@@ -12,6 +12,14 @@ export interface CreateTransactionInput {
   userId: string
 }
 
+export interface UpdateTransactionInput {
+  title: string
+  amount: number
+  type: 'INCOME' | 'EXPENSE'
+  category: string
+  date: string
+}
+
 export async function createTransaction(input: CreateTransactionInput) {
   return prisma.transaction.create({
     data: {
@@ -21,6 +29,24 @@ export async function createTransaction(input: CreateTransactionInput) {
       category: input.category,
       date: new Date(input.date),
       userId: input.userId,
+    },
+  })
+}
+
+export async function updateTransaction(id: string, userId: string, input: UpdateTransactionInput) {
+  const existing = await prisma.transaction.findUnique({ where: { id } })
+  if (!existing || existing.userId !== userId) {
+    throw new Error('Transaction not found or unauthorized')
+  }
+
+  return prisma.transaction.update({
+    where: { id },
+    data: {
+      title: input.title,
+      amount: new Decimal(input.amount),
+      type: input.type,
+      category: input.category,
+      date: new Date(input.date),
     },
   })
 }

@@ -40,6 +40,8 @@ export const translations = {
     'dashboard.income': 'Receita',
     'dashboard.categoryPlaceholder': 'Selecione a categoria',
     'dashboard.datePickerLabel': 'Data',
+    'dashboard.editTransaction': 'Editar Transação',
+    'transaction.saveChanges': 'Salvar Alterações',
 
     // Transaction form
     'transaction.title': 'Título',
@@ -86,6 +88,10 @@ export const translations = {
     'category.General': 'Geral',
     'category.Investment': 'Investimento',
     'category.Other': 'Outro',
+    'category.Restaurant': 'Restaurante',
+    'category.Gym': 'Academia',
+    'category.Home': 'Casa',
+    'category.Education': 'Educação',
 
     // Monthly Report
     'monthly.selectMonth': 'Selecione um mês',
@@ -160,6 +166,8 @@ export const translations = {
     'dashboard.income': 'Income',
     'dashboard.categoryPlaceholder': 'Select category',
     'dashboard.datePickerLabel': 'Date',
+    'dashboard.editTransaction': 'Edit Transaction',
+    'transaction.saveChanges': 'Save Changes',
     'transaction.title': 'Title',
     'transaction.amount': 'Amount',
     'transaction.type': 'Type',
@@ -198,6 +206,10 @@ export const translations = {
     'category.General': 'General',
     'category.Investment': 'Investment',
     'category.Other': 'Other',
+    'category.Restaurant': 'Restaurant',
+    'category.Gym': 'Gym',
+    'category.Home': 'Home',
+    'category.Education': 'Education',
 
     // Monthly Report
     'monthly.selectMonth': 'Select a month',
@@ -295,7 +307,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const t = (key: string): string => {
     const dict = (translations as Record<string, Record<string, string>>)[locale] ?? translations['en']
-    return dict[key] ?? translations['en'][key as keyof typeof translations['en']] ?? key
+    const result = dict[key] ?? translations['en'][key as keyof typeof translations['en']] ?? key
+    // For category keys like "category.CustomName", return the raw name when not translated
+    if (result === key && key.startsWith('category.')) {
+      return key.slice(9)
+    }
+    return result
   }
 
   return (
