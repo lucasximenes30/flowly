@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
 import ThemeToggle from '@/components/ThemeToggle'
 import LanguageToggle from '@/components/LanguageToggle'
+import MonthlyReport from '@/components/MonthlyReport'
 
 interface Session { userId: string; email: string; name: string }
 interface Transaction { id: string; title: string; amount: string; type: 'INCOME' | 'EXPENSE'; category: string; date: string }
@@ -279,6 +280,12 @@ export default function DashboardClient({
             </div>
           </div>
         </div>
+
+        {/* Monthly Report Section */}
+        <MonthlyReport 
+          formatCurrency={formatCurrency}
+          formatConverted={formatConverted}
+        />
 
         {/* Exchange rate notice (EN only) */}
         {!isBRL && rateLoading && (
