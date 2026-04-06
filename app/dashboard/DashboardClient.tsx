@@ -223,16 +223,24 @@ export default function DashboardClient({
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         {/* Balance Card */}
         <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white shadow-lg dark:shadow-brand-700/20">
-          <div className="space-y-1">
-            <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
-            <div className="flex items-baseline gap-3">
-              <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
-              {!isBRL && (
-                <span className="text-sm font-medium text-white/50">
-                  ≈ {formatConverted(balance.balance)}
-                </span>
-              )}
+          <div className="flex items-start justify-between gap-6">
+            <div className="space-y-1">
+              <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
+              <div className="flex items-baseline gap-3">
+                <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
+                {!isBRL && (
+                  <span className="text-sm font-medium text-white/50">
+                    ≈ {formatConverted(balance.balance)}
+                  </span>
+                )}
+              </div>
             </div>
+            <button
+              onClick={() => router.push('/reports')}
+              className="shrink-0 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98]"
+            >
+              {isBRL ? 'Ver relatórios' : 'View reports'}
+            </button>
           </div>
           <div className="mt-6 flex gap-8">
             <div className="space-y-0.5">

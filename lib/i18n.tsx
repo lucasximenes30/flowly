@@ -112,6 +112,21 @@ export const translations = {
     'month.october': 'Outubro',
     'month.november': 'Novembro',
     'month.december': 'Dezembro',
+
+    // Reports
+    'reports.title': 'Relatórios Financeiros',
+    'reports.subtitle': 'Análise mensal dos seus gastos',
+    'reports.income': 'Receita',
+    'reports.expenses': 'Despesas',
+    'reports.balance': 'Saldo',
+    'reports.insights': 'Insights',
+    'reports.expenseByCategory': 'Despesas por Categoria',
+    'reports.incomeVsExpenses': 'Receitas vs Despesas',
+    'reports.comparison': 'Comparação Mensal',
+    'reports.viewReports': 'Ver relatórios',
+    'reports.noExpenses': 'Nenhuma despesa neste mês',
+    'reports.noData': 'Sem dados suficientes',
+    'reports.backToDashboard': 'Voltar ao Dashboard',
   },
   'en': {
     'common.signIn': 'Sign In',
