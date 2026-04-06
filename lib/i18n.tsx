@@ -86,6 +86,32 @@ export const translations = {
     'category.General': 'Geral',
     'category.Investment': 'Investimento',
     'category.Other': 'Outro',
+
+    // Monthly Report
+    'monthly.selectMonth': 'Selecione um mês',
+    'monthly.currentMonth': 'Mês Atual',
+    'monthly.previousMonth': 'Mês Anterior',
+    'monthly.comparison': 'Comparação',
+    'monthly.incomeChange': 'Variação de Receita',
+    'monthly.expenseChange': 'Variação de Despesa',
+    'monthly.balanceChange': 'Variação de Saldo',
+    'monthly.increase': 'Aumento de',
+    'monthly.decrease': 'Redução de',
+    'monthly.report': 'Relatório de',
+
+    // Month names
+    'month.january': 'Janeiro',
+    'month.february': 'Fevereiro',
+    'month.march': 'Março',
+    'month.april': 'Abril',
+    'month.may': 'Maio',
+    'month.june': 'Junho',
+    'month.july': 'Julho',
+    'month.august': 'Agosto',
+    'month.september': 'Setembro',
+    'month.october': 'Outubro',
+    'month.november': 'Novembro',
+    'month.december': 'Dezembro',
   },
   'en': {
     'common.signIn': 'Sign In',
@@ -157,6 +183,32 @@ export const translations = {
     'category.General': 'General',
     'category.Investment': 'Investment',
     'category.Other': 'Other',
+
+    // Monthly Report
+    'monthly.selectMonth': 'Select a month',
+    'monthly.currentMonth': 'Current Month',
+    'monthly.previousMonth': 'Previous Month',
+    'monthly.comparison': 'Comparison',
+    'monthly.incomeChange': 'Income Change',
+    'monthly.expenseChange': 'Expense Change',
+    'monthly.balanceChange': 'Balance Change',
+    'monthly.increase': 'Increase of',
+    'monthly.decrease': 'Decrease of',
+    'monthly.report': 'Report for',
+
+    // Month names
+    'month.january': 'January',
+    'month.february': 'February',
+    'month.march': 'March',
+    'month.april': 'April',
+    'month.may': 'May',
+    'month.june': 'June',
+    'month.july': 'July',
+    'month.august': 'August',
+    'month.september': 'September',
+    'month.october': 'October',
+    'month.november': 'November',
+    'month.december': 'December',
   },
 }
 

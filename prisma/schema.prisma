@@ -16,6 +16,7 @@ model User {
   subscriptionStatus   UserSubscriptionStatus @default(INACTIVE)
   subscriptionId       String?
   transactions         Transaction[]
+  monthlyReports       MonthlyReport[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -35,6 +36,23 @@ model Transaction {
   updatedAt DateTime @updatedAt
 
   @@map("transactions")
+}
+
+model MonthlyReport {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year            Int
+  month           Int      // 1-12
+  income          Decimal  @db.Decimal(12, 2) @default(0)
+  expense         Decimal  @db.Decimal(12, 2) @default(0)
+  transactionCount Int     @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([userId, year, month])
+  @@index([userId, year, month])
+  @@map("monthly_reports")
 }
 
 enum UserPlan {

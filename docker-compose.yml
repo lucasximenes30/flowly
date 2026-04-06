@@ -10,15 +10,5 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  app:
-    build: .
-    environment:
-      DATABASE_URL: postgresql://flowly:flowlypass@db:5432/flowly?schema=public
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
-    ports:
-      - "3000:3000"
-    depends_on:
-      - db
-
 volumes:
   postgres_data:
