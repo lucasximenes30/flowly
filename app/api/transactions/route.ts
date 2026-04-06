@@ -10,6 +10,10 @@ const createSchema = z.object({
   type: z.enum(['INCOME', 'EXPENSE']),
   category: z.string().min(1, 'Category is required'),
   date: z.string(),
+  isInstallment: z.boolean().optional(),
+  totalInstallments: z.number().int().positive().optional().nullable(),
+  purchaseDate: z.string().optional().nullable(),
+  dueDay: z.number().int().min(1).max(31).optional().nullable(),
 })
 
 export async function GET() {
@@ -32,8 +36,16 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = createSchema.parse(body)
+    const { isInstallment, totalInstallments, purchaseDate, dueDay, ...rest } = data
 
-    const transaction = await createTransaction({ ...data, userId: session.userId })
+    const transaction = await createTransaction({
+      ...rest,
+      userId: session.userId,
+      ...(isInstallment !== undefined && { isInstallment }),
+      totalInstallments: totalInstallments ?? undefined,
+      ...(purchaseDate && { purchaseDate }),
+      ...(dueDay && { dueDay }),
+    })
     return NextResponse.json({ success: true, transaction })
   } catch (error: any) {
     const message = error instanceof z.ZodError

@@ -27,12 +27,11 @@ interface MonthlyReportProps {
 
 export default function MonthlyReport({ formatCurrency, formatConverted }: MonthlyReportProps) {
   const { t } = useApp()
-  const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const [selectedYearMonth, setSelectedYearMonth] = useState<string>('')
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
   const [comparison, setComparison] = useState<MonthComparison | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Get current month in YYYY-MM format
   const getCurrentMonth = useCallback(() => {
     const now = new Date()
     const year = now.getFullYear()
@@ -48,25 +47,32 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
         if (res.ok) {
           const data = await res.json()
           setAvailableMonths(data.months)
-          // Set current month as default
           const current = getCurrentMonth()
-          setSelectedMonth(current)
+          // Use current month even if not in available months yet (for new users)
+          setSelectedYearMonth(current)
+          if (data.months.length > 0 && !data.months.includes(current)) {
+            setAvailableMonths(prev => [current, ...prev])
+          }
         }
       } catch (error) {
         console.error('Failed to fetch available months:', error)
+        setSelectedYearMonth(getCurrentMonth())
       }
     }
     fetchAvailableMonths()
   }, [getCurrentMonth])
 
-  // Fetch comparison data
+  // Fetch comparison data when selected month changes
   useEffect(() => {
-    if (!selectedMonth) return
+    if (!selectedYearMonth) return
 
+    const [year, month] = selectedYearMonth.split('-')
     const fetchComparison = async () => {
       setLoading(true)
       try {
-        const res = await fetch('/api/transactions/monthly?type=comparison')
+        const res = await fetch(
+          `/api/transactions/monthly?type=comparison&refYear=${year}&refMonth=${month}`
+        )
         if (res.ok) {
           const data = await res.json()
           setComparison(data)
@@ -79,9 +85,9 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
     }
 
     fetchComparison()
-  }, [selectedMonth])
+  }, [selectedYearMonth])
 
-  const getMonthName = (monthNumber: number): string => {
+  const getMonthNames = (monthNumber: number): string => {
     const monthNames = [
       'month.january', 'month.february', 'month.march', 'month.april',
       'month.may', 'month.june', 'month.july', 'month.august',
@@ -92,7 +98,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
 
   const formatMonthLabel = (yearMonth: string): string => {
     const [year, month] = yearMonth.split('-')
-    return `${getMonthName(parseInt(month))} ${year}`
+    return `${getMonthNames(parseInt(month))} ${year}`
   }
 
   const getComparisonIcon = (value: number) => {
@@ -109,19 +115,19 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
     <div className="space-y-6">
       {/* Month Selector */}
       <div className="card">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
             {t('monthly.selectMonth')}
           </label>
           <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
+            value={selectedYearMonth}
+            onChange={(e) => setSelectedYearMonth(e.target.value)}
             className="input-field w-48"
             disabled={loading}
           >
-            {availableMonths.map((month) => (
-              <option key={month} value={month}>
-                {formatMonthLabel(month)}
+            {availableMonths.map((ym) => (
+              <option key={ym} value={ym}>
+                {formatMonthLabel(ym)}
               </option>
             ))}
           </select>
@@ -141,13 +147,13 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
         <>
           {/* Comparison Cards */}
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Current Month */}
+            {/* Selected Month */}
             <div className="card border-l-4 border-brand-600">
               <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
-                {t('monthly.currentMonth')}
+                {selectedYearMonth === getCurrentMonth() ? t('monthly.currentMonth') : t('monthly.selectedMonth') ?? 'Mês Selecionado'}
               </p>
               <p className="text-sm text-surface-400 dark:text-surface-500 mb-4">
-                {getMonthName(comparison.current.month)} {comparison.current.year}
+                {getMonthNames(comparison.current.month)} {comparison.current.year}
               </p>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
@@ -183,7 +189,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                 {t('monthly.previousMonth')}
               </p>
               <p className="text-sm text-surface-400 dark:text-surface-500 mb-4">
-                {getMonthName(comparison.previous.month)} {comparison.previous.year}
+                {getMonthNames(comparison.previous.month)} {comparison.previous.year}
               </p>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">

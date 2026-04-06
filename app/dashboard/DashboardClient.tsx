@@ -9,9 +9,11 @@ import MonthlyReport from '@/components/MonthlyReport'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import CategorySelect from '@/components/CategorySelect'
 import ManageCategoriesModal from '@/components/ManageCategoriesModal'
+import * as Lucide from 'lucide-react'
+import { getInstallmentInfo, formatShortDate } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; type: 'INCOME' | 'EXPENSE'; category: string; date: string }
+interface Transaction { id: string; title: string; amount: string; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; installmentAmount?: number | string; _activeInstallment?: number }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
 
@@ -127,6 +129,12 @@ export default function DashboardClient({
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
+  // Installment fields
+  const [isInstallment, setIsInstallment] = useState(false)
+  const [totalInstallments, setTotalInstallments] = useState('')
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
+  const [dueDay, setDueDay] = useState('')
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
@@ -136,7 +144,17 @@ export default function DashboardClient({
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, amount: parseFloat(amount), type, category: category.trim() || 'General', date }),
+        body: JSON.stringify({
+          title,
+          amount: parseFloat(amount),
+          type,
+          category: category.trim() || 'General',
+          date,
+          isInstallment,
+          totalInstallments: isInstallment ? parseInt(totalInstallments) : null,
+          purchaseDate: isInstallment ? purchaseDate : null,
+          dueDay: isInstallment ? parseInt(dueDay) : null,
+        }),
       })
 
       if (!res.ok) {
@@ -147,6 +165,7 @@ export default function DashboardClient({
 
       setTitle(''); setAmount(''); setCategory('')
       setDate(new Date().toISOString().split('T')[0])
+      setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay('')
       setShowForm(false)
       router.refresh()
     } catch {
@@ -328,12 +347,83 @@ export default function DashboardClient({
                   <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.date')}</label>
                   <input type="date" required className="input-field" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
+                {/* Installment toggle */}
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsInstallment(!isInstallment)}
+                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
+                      isInstallment
+                        ? 'border-brand-300 bg-brand-50 dark:border-brand-700/50 dark:bg-brand-900/20'
+                        : 'border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lucide.ReceiptText className={`w-4 h-4 ${isInstallment ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400'}`} />
+                      <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                        {isBRL ? 'É parcelado?' : 'Installment?'}
+                      </span>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
+                      isInstallment ? 'bg-brand-600 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start'
+                    }`}>
+                      <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm transition-transform" />
+                    </div>
+                  </button>
+                </div>
+                {/* Installment fields */}
+                {isInstallment && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                        {isBRL ? 'Quantas parcelas?' : 'How many installments?'}
+                      </label>
+                      <input
+                        type="number"
+                        min="2"
+                        max="48"
+                        className="input-field"
+                        placeholder="12"
+                        value={totalInstallments}
+                        onChange={(e) => setTotalInstallments(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                        {isBRL ? 'Dia do vencimento' : 'Payment day'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        className="input-field"
+                        placeholder="12"
+                        value={dueDay}
+                        onChange={(e) => setDueDay(e.target.value)}
+                      />
+                      <p className="text-[10px] text-surface-400 mt-0.5">
+                        {isBRL ? 'Ex: Se paga dia 12 todo mês, selecione 12' : 'e.g., if you pay on the 12th every month, select 12'}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                        {isBRL ? 'Data da compra' : 'Purchase date'}
+                      </label>
+                      <input
+                        type="date"
+                        className="input-field"
+                        value={purchaseDate}
+                        onChange={(e) => setPurchaseDate(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               {formError && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</p>}
               <div className="mt-4 flex gap-3">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(new Date().toISOString().split('T')[0]); }}
+                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(new Date().toISOString().split('T')[0]); setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay(''); }}
                   className="btn-secondary"
                   disabled={submitting}
                 >
@@ -388,19 +478,84 @@ export default function DashboardClient({
                       )}
                     </button>
                     <div className="space-y-0.5">
-                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
-                      <p className="text-xs text-surface-400 dark:text-surface-500">{t(`category.${txn.category}`) ?? txn.category} · {formatDate(txn.date)}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
+                        {txn.isInstallment && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
+                            <Lucide.ReceiptText className="w-3 h-3" />
+                            Parcelado
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-surface-400 dark:text-surface-500">{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</p>
+                      {txn.isInstallment && txn.totalInstallments && txn.dueDay && txn.purchaseDate && (() => {
+                        // Use _activeInstallment if provided (from month-aware query), otherwise compute from today
+                        const currentInstallment = txn._activeInstallment ?? getInstallmentInfo(
+                          txn.purchaseDate ? new Date(txn.purchaseDate) : null,
+                          txn.totalInstallments,
+                          txn.dueDay,
+                          txn.date,
+                        ).currentInstallment
+
+                        const info = getInstallmentInfo(
+                          txn.purchaseDate ? new Date(txn.purchaseDate) : null,
+                          txn.totalInstallments,
+                          txn.dueDay,
+                          txn.date,
+                        )
+
+                        // Override currentInstallment with the active one if available
+                        const displayInstallment = txn._activeInstallment ?? info.currentInstallment
+
+                        const perMonth = txn.installmentAmount ? parseFloat(txn.installmentAmount.toString()) : (parseFloat(txn.amount) / txn.totalInstallments)
+                        const statusColor = info.status === 'LATE' ? 'text-red-600 dark:text-red-400' : info.status === 'PAID' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                        return (
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className={`text-[10px] font-medium ${statusColor}`}>
+                              {isBRL ? `Parcela ${displayInstallment}/${txn.totalInstallments}` : `Installment ${displayInstallment}/${txn.totalInstallments}`}
+                            </span>
+                            <span className="text-[10px] text-surface-400">
+                              {formatCurrency(perMonth)} {isBRL ? 'por mês' : 'per month'}
+                            </span>
+                            {displayInstallment < txn.totalInstallments && (
+                              <span className="text-[10px] text-surface-400">
+                                {isBRL ? `Restam ${txn.totalInstallments - displayInstallment}` : `${txn.totalInstallments - displayInstallment} remaining`}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(parseFloat(txn.amount))}
-                      </span>
-                      {!isBRL && (
-                        <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
-                          ≈ {formatConverted(parseFloat(txn.amount))}
-                        </p>
+                      {txn.isInstallment && txn.totalInstallments ? (() => {
+                        const perMonth = txn.installmentAmount
+                          ? parseFloat(txn.installmentAmount.toString())
+                          : parseFloat(txn.amount) / txn.totalInstallments
+                        return (
+                          <>
+                            <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(perMonth)}
+                            </span>
+                            {!isBRL && (
+                              <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
+                                ≈ {formatConverted(perMonth)}
+                              </p>
+                            )}
+                          </>
+                        )
+                      })() : (
+                        <>
+                          <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(parseFloat(txn.amount))}
+                          </span>
+                          {!isBRL && (
+                            <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
+                              ≈ {formatConverted(parseFloat(txn.amount))}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

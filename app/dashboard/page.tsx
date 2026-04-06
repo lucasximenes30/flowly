@@ -11,6 +11,10 @@ function serializeData(transactions: any[], balance: any, monthly: any) {
     type: t.type,
     category: t.category,
     date: t.date.toISOString(),
+    isInstallment: t.isInstallment,
+    totalInstallments: t.totalInstallments,
+    purchaseDate: t.purchaseDate?.toISOString(),
+    dueDay: t.dueDay,
   }))
 
   return {

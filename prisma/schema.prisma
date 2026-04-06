@@ -18,6 +18,7 @@ model User {
   transactions         Transaction[]
   monthlyReports       MonthlyReport[]
   customCategories     Category[]
+  notifications        Notification[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -25,16 +26,21 @@ model User {
 }
 
 model Transaction {
-  id        String   @id @default(uuid())
-  title     String
-  amount    Decimal  @db.Decimal(12, 2)
-  type      TransactionType
-  category  String
-  date      DateTime
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id               String   @id @default(uuid())
+  title            String
+  amount            Decimal  @db.Decimal(12, 2)
+  installmentAmount Decimal? @db.Decimal(12, 2)
+  type             TransactionType
+  category         String
+  date             DateTime
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isInstallment    Boolean  @default(false)
+  totalInstallments Int?
+  purchaseDate     DateTime?
+  dueDay           Int?     // day of month (1–31)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@map("transactions")
 }
@@ -68,6 +74,21 @@ model Category {
 
   @@index([userId])
   @@map("categories")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  date      DateTime
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, read])
+  @@map("notifications")
 }
 
 enum UserPlan {

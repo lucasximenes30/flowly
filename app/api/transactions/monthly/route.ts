@@ -15,8 +15,10 @@ export async function GET(request: NextRequest) {
 
   const searchParams = request.nextUrl.searchParams
   const type = searchParams.get('type') // 'summary', 'transactions', 'comparison', 'available'
-  const year = searchParams.get('year')
-  const month = searchParams.get('month')
+  const refYear = searchParams.get('refYear')
+  const refMonth = searchParams.get('refMonth')
+  const year = refYear ?? searchParams.get('year')
+  const month = refMonth ?? searchParams.get('month')
 
   try {
     if (type === 'transactions' && year && month) {
@@ -38,7 +40,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === 'comparison') {
-      const comparison = await getMonthComparison(session.userId)
+      const cYear = parseInt(refYear ?? new Date().getFullYear().toString())
+      const cMonth = parseInt(refMonth ?? (new Date().getMonth() + 1).toString())
+      const comparison = await getMonthComparison(session.userId, cYear, cMonth)
       return NextResponse.json(comparison)
     }
 
