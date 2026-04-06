@@ -1,12 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
-import {
-  ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend,
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-} from 'recharts'
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
+import AdvancedReports from '@/components/AdvancedReports'
 
 interface Session { userId: string; email: string; name: string }
 interface Balance { income: number; expense: number; balance: number }
@@ -65,30 +63,28 @@ const CATEGORY_COLORS_LIGHT: Record<string, string> = {
   Outro: '#cbd5e1',
 }
 
-type Insights = { text: string; type: 'positive' | 'negative' | 'neutral' }[]
+type AIInsight = { text: string; type: 'positive' | 'negative' | 'tip' }
+type StaticInsight = { text: string; type: 'positive' | 'negative' | 'tip' }
 
-function generateInsights(
+function generateStaticFallbackInsights(
   categories: { category: string; amount: number }[],
   comparison: Comparison,
-  t: (key: string) => string,
   formatCurrency: (value: number) => string,
-): Insights {
-  const insights: Insights = []
+): StaticInsight[] {
+  const insights: StaticInsight[] = []
 
   if (categories.length > 0) {
-    const totalExpenses = categories.reduce((sum, c) => sum + c.amount, 0)
-    const topCategory = categories[0]
-    const percentage = totalExpenses > 0 ? ((topCategory.amount / totalExpenses) * 100).toFixed(0) : '0'
-    insights.push({
-      text: `${t(`category.${topCategory.category}`) ?? topCategory.category} representa ${percentage}% dos seus gastos`,
-      type: 'neutral',
-    })
+    const total = categories.reduce((s, c) => s + c.amount, 0)
+    const top = categories[0]
+    const pct = total > 0 ? ((top.amount / total) * 100).toFixed(0) : '0'
+    insights.push({ text: `${top.category} representa ${pct}% dos seus gastos`, type: 'tip' })
   }
 
-  if (comparison.comparison.balanceChange >= 0) {
-    insights.push({ text: `Seu saldo aumentou ${formatCurrency(Math.abs(comparison.comparison.balanceChange))} em relação ao mês anterior`, type: 'positive' })
+  const balChange = comparison.comparison.balanceChange
+  if (balChange >= 0) {
+    insights.push({ text: `Seu saldo aumentou ${formatCurrency(Math.abs(balChange))} em relação ao mês anterior`, type: 'positive' })
   } else {
-    insights.push({ text: `Seu saldo diminuiu ${formatCurrency(Math.abs(comparison.comparison.balanceChange))} em relação ao mês anterior`, type: 'negative' })
+    insights.push({ text: `Seu saldo diminuiu ${formatCurrency(Math.abs(balChange))} em relação ao mês anterior`, type: 'negative' })
   }
 
   if (comparison.comparison.expenseChange > 0) {
@@ -101,14 +97,7 @@ function generateInsights(
     insights.push({ text: `Sua receita aumentou ${formatCurrency(comparison.comparison.incomeChange)} em relação ao mês anterior`, type: 'positive' })
   }
 
-  if (categories.length >= 2) {
-    const totalExpenses = categories.reduce((sum, c) => sum + c.amount, 0)
-    const top2 = categories.slice(0, 2).reduce((sum, c) => sum + c.amount, 0)
-    const pct = totalExpenses > 0 ? ((top2 / totalExpenses) * 100).toFixed(0) : '0'
-    insights.push({ text: `As 2 maiores categorias representam ${pct}% do total de gastos`, type: 'neutral' })
-  }
-
-  return insights
+  return insights.slice(0, 5)
 }
 
 export default function ReportsClient({
@@ -210,14 +199,25 @@ export default function ReportsClient({
     return t(keys[monthNumber - 1])
   }
 
-  const insights = useMemo(() => {
-    const comp = comparison ?? {
-      current: { year: 0, month: 0, income: 0, expense: 0, balance: 0 },
-      previous: { year: 0, month: 0, income: 0, expense: 0, balance: 0 },
-      comparison: { incomeChange: 0, expenseChange: 0, balanceChange: 0 },
-    }
-    return generateInsights(categoryData, comp, t, formatCurrency)
-  }, [categoryData, comparison, t, formatCurrency])
+  // AI Insights
+  const [aiInsights, setAiInsights] = useState<AIInsight[]>([])
+  const [insightsLoading, setInsightsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!selectedMonth) return
+    setInsightsLoading(true)
+    fetch('/api/insights', { method: 'POST' })
+      .then(async (r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.insights) setAiInsights(data.insights)
+        else setAiInsights(generateStaticFallbackInsights(categoryData, comparison, formatCurrency))
+        setInsightsLoading(false)
+      })
+      .catch(() => {
+        setAiInsights(generateStaticFallbackInsights(categoryData, comparison, formatCurrency))
+        setInsightsLoading(false)
+      })
+  }, [selectedMonth])
 
   const displaySummary = monthlySummary ?? monthly
 
@@ -310,16 +310,26 @@ export default function ReportsClient({
         </div>
 
         {/* Insights */}
-        {insights.length > 0 && (
-          <div className="card">
-            <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
-              <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        <div className="card">
+          <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
+            <svg className="w-5 h-5 text-violet-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            {isBRL ? 'Insights com IA' : 'AI Insights'}
+            {insightsLoading && (
+              <svg className="w-4 h-4 text-surface-400 animate-spin ml-auto" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
+                <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
               </svg>
-              {isBRL ? 'Insights' : 'Insights'}
-            </h2>
+            )}
+          </h2>
+          {aiInsights.length === 0 && !insightsLoading ? (
+            <div className="py-8 text-center text-sm text-surface-400 dark:text-surface-500">
+              {isBRL ? 'Adicione transações para receber insights' : 'Add transactions to receive insights'}
+            </div>
+          ) : (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {insights.map((insight, i) => (
+              {aiInsights.map((insight, i) => (
                 <div
                   key={i}
                   className={`flex items-start gap-3 p-4 rounded-xl border ${
@@ -327,7 +337,7 @@ export default function ReportsClient({
                       ? 'bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800/40'
                       : insight.type === 'negative'
                       ? 'bg-rose-50 border-rose-200 dark:bg-rose-900/20 dark:border-rose-800/40'
-                      : 'bg-surface-50 border-surface-200 dark:bg-surface-800/50 dark:border-surface-700/60'
+                      : 'bg-violet-50 border-violet-200 dark:bg-violet-900/20 dark:border-violet-800/40'
                   }`}
                 >
                   <div className="mt-0.5">
@@ -340,8 +350,8 @@ export default function ReportsClient({
                         <path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" />
                       </svg>
                     ) : (
-                      <svg className="w-4 h-4 text-surface-500 dark:text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      <svg className="w-4 h-4 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                       </svg>
                     )}
                   </div>
@@ -350,15 +360,15 @@ export default function ReportsClient({
                       ? 'text-emerald-700 dark:text-emerald-300'
                       : insight.type === 'negative'
                       ? 'text-rose-700 dark:text-rose-300'
-                      : 'text-surface-700 dark:text-surface-300'
+                      : 'text-violet-700 dark:text-violet-300'
                   }`}>
                     {insight.text}
                   </p>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Charts */}
         {chartsLoading ? (
@@ -401,7 +411,7 @@ export default function ReportsClient({
                             ))}
                           </Pie>
                           <RechartsTooltip
-                            formatter={(value: number) => formatCurrency(value)}
+                            formatter={(value) => formatCurrency(Number(value))}
                             contentStyle={{
                               backgroundColor: isBRL ? '#16171d' : '#fff',
                               border: 'none',
@@ -455,7 +465,7 @@ export default function ReportsClient({
                           tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
                         />
                         <RechartsTooltip
-                          formatter={(value: number) => formatCurrency(value)}
+                          formatter={(value) => formatCurrency(Number(value))}
                           contentStyle={{
                             backgroundColor: isBRL ? '#16171d' : '#fff',
                             border: 'none',
@@ -527,6 +537,9 @@ export default function ReportsClient({
             </div>
           </>
         )}
+
+        {/* Advanced Reports Section */}
+        <AdvancedReports formatCurrency={formatCurrency} isBRL={isBRL} />
       </main>
     </div>
   )

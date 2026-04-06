@@ -1,0 +1,414 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useApp } from '@/lib/i18n'
+import {
+  ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, LineChart, Line,
+} from 'recharts'
+
+interface FinancialScore {
+  score: number
+  label: string
+  breakdown: { category: string; score: number; max: number }[]
+  recommendations: string[]
+}
+
+interface SpendingAnomaly {
+  date: string
+  category: string
+  amount: number
+  averageInCategory: number
+  deviation: number
+  title: string
+}
+
+interface WeeklyAnalysis {
+  week: string
+  income: number
+  expense: number
+  balance: number
+  transactionCount: number
+  topCategory: string | null
+}
+
+interface AdvancedReportsProps {
+  formatCurrency: (value: number) => string
+  isBRL: boolean
+}
+
+const SCORE_COLORS: Record<string, string> = {
+  'Excelente': '#22c55e',
+  'Muito Bom': '#4ade80',
+  'Bom': '#a3e635',
+  'Regular': '#fbbf24',
+  'Precisa melhorar': '#f43f5e',
+}
+
+export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedReportsProps) {
+  const { t } = useApp()
+  const [loading, setLoading] = useState(true)
+  const [score, setScore] = useState<FinancialScore | null>(null)
+  const [anomalies, setAnomalies] = useState<SpendingAnomaly[]>([])
+  const [weekly, setWeekly] = useState<WeeklyAnalysis[]>([])
+
+  const [activeTab, setActiveTab] = useState<'score' | 'weekly' | 'anomalies'>('score')
+
+  useEffect(() => {
+    setLoading(true)
+    fetch('/api/reports/advanced')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data) {
+          setScore(data.score)
+          setAnomalies(data.anomalies)
+          setWeekly(data.weekly)
+        }
+      })
+      .catch(() => { /* silent fail */ })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const weeklyChartData = weekly.map((w) => ({
+    week: w.week,
+    income: w.income,
+    expense: w.expense,
+    balance: w.balance,
+  }))
+
+  if (loading) {
+    return (
+      <div className="card flex items-center justify-center py-16">
+        <svg className="w-8 h-8 text-brand-600 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
+          <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
+        </svg>
+      </div>
+    )
+  }
+
+  if (weekly.length === 0 && !score) {
+    return (
+      <div className="card">
+        <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">
+          {isBRL ? 'Relatórios Avançados' : 'Advanced Reports'}
+        </h2>
+        <p className="text-sm text-surface-400 dark:text-surface-500">
+          {isBRL
+            ? 'Adicione transações ao longo do tempo para desbloquear análises avançadas'
+            : 'Add transactions over time to unlock advanced analysis'}
+        </p>
+      </div>
+    )
+  }
+
+  const scoreColor = score ? (SCORE_COLORS[score.label] || '#8f93a1') : '#8f93a1'
+  const circumference = 2 * Math.PI * 54
+  const scoreProgress = score ? (score.score / 100) * circumference : 0
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div>
+        <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">
+          {isBRL ? 'Relatórios Avançados' : 'Advanced Reports'}
+        </h2>
+        <p className="text-sm text-surface-400 dark:text-surface-500">
+          {isBRL
+            ? 'Análise detalhada dos seus hábitos financeiros'
+            : 'Detailed analysis of your financial habits'}
+        </p>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 rounded-xl bg-surface-100 dark:bg-surface-800/50 w-fit">
+        {[
+          { key: 'score' as const, label: isBRL ? 'Score' : 'Score' },
+          { key: 'weekly' as const, label: isBRL ? 'Semanal' : 'Weekly' },
+          { key: 'anomalies' as const, label: isBRL ? 'Alertas' : 'Alerts' },
+        ].map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
+              activeTab === tab.key
+                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-surface-100 shadow-sm'
+                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-300'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Score Tab */}
+      {activeTab === 'score' && score && (
+        <div className="space-y-6">
+          {/* Score Circle + Breakdown */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* Score Circle */}
+            <div className="card flex flex-col items-center justify-center py-8">
+              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
+                {isBRL ? 'Score Financeiro' : 'Financial Score'}
+              </h3>
+              <div className="relative">
+                <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
+                  <circle
+                    cx="60" cy="60" r="54"
+                    fill="none"
+                    stroke="currentColor"
+                    className="text-surface-200 dark:text-surface-700"
+                    strokeWidth="8"
+                  />
+                  <circle
+                    cx="60" cy="60" r="54"
+                    fill="none"
+                    stroke={scoreColor}
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference - scoreProgress}
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold" style={{ color: scoreColor }}>
+                    {score.score}
+                  </span>
+                  <span className="text-xs text-surface-500">{score.label}</span>
+                </div>
+              </div>
+              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
+                {isBRL ? 'Baseado nos seus hábitos deste mês' : 'Based on your habits this month'}
+              </p>
+            </div>
+
+            {/* Breakdown */}
+            <div className="card space-y-4">
+              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                {isBRL ? 'Detalhamento' : 'Breakdown'}
+              </h3>
+              {score.breakdown.map((item) => (
+                <div key={item.category}>
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-surface-600 dark:text-surface-400">{item.category}</span>
+                    <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                      {item.score}/{item.max}
+                    </span>
+                  </div>
+                  <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800">
+                    <div
+                      className="h-2 rounded-full transition-all duration-500"
+                      style={{
+                        width: `${item.max > 0 ? (item.score / item.max) * 100 : 0}%`,
+                        backgroundColor: (item.score / item.max) >= 0.7 ? '#22c55e' : (item.score / item.max) >= 0.5 ? '#fbbf24' : '#f43f5e',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recommendations */}
+          {score.recommendations.length > 0 && (
+            <div className="card bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-900/20 dark:to-violet-800/10 border border-violet-200/50 dark:border-violet-800/30">
+              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-3">
+                {isBRL ? 'Recomendações' : 'Recommendations'}
+              </h3>
+              <ul className="space-y-2">
+                {score.recommendations.map((rec, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <svg className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-sm text-violet-700 dark:text-violet-300">{rec}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Weekly Tab */}
+      {activeTab === 'weekly' && (
+        weeklyChartData.length === 0 ? (
+          <div className="card flex items-center justify-center py-16">
+            <p className="text-sm text-surface-400 dark:text-surface-500">
+              {isBRL ? 'Sem dados semanais suficientes' : 'Not enough weekly data'}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Weekly Trend Chart */}
+            <div className="card">
+              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
+                {isBRL ? 'Tendência Semanal' : 'Weekly Trend'}
+              </h3>
+              <div style={{ width: '100%', height: 300 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={weeklyChartData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke={isBRL ? '#282a32' : '#e2e5ed'} />
+                    <XAxis
+                      dataKey="week"
+                      tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: string) => v.slice(5)}
+                    />
+                    <YAxis
+                      tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}
+                    />
+                    <RechartsTooltip
+                      formatter={(value) => formatCurrency(Number(value))}
+                      contentStyle={{
+                        backgroundColor: isBRL ? '#16171d' : '#fff',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: isBRL ? '#f1f3f7' : '#16171d',
+                        fontSize: '13px',
+                      }}
+                    />
+                    <Legend
+                      formatter={(value: string) => value === 'income' ? (isBRL ? 'Receita' : 'Income') : isBRL ? 'Despesa' : 'Expense'}
+                      wrapperStyle={{ fontSize: '12px' }}
+                    />
+                    <Bar dataKey="income" fill="#22c55e" radius={[6, 6, 0, 0]} />
+                    <Bar dataKey="expense" fill="#f43f5e" radius={[6, 6, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Weekly Cards */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {weekly.slice(-6).map((w, i) => (
+                <div key={w.week} className="card p-4">
+                  <p className="text-xs text-surface-400 dark:text-surface-500 mb-3">{w.week.slice(5)}</p>
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between">
+                      <span className="text-xs text-emerald-600 dark:text-emerald-400">
+                        {isBRL ? 'Receita' : 'Income'}
+                      </span>
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(w.income)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-xs text-rose-600 dark:text-rose-400">
+                        {isBRL ? 'Despesa' : 'Expense'}
+                      </span>
+                      <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                        {formatCurrency(w.expense)}
+                      </span>
+                    </div>
+                    <div className="border-t border-surface-100 dark:border-surface-800 pt-1.5 flex justify-between">
+                      <span className={`text-xs font-medium ${w.balance >= 0 ? 'text-surface-600 dark:text-surface-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {isBRL ? 'Saldo' : 'Balance'}
+                      </span>
+                      <span className={`text-xs font-bold ${w.balance >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {formatCurrency(w.balance)}
+                      </span>
+                    </div>
+                    {w.topCategory && (
+                      <div className="flex justify-between pt-1">
+                        <span className="text-xs text-surface-400 dark:text-surface-500">
+                          {isBRL ? 'Top' : 'Top'}
+                        </span>
+                        <span className="text-xs text-surface-500 dark:text-surface-400">
+                          {w.topCategory}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      )}
+
+      {/* Anomalies Tab */}
+      {activeTab === 'anomalies' && (
+        anomalies.length === 0 ? (
+          <div className="card">
+            <div className="flex items-center gap-3 mb-3">
+              <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p className="font-semibold text-surface-900 dark:text-surface-100">
+                  {isBRL ? 'Nenhum gasto anômalo detectado' : 'No anomalous spending detected'}
+                </p>
+                <p className="text-xs text-surface-400 dark:text-surface-500">
+                  {isBRL ? 'Seus gastos estão dentro do padrão esperado' : 'Your spending is within expected patterns'}
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="card">
+            <div className="flex items-center gap-2 mb-1">
+              <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                {isBRL ? 'Gastos Incomuns Detectados' : 'Unusual Spending Detected'}
+              </h3>
+              <span className="text-xs text-surface-400 dark:text-surface-500 ml-auto">
+                {isBRL ? 'Últimos 3 meses' : 'Last 3 months'}
+              </span>
+            </div>
+            <p className="text-xs text-surface-400 dark:text-surface-500 mb-4">
+              {isBRL
+                ? 'Gastos que estão significativamente acima da sua média habitual'
+                : 'Spending significantly above your usual average'}
+            </p>
+            <div className="space-y-3">
+              {anomalies.map((a, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-900/20 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-medium text-surface-900 dark:text-surface-100">
+                        {a.title}
+                      </p>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                        {a.category} · {new Date(a.date).toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short' })}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-bold text-amber-700 dark:text-amber-300">
+                        {formatCurrency(a.amount)}
+                      </p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400">
+                        {isBRL ? 'Média' : 'Avg'}: {formatCurrency(a.averageInCategory)}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-1">
+                    <div className="flex-1 h-1.5 rounded-full bg-amber-200 dark:bg-amber-800/30">
+                      <div
+                        className="h-1.5 rounded-full bg-amber-500"
+                        style={{ width: `${Math.min(a.deviation * 20, 100)}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-amber-600 dark:text-amber-400 ml-1">
+                      {a.deviation}σ
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  )
+}

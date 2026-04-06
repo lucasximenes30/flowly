@@ -4,14 +4,15 @@ import { prisma } from '@/lib/prisma'
 
 export async function DELETE(
   _request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   try {
     const transaction = await prisma.transaction.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
 
     if (!transaction || transaction.userId !== session.userId) {
@@ -21,7 +22,7 @@ export async function DELETE(
       )
     }
 
-    await prisma.transaction.delete({ where: { id: params.id } })
+    await prisma.transaction.delete({ where: { id } })
 
     return NextResponse.json({ success: true })
   } catch {

@@ -12,6 +12,7 @@
     "db:push": "prisma db push"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.5.0",
     "bcryptjs": "^3.0.2",
     "jose": "^5.9.0",
