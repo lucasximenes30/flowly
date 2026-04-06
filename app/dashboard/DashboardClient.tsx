@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
 import ThemeToggle from '@/components/ThemeToggle'
@@ -117,6 +117,7 @@ export default function DashboardClient({
 
   // Add transaction
   const [showForm, setShowForm] = useState(false)
+  const formRef = useRef<HTMLDivElement>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
@@ -257,50 +258,26 @@ export default function DashboardClient({
               {isBRL ? 'Ver relatórios' : 'View reports'}
             </button>
           </div>
-          <div className="mt-6 flex gap-8">
-            <div className="space-y-0.5">
-              <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
-              <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalExpenses')}</p>
-              <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.expense)}</p>
-            </div>
-            {!isBRL && !rateLoading && (
-              <div className="ml-auto text-right">
-                <p className="text-xs/5 font-medium text-white/40">1 USD = R$ {rate.toFixed(2)}</p>
+          <div className="mt-6 flex items-center justify-between gap-8">
+            <div className="flex gap-8">
+              <div className="space-y-0.5">
+                <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
+                <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="card">
-            <div className="space-y-1">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">
-                {t('dashboard.thisMonth')}
-                {!isBRL && (
-                  <span className="ml-1 font-normal text-surface-400 lowercase">
-                    (≈ {formatConverted(monthly.balance)})
-                  </span>
-                )}
-              </p>
-              <p className="text-2xl font-semibold text-surface-900 dark:text-surface-100">{formatCurrency(monthly.balance)}</p>
-              <p className="text-xs text-surface-400 dark:text-surface-500">{monthly.transactionCount} {isBRL ? 'transações' : 'transactions'}</p>
+              <div className="space-y-0.5">
+                <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalExpenses')}</p>
+                <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.expense)}</p>
+              </div>
             </div>
-          </div>
-          <div className="card">
-            <div className="space-y-1">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">{t('dashboard.monthlyIncome')}</p>
-              <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">+{formatCurrency(monthly.income)}</p>
-            </div>
-          </div>
-          <div className="card">
-            <div className="space-y-1">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">{t('dashboard.monthlyExpenses')}</p>
-              <p className="text-2xl font-semibold text-rose-600 dark:text-rose-400">-{formatCurrency(monthly.expense)}</p>
-            </div>
+            <button
+              onClick={() => {
+                setShowForm((prev) => !prev)
+                setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+              }}
+              className="shrink-0 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98]"
+            >
+              {showForm ? (isBRL ? 'Cancelar' : 'Cancel') : (isBRL ? 'Nova Transação' : 'New Transaction')}
+            </button>
           </div>
         </div>
 
@@ -319,16 +296,14 @@ export default function DashboardClient({
 
         {/* Transactions Section */}
         <div className="card">
-          <div className="mb-5 flex items-center justify-between">
+          <div className="mb-5">
             <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">{t('dashboard.recentTransactions')}</h2>
-            <button onClick={() => setShowForm(!showForm)} className="btn-primary text-xs px-4 py-2">
-              {showForm ? t('common.cancel') : t('dashboard.addTransaction')}
-            </button>
           </div>
 
           {/* Add Transaction Form */}
           {showForm && (
-            <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-5 dark:bg-surface-800/50 dark:border-surface-700/60">
+            <div ref={formRef}>
+            <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-5 dark:bg-surface-800/50 dark:border-surface-700/60 transition-all duration-500">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.title')}</label>
@@ -355,12 +330,21 @@ export default function DashboardClient({
                 </div>
               </div>
               {formError && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</p>}
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(new Date().toISOString().split('T')[0]); }}
+                  className="btn-secondary"
+                  disabled={submitting}
+                >
+                  {t('common.cancel')}
+                </button>
                 <button type="submit" disabled={submitting} className="btn-primary">
                   {submitting ? t('transaction.saving') : t('transaction.save')}
                 </button>
               </div>
             </form>
+            </div>
           )}
 
           {/* Transaction List */}
