@@ -1,0 +1,245 @@
+'use client'
+
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react'
+
+export const translations = {
+  'pt-BR': {
+    // Common
+    'common.signIn': 'Entrar',
+    'common.signUp': 'Criar Conta',
+    'common.signOut': 'Sair',
+    'common.email': 'E-mail',
+    'common.password': 'Senha',
+    'common.name': 'Nome',
+    'common.cancel': 'Cancelar',
+    'common.save': 'Salvar',
+
+    // Auth
+    'auth.welcomeBack': 'Bem-vindo de volta. Entre na sua conta.',
+    'auth.createAccount': 'Crie sua conta para começar.',
+    'auth.namePlaceholder': 'João Silva',
+    'auth.emailPlaceholder': 'voce@exemplo.com',
+    'auth.passwordPlaceholder': '••••••••',
+    'auth.signingIn': 'Entrando...',
+    'auth.creatingAccount': 'Criando conta...',
+    'auth.noAccount': 'Não tem conta?',
+    'auth.hasAccount': 'Já tem conta?',
+
+    // Dashboard
+    'dashboard.currentBalance': 'Saldo Atual',
+    'dashboard.totalIncome': 'Receitas',
+    'dashboard.totalExpenses': 'Despesas',
+    'dashboard.thisMonth': 'Este Mês',
+    'dashboard.monthlyIncome': 'Receita do Mês',
+    'dashboard.monthlyExpenses': 'Despesas do Mês',
+    'dashboard.recentTransactions': 'Transações Recentes',
+    'dashboard.addTransaction': '+ Nova Transação',
+    'dashboard.noTransactions': 'Nenhuma transação ainda.',
+    'dashboard.addFirstTransaction': 'Adicione sua primeira transação para começar.',
+    'dashboard.expense': 'Despesa',
+    'dashboard.income': 'Receita',
+    'dashboard.categoryPlaceholder': 'Selecione a categoria',
+    'dashboard.datePickerLabel': 'Data',
+
+    // Transaction form
+    'transaction.title': 'Título',
+    'transaction.amount': 'Valor',
+    'transaction.type': 'Tipo',
+    'transaction.category': 'Categoria',
+    'transaction.date': 'Data',
+    'transaction.saving': 'Salvando...',
+    'transaction.save': 'Salvar Transação',
+    'transaction.titlePlaceholder': 'Nome da transação',
+    'transaction.failed': 'Falha ao criar transação',
+    'transaction.networkError': 'Erro de rede',
+
+    // Settings
+    'settings.title': 'Configurações',
+    'settings.general': 'Geral',
+    'settings.theme': 'Tema',
+    'settings.themeLight': 'Claro',
+    'settings.themeDark': 'Escuro',
+    'settings.themeSystem': 'Automático',
+    'settings.language': 'Idioma',
+    'settings.changePassword': 'Alterar Senha',
+    'settings.currentPassword': 'Senha Atual',
+    'settings.newPassword': 'Nova Senha',
+    'settings.confirmPassword': 'Confirmar Nova Senha',
+    'settings.passwordUpdated': 'Senha atualizada com sucesso!',
+    'settings.passwordMismatch': 'As senhas não coincidem.',
+    'settings.passwordSame': 'A nova senha deve ser diferente da atual.',
+    'settings.changingPassword': 'Alterando senha...',
+    'settings.update': 'Alterar Senha',
+
+    // Landing
+    'landing.tagline': 'Gestão financeira pessoal, de um jeito simples e bonito.',
+
+    // Category translations
+    'category.Salary': 'Salário',
+    'category.Freelance': 'Freelance',
+    'category.Food': 'Alimentação',
+    'category.Transport': 'Transporte',
+    'category.Entertainment': 'Lazer',
+    'category.Shopping': 'Compras',
+    'category.Bills': 'Contas',
+    'category.Health': 'Saúde',
+    'category.General': 'Geral',
+    'category.Investment': 'Investimento',
+    'category.Other': 'Outro',
+  },
+  'en': {
+    'common.signIn': 'Sign In',
+    'common.signUp': 'Create Account',
+    'common.signOut': 'Sign out',
+    'common.email': 'Email',
+    'common.password': 'Password',
+    'common.name': 'Name',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'auth.welcomeBack': 'Welcome back. Sign in to your account.',
+    'auth.createAccount': 'Create your account to get started.',
+    'auth.namePlaceholder': 'John Doe',
+    'auth.emailPlaceholder': 'you@example.com',
+    'auth.passwordPlaceholder': '••••••••',
+    'auth.signingIn': 'Signing in...',
+    'auth.creatingAccount': 'Creating account...',
+    'auth.noAccount': "Don't have an account? ",
+    'auth.hasAccount': 'Already have an account? ',
+    'dashboard.currentBalance': 'Current Balance',
+    'dashboard.totalIncome': 'Total Income',
+    'dashboard.totalExpenses': 'Total Expenses',
+    'dashboard.thisMonth': 'This Month',
+    'dashboard.monthlyIncome': 'Monthly Income',
+    'dashboard.monthlyExpenses': 'Monthly Expenses',
+    'dashboard.recentTransactions': 'Recent Transactions',
+    'dashboard.addTransaction': '+ Add Transaction',
+    'dashboard.noTransactions': 'No transactions yet.',
+    'dashboard.addFirstTransaction': 'Add your first transaction to get started.',
+    'dashboard.expense': 'Expense',
+    'dashboard.income': 'Income',
+    'dashboard.categoryPlaceholder': 'Select category',
+    'dashboard.datePickerLabel': 'Date',
+    'transaction.title': 'Title',
+    'transaction.amount': 'Amount',
+    'transaction.type': 'Type',
+    'transaction.category': 'Category',
+    'transaction.date': 'Date',
+    'transaction.saving': 'Saving...',
+    'transaction.save': 'Save Transaction',
+    'transaction.titlePlaceholder': 'Transaction name',
+    'transaction.failed': 'Failed to create transaction',
+    'transaction.networkError': 'Network error',
+    'settings.title': 'Settings',
+    'settings.general': 'General',
+    'settings.theme': 'Theme',
+    'settings.themeLight': 'Light',
+    'settings.themeDark': 'Dark',
+    'settings.themeSystem': 'Auto',
+    'settings.language': 'Language',
+    'settings.changePassword': 'Change Password',
+    'settings.currentPassword': 'Current Password',
+    'settings.newPassword': 'New Password',
+    'settings.confirmPassword': 'Confirm New Password',
+    'settings.passwordUpdated': 'Password updated successfully!',
+    'settings.passwordMismatch': 'Passwords do not match.',
+    'settings.passwordSame': 'New password must be different from current password.',
+    'settings.changingPassword': 'Changing password...',
+    'settings.update': 'Change Password',
+    'landing.tagline': 'Effortless financial tracking, beautifully simple.',
+    'category.Salary': 'Salary',
+    'category.Freelance': 'Freelance',
+    'category.Food': 'Food',
+    'category.Transport': 'Transport',
+    'category.Entertainment': 'Entertainment',
+    'category.Shopping': 'Shopping',
+    'category.Bills': 'Bills',
+    'category.Health': 'Health',
+    'category.General': 'General',
+    'category.Investment': 'Investment',
+    'category.Other': 'Other',
+  },
+}
+
+type Locale = 'pt-BR' | 'en'
+type Theme = 'light' | 'dark' | 'system'
+
+interface AppContextType {
+  locale: Locale
+  setLocale: (l: Locale) => void
+  theme: Theme
+  setTheme: (t: Theme) => void
+  resolvedTheme: 'light' | 'dark'
+  t: (key: string) => string
+}
+
+const AppContext = createContext<AppContextType | null>(null)
+
+export function AppProvider({ children }: { children: ReactNode }) {
+  const [locale, setLocale] = useState<Locale>('pt-BR')
+  const [theme, setTheme] = useState<Theme>('system')
+
+  useEffect(() => {
+    const saved = localStorage.getItem('flowly_locale') as Locale | null
+    if (saved && (saved === 'pt-BR' || saved === 'en')) setLocale(saved)
+  }, [])
+
+  useEffect(() => {
+    const saved = localStorage.getItem('flowly_theme') as Theme | null
+    if (saved && ['light', 'dark', 'system'].includes(saved)) setTheme(saved)
+  }, [])
+
+  useEffect(() => {
+    localStorage.setItem('flowly_locale', locale)
+    document.documentElement.lang = locale
+  }, [locale])
+
+  useEffect(() => {
+    localStorage.setItem('flowly_theme', theme)
+  }, [theme])
+
+  const resolvedTheme = (() => {
+    if (theme === 'light') return 'light' as const
+    if (theme === 'dark') return 'dark' as const
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+      return 'dark' as const
+    return 'light' as const
+  })()
+
+  // Sync dark class on html element
+  useEffect(() => {
+    if (resolvedTheme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }, [resolvedTheme])
+
+  // Listen for system theme changes
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => {
+      if (theme === 'system') {
+        setTheme((prev) => prev) // force re-render
+      }
+    }
+    media.addEventListener('change', handler)
+    return () => media.removeEventListener('change', handler)
+  }, [theme])
+
+  const t = (key: string): string => {
+    const dict = (translations as Record<string, Record<string, string>>)[locale] ?? translations['en']
+    return dict[key] ?? translations['en'][key as keyof typeof translations['en']] ?? key
+  }
+
+  return (
+    <AppContext.Provider value={{ locale, setLocale, theme, setTheme, resolvedTheme, t }}>
+      {children}
+    </AppContext.Provider>
+  )
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext)
+  if (!ctx) throw new Error('useApp must be used inside AppProvider')
+  return ctx
+}

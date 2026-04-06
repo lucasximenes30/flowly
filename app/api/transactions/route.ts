@@ -1,0 +1,48 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { getSession } from '@/lib/auth'
+import { createTransaction, getTransactionsByUser, getUserBalance, getMonthlySummary } from '@/services/transaction.service'
+
+
+const createSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  amount: z.number().positive('Amount must be positive'),
+  type: z.enum(['INCOME', 'EXPENSE']),
+  category: z.string().min(1, 'Category is required'),
+  date: z.string(),
+})
+
+export async function GET() {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const [transactions, balance, monthly] = await Promise.all([
+    getTransactionsByUser(session.userId),
+    getUserBalance(session.userId),
+    getMonthlySummary(session.userId),
+  ])
+
+  return NextResponse.json({ transactions, balance, monthly })
+}
+
+export async function POST(request: NextRequest) {
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const body = await request.json()
+    const data = createSchema.parse(body)
+
+    const transaction = await createTransaction({ ...data, userId: session.userId })
+    return NextResponse.json({ success: true, transaction })
+  } catch (error: any) {
+    const message = error instanceof z.ZodError
+      ? error.errors[0]?.message ?? 'Invalid input'
+      : error.message ?? 'Something went wrong'
+
+    return NextResponse.json(
+      { success: false, error: message },
+      { status: 400 }
+    )
+  }
+}
