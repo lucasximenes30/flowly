@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { 
-  getTransactionsByMonth, 
-  getMonthSummary, 
-  getMonthComparison, 
-  getAvailableMonths 
+import {
+  getTransactionsByMonth,
+  getMonthSummary,
+  getMonthComparison,
+  getAvailableMonths,
+  getExpensesByCategory,
+  getMonthlyTrend,
 } from '@/services/transaction.service'
 
 export async function GET(request: NextRequest) {
@@ -43,6 +45,20 @@ export async function GET(request: NextRequest) {
     if (type === 'available') {
       const months = await getAvailableMonths(session.userId)
       return NextResponse.json({ months })
+    }
+
+    if (type === 'categories' && year && month) {
+      const categories = await getExpensesByCategory(
+        session.userId,
+        parseInt(year),
+        parseInt(month)
+      )
+      return NextResponse.json({ categories })
+    }
+
+    if (type === 'trend') {
+      const trend = await getMonthlyTrend(session.userId)
+      return NextResponse.json({ trend })
     }
 
     return NextResponse.json({ error: 'Invalid type parameter' }, { status: 400 })

@@ -17,6 +17,7 @@ model User {
   subscriptionId       String?
   transactions         Transaction[]
   monthlyReports       MonthlyReport[]
+  customCategories     Category[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -53,6 +54,20 @@ model MonthlyReport {
   @@unique([userId, year, month])
   @@index([userId, year, month])
   @@map("monthly_reports")
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String
+  icon      String
+  color     String
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@map("categories")
 }
 
 enum UserPlan {

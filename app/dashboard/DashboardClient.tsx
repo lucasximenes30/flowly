@@ -6,13 +6,14 @@ import { useApp } from '@/lib/i18n'
 import ThemeToggle from '@/components/ThemeToggle'
 import LanguageToggle from '@/components/LanguageToggle'
 import MonthlyReport from '@/components/MonthlyReport'
+import EditTransactionModal from '@/components/EditTransactionModal'
+import CategorySelect from '@/components/CategorySelect'
+import ManageCategoriesModal from '@/components/ManageCategoriesModal'
 
 interface Session { userId: string; email: string; name: string }
 interface Transaction { id: string; title: string; amount: string; type: 'INCOME' | 'EXPENSE'; category: string; date: string }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
-
-const CATEGORY_KEYS = ['Salary','Freelance','Food','Transport','Entertainment','Shopping','Bills','Health','General','Investment','Other'] as const
 
 // Cache de taxa de câmbio (atualiza a cada 5 min)
 const cacheKey = 'flowly_exchange_rate'
@@ -104,6 +105,16 @@ export default function DashboardClient({
     setDeleteConfirmId(null)
   }
 
+  // Edit transaction
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
+  const [editSuccess, setEditSuccess] = useState(false)
+
+  const handleEditSave = () => {
+    setEditSuccess(true)
+    router.refresh()
+    setTimeout(() => setEditSuccess(false), 2000)
+  }
+
   // Add transaction
   const [showForm, setShowForm] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
@@ -150,6 +161,10 @@ export default function DashboardClient({
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState('')
+
+  // Manage categories
+  const [showManageCategories, setShowManageCategories] = useState(false)
+  const [categoriesVersion, setCategoriesVersion] = useState(0)
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -223,16 +238,24 @@ export default function DashboardClient({
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         {/* Balance Card */}
         <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white shadow-lg dark:shadow-brand-700/20">
-          <div className="space-y-1">
-            <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
-            <div className="flex items-baseline gap-3">
-              <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
-              {!isBRL && (
-                <span className="text-sm font-medium text-white/50">
-                  ≈ {formatConverted(balance.balance)}
-                </span>
-              )}
+          <div className="flex items-start justify-between gap-6">
+            <div className="space-y-1">
+              <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
+              <div className="flex items-baseline gap-3">
+                <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
+                {!isBRL && (
+                  <span className="text-sm font-medium text-white/50">
+                    ≈ {formatConverted(balance.balance)}
+                  </span>
+                )}
+              </div>
             </div>
+            <button
+              onClick={() => router.push('/reports')}
+              className="shrink-0 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98]"
+            >
+              {isBRL ? 'Ver relatórios' : 'View reports'}
+            </button>
           </div>
           <div className="mt-6 flex gap-8">
             <div className="space-y-0.5">
@@ -324,10 +347,7 @@ export default function DashboardClient({
                 </div>
                 <div className="space-y-1.5">
                   <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.category')}</label>
-                  <select value={category} onChange={(e) => setCategory(e.target.value)} className="input-field">
-                    <option value="">{t('dashboard.categoryPlaceholder')}</option>
-                    {CATEGORY_KEYS.map((c) => (<option key={c} value={c}>{t(`category.${c}`)}</option>))}
-                  </select>
+                  <CategorySelect value={category} onChange={setCategory} type={type} />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
                   <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.date')}</label>
@@ -357,6 +377,15 @@ export default function DashboardClient({
               {transactions.slice(0, 20).map((txn) => (
                 <div key={txn.id} className="group flex items-center justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
                   <div className="flex items-center gap-3">
+                    {/* Edit button */}
+                    <button
+                      onClick={() => setEditingTransaction(txn)}
+                      className="invisible group-hover:visible flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-surface-400 hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                    >
+                      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                    </button>
                     {/* Delete button */}
                     <button
                       onClick={() => handleDelete(txn.id)}
@@ -423,6 +452,20 @@ export default function DashboardClient({
                     <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.language')}</label>
                     <LanguageToggle />
                   </div>
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+                      {isBRL ? 'Categorias' : 'Categories'}
+                    </label>
+                    <button
+                      onClick={() => setShowManageCategories(true)}
+                      className="w-full flex items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-600 transition-colors"
+                    >
+                      <span>{isBRL ? 'Gerenciar Categorias' : 'Manage Categories'}</span>
+                      <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -456,6 +499,34 @@ export default function DashboardClient({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Edit success toast */}
+      {editSuccess && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white shadow-lg">
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          {isBRL ? 'Transação atualizada!' : 'Transaction updated!'}
+        </div>
+      )}
+
+      {/* Edit Transaction Modal */}
+      {editingTransaction && (
+        <EditTransactionModal
+          transaction={editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          onSave={handleEditSave}
+          formatCurrency={formatCurrency}
+        />
+      )}
+
+      {/* Manage Categories Modal */}
+      {showManageCategories && (
+        <ManageCategoriesModal
+          onClose={() => setShowManageCategories(false)}
+          onRefresh={() => setCategoriesVersion((v) => v + 1)}
+        />
       )}
     </div>
   )
