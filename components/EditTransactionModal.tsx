@@ -16,6 +16,8 @@ interface Transaction {
   totalInstallments?: number
   purchaseDate?: string
   dueDay?: number
+  isRecurring?: boolean
+  recurringDay?: number
 }
 
 interface EditTransactionModalProps {
@@ -42,6 +44,19 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
   const [totalInstallments, setTotalInstallments] = useState(transaction.totalInstallments?.toString() ?? '')
   const [purchaseDate, setPurchaseDate] = useState(transaction.purchaseDate?.split('T')[0] ?? transaction.date.split('T')[0])
   const [dueDay, setDueDay] = useState(transaction.dueDay?.toString() ?? '')
+
+  // Recurring fields
+  const [isRecurring, setIsRecurring] = useState(transaction.isRecurring ?? false)
+  const [recurringDay, setRecurringDay] = useState(transaction.recurringDay?.toString() ?? '')
+
+  const toggleInstallment = (value: boolean) => {
+    setIsInstallment(value)
+    if (value) setIsRecurring(false)
+  }
+  const toggleRecurring = (value: boolean) => {
+    setIsRecurring(value)
+    if (value) setIsInstallment(false)
+  }
 
   // Trigger entrance animation
   useEffect(() => {
@@ -72,6 +87,8 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
           totalInstallments: isInstallment ? parseInt(totalInstallments) : null,
           purchaseDate: isInstallment ? purchaseDate : null,
           dueDay: isInstallment ? parseInt(dueDay) : null,
+          isRecurring,
+          recurringDay: isRecurring ? parseInt(recurringDay) : null,
         }),
       })
 
@@ -184,7 +201,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             <div className="sm:col-span-2">
               <button
                 type="button"
-                onClick={() => setIsInstallment(!isInstallment)}
+                onClick={() => toggleInstallment(!isInstallment)}
                 className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
                   isInstallment
                     ? 'border-brand-300 bg-brand-50 dark:border-brand-700/50 dark:bg-brand-900/20'
@@ -251,6 +268,54 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                   />
                 </div>
               </>
+            )}
+
+            {/* Recurring toggle */}
+            <div className="sm:col-span-2">
+              <button
+                type="button"
+                onClick={() => toggleRecurring(!isRecurring)}
+                className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
+                  isRecurring
+                    ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700/50 dark:bg-emerald-900/20'
+                    : 'border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700/50'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Lucide.Repeat className={`w-4 h-4 ${isRecurring ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400'}`} />
+                  <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                    {isBRL ? 'Pagamento recorrente?' : 'Recurring payment?'}
+                  </span>
+                </div>
+                <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
+                  isRecurring ? 'bg-emerald-600 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start'
+                }`}>
+                  <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm" />
+                </div>
+              </button>
+            </div>
+
+            {/* Recurring fields */}
+            {isRecurring && (
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                  {isBRL ? 'Dia da recorrência' : 'Recurring day'}
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="31"
+                  className="input-field"
+                  placeholder="10"
+                  value={recurringDay}
+                  onChange={(e) => setRecurringDay(e.target.value)}
+                />
+                <p className="text-[10px] text-surface-400 mt-0.5">
+                  {isBRL
+                    ? 'Ex: Se esse pagamento acontece todo dia 10, selecione 10'
+                    : 'e.g., if this payment happens every day 10, select 10'}
+                </p>
+              </div>
             )}
           </div>
 

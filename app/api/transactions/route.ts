@@ -14,6 +14,8 @@ const createSchema = z.object({
   totalInstallments: z.number().int().positive().optional().nullable(),
   purchaseDate: z.string().optional().nullable(),
   dueDay: z.number().int().min(1).max(31).optional().nullable(),
+  isRecurring: z.boolean().optional(),
+  recurringDay: z.number().int().min(1).max(31).optional().nullable(),
 })
 
 export async function GET() {
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = createSchema.parse(body)
-    const { isInstallment, totalInstallments, purchaseDate, dueDay, ...rest } = data
+    const { isInstallment, totalInstallments, purchaseDate, dueDay, isRecurring, recurringDay, ...rest } = data
 
     const transaction = await createTransaction({
       ...rest,
@@ -45,6 +47,8 @@ export async function POST(request: NextRequest) {
       totalInstallments: totalInstallments ?? undefined,
       ...(purchaseDate && { purchaseDate }),
       ...(dueDay && { dueDay }),
+      ...(isRecurring !== undefined && { isRecurring }),
+      ...(recurringDay && { recurringDay }),
     })
     return NextResponse.json({ success: true, transaction })
   } catch (error: any) {

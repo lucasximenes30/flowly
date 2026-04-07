@@ -165,3 +165,36 @@ export function formatShortDate(date: Date, locale: string = 'pt-BR'): string {
     month: 'short',
   })
 }
+
+/**
+ * Recurring payment status for a given month
+ */
+export interface RecurringStatus {
+  isRecurring: boolean
+  day: number | null
+  status: 'DUE' | 'PAID' | 'UPCOMING'
+  daysUntil: number | null
+}
+
+export function getRecurringStatusForMonth(recurringDay: number | null, year: number, month: number): RecurringStatus {
+  if (!recurringDay) return { isRecurring: false, day: null, status: 'UPCOMING', daysUntil: null }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const targetDate = new Date(year, month - 1, recurringDay)
+  if (targetDate.getMonth() !== month - 1) {
+    targetDate.setDate(0)
+  }
+
+  if (today.getMonth() === month - 1 && today >= targetDate) {
+    return { isRecurring: true, day: recurringDay, status: 'PAID', daysUntil: null }
+  }
+
+  if (today.getMonth() === month - 1) {
+    const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+    return { isRecurring: true, day: recurringDay, status: 'DUE', daysUntil }
+  }
+
+  return { isRecurring: true, day: recurringDay, status: 'UPCOMING', daysUntil: null }
+}

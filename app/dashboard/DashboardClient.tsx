@@ -3,17 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
-import ThemeToggle from '@/components/ThemeToggle'
-import LanguageToggle from '@/components/LanguageToggle'
 import MonthlyReport from '@/components/MonthlyReport'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import CategorySelect from '@/components/CategorySelect'
-import ManageCategoriesModal from '@/components/ManageCategoriesModal'
+import SettingsPanel from '@/components/SettingsPanel'
 import * as Lucide from 'lucide-react'
 import { getInstallmentInfo, formatShortDate } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number }
+interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null } }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
 
@@ -142,6 +140,20 @@ export default function DashboardClient({
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDay, setDueDay] = useState('')
 
+  // Recurring fields
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringDay, setRecurringDay] = useState('')
+
+  // Mutual exclusion: can't be both installment and recurring
+  const toggleInstallment = (value: boolean) => {
+    setIsInstallment(value)
+    if (value) setIsRecurring(false)
+  }
+  const toggleRecurring = (value: boolean) => {
+    setIsRecurring(value)
+    if (value) setIsInstallment(false)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setFormError('')
@@ -161,6 +173,8 @@ export default function DashboardClient({
           totalInstallments: isInstallment ? parseInt(totalInstallments) : null,
           purchaseDate: isInstallment ? purchaseDate : null,
           dueDay: isInstallment ? parseInt(dueDay) : null,
+          isRecurring,
+          recurringDay: isRecurring ? parseInt(recurringDay) : null,
         }),
       })
 
@@ -173,6 +187,7 @@ export default function DashboardClient({
       setTitle(''); setAmount(''); setCategory('')
       setDate(new Date().toISOString().split('T')[0])
       setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay('')
+      setIsRecurring(false); setRecurringDay('')
       setShowForm(false)
       router.refresh()
     } catch {
@@ -182,97 +197,38 @@ export default function DashboardClient({
     }
   }
 
-  // Profile name
+  // Profile name display only
   const [profileName, setProfileName] = useState(session.name)
-  const [newName, setNewName] = useState('')
-  const [isUpdatingName, setIsUpdatingName] = useState(false)
-  const [nameMessage, setNameMessage] = useState('')
-
-  // Change password
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
-  const [passwordMessage, setPasswordMessage] = useState('')
 
   // Confirmation modals
-  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
-  const [showNameConfirm, setShowNameConfirm] = useState(false)
   const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false)
   const [showDeleteConfirm2, setShowDeleteConfirm2] = useState(false)
   const [deleteConfirmText, setDeleteConfirmText] = useState('')
   const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [deleteMessage, setDeleteMessage] = useState('')
 
-  // Manage categories
-  const [showManageCategories, setShowManageCategories] = useState(false)
-  const [categoriesVersion, setCategoriesVersion] = useState(0)
+  // Manage categories - handled inside SettingsPanel
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPasswordMessage('')
+  // Listen for delete account trigger from SettingsPanel
+  useEffect(() => {
+    const handler = () => setShowDeleteConfirm1(true)
+    window.addEventListener('flowly:deleteAccount', handler)
+    return () => window.removeEventListener('flowly:deleteAccount', handler)
+  }, [])
 
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage(t('settings.passwordMismatch'))
-      return
+  // Listen for name updates from SettingsPanel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const name = (e as CustomEvent<string>).detail
+      setProfileName(name)
     }
-    if (newPassword === currentPassword) {
-      setPasswordMessage(t('settings.passwordSame'))
-      return
-    }
-
-    setIsChangingPassword(true)
-    try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setPasswordMessage(data.error ?? 'Erro ao alterar senha')
-        return
-      }
-      setPasswordMessage(t('settings.passwordUpdated'))
-      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
-    } catch {
-      setPasswordMessage('Erro de rede')
-    } finally {
-      setIsChangingPassword(false)
-    }
-  }
+    window.addEventListener('flowly:nameUpdated', handler)
+    return () => window.removeEventListener('flowly:nameUpdated', handler)
+  }, [])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
-  }
-
-  // Update profile name
-  const handleUpdateName = async () => {
-    setShowNameConfirm(false)
-    if (newName.trim() === session.name) {
-      setNameMessage(t('settings.nameSame'))
-      return
-    }
-    setIsUpdatingName(true)
-    try {
-      const res = await fetch('/api/auth/update-name', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newName.trim() }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setNameMessage(data.error ?? 'Erro ao atualizar nome')
-        return
-      }
-      setProfileName(newName.trim())
-      setNameMessage(t('settings.nameUpdated'))
-    } catch {
-      setNameMessage('Erro de rede')
-    } finally {
-      setIsUpdatingName(false)
-    }
   }
 
   // Delete account
@@ -505,6 +461,54 @@ export default function DashboardClient({
                     </div>
                   </>
                 )}
+
+                {/* Recurring toggle */}
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleRecurring(!isRecurring)}
+                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
+                      isRecurring
+                        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700/50 dark:bg-emerald-900/20'
+                        : 'border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lucide.Repeat className={`w-4 h-4 ${isRecurring ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400'}`} />
+                      <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                        {isBRL ? 'Pagamento recorrente?' : 'Recurring payment?'}
+                      </span>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
+                      isRecurring ? 'bg-emerald-600 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start'
+                    }`}>
+                      <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm" />
+                    </div>
+                  </button>
+                </div>
+
+                {/* Recurring fields */}
+                {isRecurring && (
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                      {isBRL ? 'Dia da recorrência' : 'Recurring day'}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      className="input-field"
+                      placeholder="10"
+                      value={recurringDay}
+                      onChange={(e) => setRecurringDay(e.target.value)}
+                    />
+                    <p className="text-[10px] text-surface-400 mt-0.5">
+                      {isBRL
+                        ? 'Ex: Se esse pagamento acontece todo dia 10, selecione 10'
+                        : 'e.g., if this payment happens every day 10, select 10'}
+                    </p>
+                  </div>
+                )}
               </div>
               {formError && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</p>}
               <div className="mt-4 flex gap-3">
@@ -573,6 +577,12 @@ export default function DashboardClient({
                             Parcelado
                           </span>
                         )}
+                        {txn.isRecurring && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            <Lucide.Repeat className="w-3 h-3" />
+                            {isBRL ? 'Recorrente' : 'Recurring'}
+                          </span>
+                        )}
                       </div>
                       <p className="text-xs text-surface-400 dark:text-surface-500">{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</p>
                       {txn.isInstallment && txn.totalInstallments && txn.dueDay && txn.purchaseDate && (() => {
@@ -612,6 +622,21 @@ export default function DashboardClient({
                           </div>
                         )
                       })()}
+                      {txn.isRecurring && txn.recurringDay && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Lucide.Repeat className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                          <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            {isBRL ? `Todo dia ${txn.recurringDay}` : `Every day ${txn.recurringDay}`}
+                          </span>
+                          {txn._recurringStatus && (
+                            <span className="text-[10px] text-surface-400">
+                              {txn._recurringStatus.status === 'UPCOMING' && txn._recurringStatus.daysUntil
+                                ? isBRL ? `${txn._recurringStatus.daysUntil}d` : `in ${txn._recurringStatus.daysUntil}d`
+                                : ''}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -651,210 +676,12 @@ export default function DashboardClient({
         </div>
       </main>
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => {
-          setShowSettings(false)
-          setShowPasswordConfirm(false)
-          setShowNameConfirm(false)
-          setShowDeleteConfirm1(false)
-          setShowDeleteConfirm2(false)
-          setNameMessage('')
-          setPasswordMessage('')
-          setDeleteMessage('')
-          setDeleteConfirmText('')
-        }}>
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">{t('settings.title')}</h2>
-              <button onClick={() => setShowSettings(false)} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            <div className="space-y-5">
-              {/* General */}
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.general')}</h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.theme')}</label>
-                    <ThemeToggle />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.language')}</label>
-                    <LanguageToggle />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
-                      {isBRL ? 'Categorias' : 'Categories'}
-                    </label>
-                    <button
-                      onClick={() => setShowManageCategories(true)}
-                      className="w-full flex items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-600 transition-colors"
-                    >
-                      <span>{isBRL ? 'Gerenciar Categorias' : 'Manage Categories'}</span>
-                      <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-surface-200 dark:border-surface-700/60" />
-
-              {/* Profile Name */}
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.profile')}</h3>
-                <div className="space-y-3">
-                  <div className="rounded-xl border border-surface-200 dark:border-surface-700/60 bg-surface-50 dark:bg-surface-800/50 p-4">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1.5">{t('settings.profileName')}</label>
-                    <input
-                      type="text"
-                      className="input-field bg-white dark:bg-surface-800 mb-1"
-                      placeholder={t('settings.namePlaceholder')}
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                    />
-                    <p className="text-[11px] text-surface-400">
-                      {isBRL ? 'Atual:' : 'Current:'} <span className="font-medium text-surface-600 dark:text-surface-300">{profileName}</span>
-                    </p>
-                  </div>
-                  {nameMessage && (
-                    <p className={`text-sm rounded-lg p-3 ${nameMessage.includes('sucesso') || nameMessage.includes('updated') || nameMessage.includes('diferente') || nameMessage.includes('different') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
-                      {nameMessage}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setShowNameConfirm(true)}
-                    disabled={!newName.trim()}
-                    className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isBRL ? 'Atualizar Nome' : 'Update Name'}
-                  </button>
-                </div>
-              </div>
-
-              <div className="border-t border-surface-200 dark:border-surface-700/60" />
-
-              {/* Change Password */}
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.changePassword')}</h3>
-                <form onSubmit={(e) => { e.preventDefault(); setShowPasswordConfirm(true) }} className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.currentPassword')}</label>
-                    <input type="password" required className="input-field" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.newPassword')}</label>
-                    <input type="password" required minLength={6} className="input-field" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.confirmPassword')}</label>
-                    <input type="password" required minLength={6} className="input-field" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                  </div>
-                  {passwordMessage && (
-                    <p className={`text-sm rounded-lg p-3 ${passwordMessage.includes('sucesso') || passwordMessage.includes('updated') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
-                      {passwordMessage}
-                    </p>
-                  )}
-                  <button type="submit" disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword} className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed">
-                    {isChangingPassword ? t('settings.changingPassword') : t('settings.update')}
-                  </button>
-                </form>
-              </div>
-
-              <div className="border-t border-surface-200 dark:border-surface-700/60" />
-
-              {/* Danger Zone */}
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wider text-red-500 mb-3">{t('settings.dangerZone')}</h3>
-                <div className="rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40">
-                        <Lucide.Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-red-800 dark:text-red-300">{t('settings.deleteAccount')}</p>
-                        <p className="text-[11px] text-red-500 dark:text-red-400/70">
-                          {isBRL ? 'Remove todos os seus dados permanentemente' : 'Removes all your data permanently'}
-                        </p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setShowDeleteConfirm1(true)}
-                      className="shrink-0 rounded-lg bg-red-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-red-700 transition-colors shadow-sm"
-                    >
-                      {isBRL ? 'Excluir' : 'Delete'}
-                    </button>
-                  </div>
-                  {deleteMessage && (
-                    <p className={`text-sm rounded-lg p-3 mt-3 ${deleteMessage.includes('sucesso') || deleteMessage.includes('deleted') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>
-                      {deleteMessage}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Password Change Confirmation */}
-      {showPasswordConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowPasswordConfirm(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.confirmPasswordChange')}</h3>
-            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">{t('settings.changePassword')}</p>
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => setShowPasswordConfirm(false)} className="btn-secondary flex-1">
-                {t('settings.cancel')}
-              </button>
-              <button onClick={handleChangePassword} disabled={isChangingPassword} className="btn-primary flex-1">
-                {isChangingPassword ? t('settings.changingPassword') : t('settings.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Name Change Confirmation */}
-      {showNameConfirm && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowNameConfirm(false)}>
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-              </svg>
-            </div>
-            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.confirmNameChange')}</h3>
-            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">
-              <span className="font-medium text-surface-700 dark:text-surface-300">{profileName}</span>
-              <span className="text-brand-600 dark:text-brand-400 mx-1">→</span>
-              <span className="font-medium text-brand-600 dark:text-brand-400">{newName}</span>
-            </p>
-            <div className="mt-6 flex gap-3">
-              <button onClick={() => setShowNameConfirm(false)} className="btn-secondary flex-1">
-                {t('settings.cancel')}
-              </button>
-              <button onClick={handleUpdateName} disabled={isUpdatingName} className="btn-primary flex-1">
-                {isUpdatingName ? t('settings.updatingName') : t('settings.confirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Settings Panel */}
+      <SettingsPanel
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        session={session}
+      />
 
       {/* Delete Account - Step 1 Confirmation */}
       {showDeleteConfirm1 && (
@@ -956,13 +783,6 @@ export default function DashboardClient({
         />
       )}
 
-      {/* Manage Categories Modal */}
-      {showManageCategories && (
-        <ManageCategoriesModal
-          onClose={() => setShowManageCategories(false)}
-          onRefresh={() => setCategoriesVersion((v) => v + 1)}
-        />
-      )}
     </div>
   )
 }

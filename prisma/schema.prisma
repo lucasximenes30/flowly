@@ -38,7 +38,9 @@ model Transaction {
   isInstallment    Boolean  @default(false)
   totalInstallments Int?
   purchaseDate     DateTime?
-  dueDay           Int?     // day of month (1–31)
+  dueDay           Int?     // day of month (1–31) — used for installments
+  isRecurring      Boolean  @default(false)
+  recurringDay     Int?     // day of month (1–31) — used for recurring
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

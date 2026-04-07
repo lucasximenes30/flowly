@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
-import { isInstallmentActiveInMonth, getInstallmentForMonth } from '@/lib/installments'
+import { isInstallmentActiveInMonth, getInstallmentForMonth, getRecurringStatusForMonth } from '@/lib/installments'
 
 export interface CreateTransactionInput {
   title: string
@@ -15,6 +15,8 @@ export interface CreateTransactionInput {
   totalInstallments?: number
   purchaseDate?: string
   dueDay?: number
+  isRecurring?: boolean
+  recurringDay?: number
 }
 
 export interface UpdateTransactionInput {
@@ -27,6 +29,8 @@ export interface UpdateTransactionInput {
   totalInstallments?: number
   purchaseDate?: string
   dueDay?: number
+  isRecurring?: boolean
+  recurringDay?: number
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
@@ -48,6 +52,8 @@ export async function createTransaction(input: CreateTransactionInput) {
       ...(input.totalInstallments !== undefined && { totalInstallments: input.totalInstallments }),
       ...(input.purchaseDate && { purchaseDate: new Date(input.purchaseDate) }),
       ...(input.dueDay !== undefined && { dueDay: input.dueDay }),
+      ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
+      ...(input.recurringDay !== undefined && { recurringDay: input.recurringDay }),
     },
   })
 }
@@ -63,6 +69,8 @@ export async function updateTransaction(id: string, userId: string, input: Updat
       ? input.amount / input.totalInstallments
       : null
 
+  const recurringDay = 'recurringDay' in input ? input.recurringDay : undefined
+
   return prisma.transaction.update({
     where: { id },
     data: {
@@ -76,6 +84,8 @@ export async function updateTransaction(id: string, userId: string, input: Updat
       totalInstallments: input.totalInstallments ?? null,
       purchaseDate: input.purchaseDate ? new Date(input.purchaseDate) : null,
       dueDay: input.dueDay ?? null,
+      ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
+      ...(recurringDay !== undefined && { recurringDay: recurringDay ?? null }),
     },
   })
 }
@@ -90,7 +100,7 @@ export async function getTransactionsByUser(userId: string) {
 export async function getUserBalance(userId: string) {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
-    select: { amount: true, type: true, isInstallment: true, installmentAmount: true },
+    select: { amount: true, type: true, isInstallment: true, installmentAmount: true, isRecurring: true },
   })
 
   const income = transactions
@@ -112,39 +122,20 @@ export async function getUserBalance(userId: string) {
 
 export async function getMonthlySummary(userId: string) {
   const now = new Date()
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-
-  const nonInstallments = await prisma.transaction.findMany({
-    where: {
-      userId,
-      isInstallment: false,
-      date: {
-        gte: startOfMonth,
-        lte: endOfMonth,
-      },
-    },
-  })
-
-  const installments = await prisma.transaction.findMany({
-    where: {
-      userId,
-      isInstallment: true,
-    },
-  })
-
-  return computeMonthSummary(installments, nonInstallments, now.getFullYear(), now.getMonth() + 1)
+  return getMonthSummary(userId, now.getFullYear(), now.getMonth() + 1)
 }
 
-// 🆕 Get transactions for a specific month (installment-aware)
+// 🆕 Get transactions for a specific month (installment + recurring aware)
 export async function getTransactionsByMonth(userId: string, year: number, month: number) {
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0)
 
+  // Non-installment, non-recurring transactions for the target month
   const nonInstallments = await prisma.transaction.findMany({
     where: {
       userId,
       isInstallment: false,
+      isRecurring: false,
       date: {
         gte: startOfMonth,
         lte: endOfMonth,
@@ -153,6 +144,7 @@ export async function getTransactionsByMonth(userId: string, year: number, month
     orderBy: { date: 'desc' },
   })
 
+  // Installment transactions
   const installmentCandidates = await prisma.transaction.findMany({
     where: {
       userId,
@@ -167,6 +159,15 @@ export async function getTransactionsByMonth(userId: string, year: number, month
       : false,
   )
 
+  // Recurring transactions — always included, every month
+  const recurring = await prisma.transaction.findMany({
+    where: {
+      userId,
+      isRecurring: true,
+    },
+    orderBy: { date: 'desc' },
+  })
+
   // Merge and mark with current installment info
   const enrichedActiveInstallments = activeInstallments.map((t) => ({
     ...t,
@@ -178,10 +179,16 @@ export async function getTransactionsByMonth(userId: string, year: number, month
     ),
   }))
 
-  return [...enrichedActiveInstallments, ...nonInstallments]
+  // Enrich recurring with payment status for the month
+  const enrichedRecurring = recurring.map((t) => ({
+    ...t,
+    _recurringStatus: getRecurringStatusForMonth(t.recurringDay, year, month),
+  }))
+
+  return [...enrichedActiveInstallments, ...nonInstallments, ...enrichedRecurring]
 }
 
-// 🆕 Get monthly summary for any month (installment-aware)
+// 🆕 Get monthly summary for any month (installment + recurring aware)
 export async function getMonthSummary(userId: string, year: number, month: number) {
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0)
@@ -190,6 +197,7 @@ export async function getMonthSummary(userId: string, year: number, month: numbe
     where: {
       userId,
       isInstallment: false,
+      isRecurring: false,
       date: {
         gte: startOfMonth,
         lte: endOfMonth,
@@ -204,7 +212,14 @@ export async function getMonthSummary(userId: string, year: number, month: numbe
     },
   })
 
-  return computeMonthSummary(installments, nonInstallments, year, month)
+  const recurring = await prisma.transaction.findMany({
+    where: {
+      userId,
+      isRecurring: true,
+    },
+  })
+
+  return computeMonthSummary(installments, nonInstallments, year, month, recurring)
 }
 
 // Pure function to compute a month's summary from transaction lists
@@ -213,6 +228,7 @@ function computeMonthSummary(
   nonInstallments: Array<{ type: string; amount: Decimal }>,
   year: number,
   month: number, // 1-12
+  recurring?: Array<{ type: string; amount: Decimal }>,
 ) {
   let income = 0
   let expense = 0
@@ -244,6 +260,19 @@ function computeMonthSummary(
     count++
   }
 
+  // Recurring transactions — always included with full amount
+  if (recurring) {
+    for (const t of recurring) {
+      const value = Number(t.amount)
+      if (t.type === 'INCOME') {
+        income += value
+      } else {
+        expense += value
+      }
+      count++
+    }
+  }
+
   return { income, expense, balance: income - expense, transactionCount: count }
 }
 
@@ -271,21 +300,23 @@ export async function getMonthComparison(userId: string, refYear: number, refMon
   }
 }
 
-// 🆕 Get available months — includes all months where any installment is active
+// 🆕 Get available months — includes all months where any installment is active or recurring exists
 export async function getAvailableMonths(userId: string) {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
-    select: { date: true, isInstallment: true, totalInstallments: true, purchaseDate: true },
+    select: { date: true, isInstallment: true, isRecurring: true, totalInstallments: true, purchaseDate: true },
     orderBy: { date: 'desc' },
   })
 
   const months = new Set<string>()
 
-  // Add months from non-installment transactions
+  // Add months from non-installment, non-recurring transactions
   transactions.forEach((t) => {
     const year = t.date.getFullYear()
     const month = t.date.getMonth() + 1
-    months.add(`${year}-${String(month).padStart(2, '0')}`)
+    if (!t.isInstallment && !t.isRecurring) {
+      months.add(`${year}-${String(month).padStart(2, '0')}`)
+    }
   })
 
   // Expand installment transactions to include all months they cover
@@ -304,10 +335,17 @@ export async function getAvailableMonths(userId: string) {
     }
   }
 
+  // Add the last 6 months for recurring transactions
+  const now = new Date()
+  for (let i = 0; i < 6; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+    months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+
   return Array.from(months).sort().reverse()
 }
 
-// 🆕 Get expenses by category for a specific month (installment-aware)
+// 🆕 Get expenses by category for a specific month (installment + recurring aware)
 export async function getExpensesByCategory(userId: string, year: number, month: number) {
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0)
@@ -317,6 +355,7 @@ export async function getExpensesByCategory(userId: string, year: number, month:
       userId,
       type: 'EXPENSE',
       isInstallment: false,
+      isRecurring: false,
       date: {
         gte: startOfMonth,
         lte: endOfMonth,
@@ -342,6 +381,18 @@ export async function getExpensesByCategory(userId: string, year: number, month:
     },
   })
 
+  const recurring = await prisma.transaction.findMany({
+    where: {
+      userId,
+      isRecurring: true,
+      type: 'EXPENSE',
+    },
+    select: {
+      category: true,
+      amount: true,
+    },
+  })
+
   const categoryMap = new Map<string, number>()
 
   for (const t of nonInstallments) {
@@ -357,6 +408,12 @@ export async function getExpensesByCategory(userId: string, year: number, month:
         categoryMap.set(t.category, current + value)
       }
     }
+  }
+
+  // Add recurring expenses
+  for (const t of recurring) {
+    const current = categoryMap.get(t.category) ?? 0
+    categoryMap.set(t.category, current + Number(t.amount))
   }
 
   return Array.from(categoryMap.entries())
