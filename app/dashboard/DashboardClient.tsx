@@ -13,7 +13,7 @@ import * as Lucide from 'lucide-react'
 import { getInstallmentInfo, formatShortDate } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; installmentAmount?: number | string; _activeInstallment?: number }
+interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
 
@@ -49,6 +49,13 @@ export default function DashboardClient({
   const router = useRouter()
   const { t, locale } = useApp()
 
+  // Loading animation
+  const [isLoading, setIsLoading] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600)
+    return () => clearTimeout(timer)
+  }, [])
+
   // Exchange rate
   const [rate, setRate] = useState<number>(5.5)
   const [rateLoading, setRateLoading] = useState(true)
@@ -80,7 +87,7 @@ export default function DashboardClient({
     if (isBRL) return null
     const convertedBRL = value
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(convertedBRL)
-  }, [isBRL])
+  }, [isBRL, rate])
 
   const formatDate = (dateStr: string) => {
     const loc = isBRL ? 'pt-BR' : 'en-US'
@@ -175,12 +182,27 @@ export default function DashboardClient({
     }
   }
 
+  // Profile name
+  const [profileName, setProfileName] = useState(session.name)
+  const [newName, setNewName] = useState('')
+  const [isUpdatingName, setIsUpdatingName] = useState(false)
+  const [nameMessage, setNameMessage] = useState('')
+
   // Change password
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [isChangingPassword, setIsChangingPassword] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState('')
+
+  // Confirmation modals
+  const [showPasswordConfirm, setShowPasswordConfirm] = useState(false)
+  const [showNameConfirm, setShowNameConfirm] = useState(false)
+  const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false)
+  const [showDeleteConfirm2, setShowDeleteConfirm2] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [deleteMessage, setDeleteMessage] = useState('')
 
   // Manage categories
   const [showManageCategories, setShowManageCategories] = useState(false)
@@ -225,15 +247,80 @@ export default function DashboardClient({
     router.push('/login')
   }
 
+  // Update profile name
+  const handleUpdateName = async () => {
+    setShowNameConfirm(false)
+    if (newName.trim() === session.name) {
+      setNameMessage(t('settings.nameSame'))
+      return
+    }
+    setIsUpdatingName(true)
+    try {
+      const res = await fetch('/api/auth/update-name', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newName.trim() }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setNameMessage(data.error ?? 'Erro ao atualizar nome')
+        return
+      }
+      setProfileName(newName.trim())
+      setNameMessage(t('settings.nameUpdated'))
+    } catch {
+      setNameMessage('Erro de rede')
+    } finally {
+      setIsUpdatingName(false)
+    }
+  }
+
+  // Delete account
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.trim() !== 'EXCLUIR' && deleteConfirmText.trim() !== 'DELETE') {
+      setDeleteMessage(isBRL ? 'Digite EXCLUIR para confirmar' : 'Type DELETE to confirm')
+      return
+    }
+    setIsDeletingAccount(true)
+    try {
+      const res = await fetch('/api/auth/delete-account', { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        setDeleteMessage(data.error ?? 'Erro ao excluir conta')
+        return
+      }
+      setDeleteMessage(t('settings.accountDeleted'))
+      setTimeout(() => router.push('/login'), 1000)
+    } catch {
+      setDeleteMessage('Erro de rede')
+    } finally {
+      setIsDeletingAccount(false)
+    }
+  }
+
+  // ── Loading screen ──
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400" />
+          <p className="text-sm font-medium text-surface-500 dark:text-surface-400">
+            {isBRL ? 'Carregando...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 animate-dashboard-fade">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
           <div className="flex items-center gap-3">
             <span className="text-sm text-surface-500 dark:text-surface-400">
-              {isBRL ? `Olá` : `Hi`}, {session.name}
+              {isBRL ? `Olá` : `Hi`}, {profileName}
             </span>
 
             {/* Settings button */}
@@ -301,7 +388,7 @@ export default function DashboardClient({
         </div>
 
         {/* Monthly Report Section */}
-        <MonthlyReport 
+        <MonthlyReport
           formatCurrency={formatCurrency}
           formatConverted={formatConverted}
         />
@@ -507,7 +594,7 @@ export default function DashboardClient({
                         // Override currentInstallment with the active one if available
                         const displayInstallment = txn._activeInstallment ?? info.currentInstallment
 
-                        const perMonth = txn.installmentAmount ? parseFloat(txn.installmentAmount.toString()) : (parseFloat(txn.amount) / txn.totalInstallments)
+                        const perMonth = txn.installmentAmount ?? (parseFloat(txn.amount) / txn.totalInstallments)
                         const statusColor = info.status === 'LATE' ? 'text-red-600 dark:text-red-400' : info.status === 'PAID' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
                         return (
                           <div className="flex items-center gap-3 mt-1">
@@ -530,9 +617,7 @@ export default function DashboardClient({
                   <div className="flex items-center gap-3">
                     <div className="text-right">
                       {txn.isInstallment && txn.totalInstallments ? (() => {
-                        const perMonth = txn.installmentAmount
-                          ? parseFloat(txn.installmentAmount.toString())
-                          : parseFloat(txn.amount) / txn.totalInstallments
+                        const perMonth = txn.installmentAmount ?? (parseFloat(txn.amount) / txn.totalInstallments)
                         return (
                           <>
                             <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
@@ -568,7 +653,17 @@ export default function DashboardClient({
 
       {/* Settings Modal */}
       {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowSettings(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => {
+          setShowSettings(false)
+          setShowPasswordConfirm(false)
+          setShowNameConfirm(false)
+          setShowDeleteConfirm1(false)
+          setShowDeleteConfirm2(false)
+          setNameMessage('')
+          setPasswordMessage('')
+          setDeleteMessage('')
+          setDeleteConfirmText('')
+        }}>
           <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
             <div className="mb-6 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">{t('settings.title')}</h2>
@@ -580,6 +675,7 @@ export default function DashboardClient({
             </div>
 
             <div className="space-y-5">
+              {/* General */}
               <div>
                 <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.general')}</h3>
                 <div className="space-y-4">
@@ -610,9 +706,45 @@ export default function DashboardClient({
 
               <div className="border-t border-surface-200 dark:border-surface-700/60" />
 
+              {/* Profile Name */}
+              <div>
+                <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.profile')}</h3>
+                <div className="space-y-3">
+                  <div className="rounded-xl border border-surface-200 dark:border-surface-700/60 bg-surface-50 dark:bg-surface-800/50 p-4">
+                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400 mb-1.5">{t('settings.profileName')}</label>
+                    <input
+                      type="text"
+                      className="input-field bg-white dark:bg-surface-800 mb-1"
+                      placeholder={t('settings.namePlaceholder')}
+                      value={newName}
+                      onChange={(e) => setNewName(e.target.value)}
+                    />
+                    <p className="text-[11px] text-surface-400">
+                      {isBRL ? 'Atual:' : 'Current:'} <span className="font-medium text-surface-600 dark:text-surface-300">{profileName}</span>
+                    </p>
+                  </div>
+                  {nameMessage && (
+                    <p className={`text-sm rounded-lg p-3 ${nameMessage.includes('sucesso') || nameMessage.includes('updated') || nameMessage.includes('diferente') || nameMessage.includes('different') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
+                      {nameMessage}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setShowNameConfirm(true)}
+                    disabled={!newName.trim()}
+                    className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isBRL ? 'Atualizar Nome' : 'Update Name'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-surface-200 dark:border-surface-700/60" />
+
+              {/* Change Password */}
               <div>
                 <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.changePassword')}</h3>
-                <form onSubmit={handleChangePassword} className="space-y-3">
+                <form onSubmit={(e) => { e.preventDefault(); setShowPasswordConfirm(true) }} className="space-y-3">
                   <div className="space-y-1.5">
                     <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.currentPassword')}</label>
                     <input type="password" required className="input-field" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
@@ -630,10 +762,174 @@ export default function DashboardClient({
                       {passwordMessage}
                     </p>
                   )}
-                  <button type="submit" disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword} className="btn-secondary w-full">
+                  <button type="submit" disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword} className="btn-secondary w-full disabled:opacity-50 disabled:cursor-not-allowed">
                     {isChangingPassword ? t('settings.changingPassword') : t('settings.update')}
                   </button>
                 </form>
+              </div>
+
+              <div className="border-t border-surface-200 dark:border-surface-700/60" />
+
+              {/* Danger Zone */}
+              <div>
+                <h3 className="text-xs font-medium uppercase tracking-wider text-red-500 mb-3">{t('settings.dangerZone')}</h3>
+                <div className="rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20 p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40">
+                        <Lucide.Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-red-800 dark:text-red-300">{t('settings.deleteAccount')}</p>
+                        <p className="text-[11px] text-red-500 dark:text-red-400/70">
+                          {isBRL ? 'Remove todos os seus dados permanentemente' : 'Removes all your data permanently'}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm1(true)}
+                      className="shrink-0 rounded-lg bg-red-600 px-3.5 py-2 text-xs font-semibold text-white hover:bg-red-700 transition-colors shadow-sm"
+                    >
+                      {isBRL ? 'Excluir' : 'Delete'}
+                    </button>
+                  </div>
+                  {deleteMessage && (
+                    <p className={`text-sm rounded-lg p-3 mt-3 ${deleteMessage.includes('sucesso') || deleteMessage.includes('deleted') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'}`}>
+                      {deleteMessage}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Password Change Confirmation */}
+      {showPasswordConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowPasswordConfirm(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.confirmPasswordChange')}</h3>
+            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">{t('settings.changePassword')}</p>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowPasswordConfirm(false)} className="btn-secondary flex-1">
+                {t('settings.cancel')}
+              </button>
+              <button onClick={handleChangePassword} disabled={isChangingPassword} className="btn-primary flex-1">
+                {isChangingPassword ? t('settings.changingPassword') : t('settings.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Name Change Confirmation */}
+      {showNameConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm" onClick={() => setShowNameConfirm(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.confirmNameChange')}</h3>
+            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">
+              <span className="font-medium text-surface-700 dark:text-surface-300">{profileName}</span>
+              <span className="text-brand-600 dark:text-brand-400 mx-1">→</span>
+              <span className="font-medium text-brand-600 dark:text-brand-400">{newName}</span>
+            </p>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowNameConfirm(false)} className="btn-secondary flex-1">
+                {t('settings.cancel')}
+              </button>
+              <button onClick={handleUpdateName} disabled={isUpdatingName} className="btn-primary flex-1">
+                {isUpdatingName ? t('settings.updatingName') : t('settings.confirm')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account - Step 1 Confirmation */}
+      {showDeleteConfirm1 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setShowDeleteConfirm1(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
+              <Lucide.AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.deleteAccountConfirm')}</h3>
+            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">{t('settings.deleteAccountWarning')}</p>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowDeleteConfirm1(false)} className="btn-secondary flex-1">
+                {t('settings.cancel')}
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm1(false); setShowDeleteConfirm2(true) }}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+              >
+                {isBRL ? 'Continuar' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account - Step 2 Final Confirmation */}
+      {showDeleteConfirm2 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => { setShowDeleteConfirm2(false); setDeleteConfirmText('') }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.deleteAccountFinalConfirm')}</h3>
+            <div className="mt-4 space-y-3">
+              <input
+                type="text"
+                className="input-field text-center font-mono text-sm uppercase"
+                placeholder={t('settings.deleteConfirmationText')}
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleDeleteAccount()
+                }}
+              />
+              {deleteMessage && (
+                <p className="text-sm rounded-lg p-3 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                  {deleteMessage}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteConfirm2(false); setDeleteConfirmText('') }}
+                  className="btn-secondary flex-1"
+                >
+                  {t('settings.cancel')}
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount || (deleteConfirmText !== 'EXCLUIR' && deleteConfirmText !== 'DELETE')}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700"
+                >
+                  {isDeletingAccount ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                        <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
+                      </svg>
+                      {t('settings.deletingAccount')}
+                    </span>
+                  ) : (
+                    t('settings.deleteAccount')
+                  )}
+                </button>
               </div>
             </div>
           </div>

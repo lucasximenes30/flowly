@@ -47,7 +47,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6 transition-colors duration-300 bg-surface-50 dark:bg-surface-950">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-8 animate-auth-fade">
         {/* Logo */}
         <div className="text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-surface-900 dark:text-surface-100">Flowly</h1>

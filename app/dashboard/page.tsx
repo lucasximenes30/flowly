@@ -8,6 +8,7 @@ function serializeData(transactions: any[], balance: any, monthly: any) {
     id: t.id,
     title: t.title,
     amount: t.amount.toString(),
+    installmentAmount: t.installmentAmount ? Number(t.installmentAmount) : undefined,
     type: t.type,
     category: t.category,
     date: t.date.toISOString(),

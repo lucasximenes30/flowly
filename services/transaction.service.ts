@@ -90,16 +90,22 @@ export async function getTransactionsByUser(userId: string) {
 export async function getUserBalance(userId: string) {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
-    select: { amount: true, type: true },
+    select: { amount: true, type: true, isInstallment: true, installmentAmount: true },
   })
 
   const income = transactions
     .filter((t) => t.type === 'INCOME')
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .reduce((sum, t) => {
+      const value = t.isInstallment && t.installmentAmount ? Number(t.installmentAmount) : Number(t.amount)
+      return sum + value
+    }, 0)
 
   const expense = transactions
     .filter((t) => t.type === 'EXPENSE')
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .reduce((sum, t) => {
+      const value = t.isInstallment && t.installmentAmount ? Number(t.installmentAmount) : Number(t.amount)
+      return sum + value
+    }, 0)
 
   return { income, expense, balance: income - expense }
 }
