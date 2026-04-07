@@ -149,7 +149,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Selected Month */}
             <div className="card border-l-4 border-brand-600">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
+              <p className="text-sm font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
                 {selectedYearMonth === getCurrentMonth() ? t('monthly.currentMonth') : t('monthly.selectedMonth') ?? 'Mês Selecionado'}
               </p>
               <p className="text-sm text-surface-400 dark:text-surface-500 mb-4">
@@ -157,23 +157,23 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               </p>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">
                     {t('dashboard.monthlyIncome')}
                   </span>
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(comparison.current.income)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">
                     {t('dashboard.monthlyExpenses')}
                   </span>
-                  <span className="text-sm font-semibold text-rose-600 dark:text-rose-400">
+                  <span className="text-base font-semibold text-rose-600 dark:text-rose-400">
                     {formatCurrency(comparison.current.expense)}
                   </span>
                 </div>
                 <div className="border-t border-surface-200 dark:border-surface-700/60 pt-3 flex items-center justify-between">
-                  <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                  <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
                     {t('dashboard.currentBalance')}
                   </span>
                   <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
@@ -185,7 +185,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
 
             {/* Previous Month */}
             <div className="card border-l-4 border-surface-300 dark:border-surface-700">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
+              <p className="text-sm font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
                 {t('monthly.previousMonth')}
               </p>
               <p className="text-sm text-surface-400 dark:text-surface-500 mb-4">
@@ -193,23 +193,23 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               </p>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">
                     {t('dashboard.monthlyIncome')}
                   </span>
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(comparison.previous.income)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
+                  <span className="text-sm text-surface-600 dark:text-surface-400">
                     {t('dashboard.monthlyExpenses')}
                   </span>
-                  <span className="text-sm font-semibold text-rose-600 dark:text-rose-400">
+                  <span className="text-base font-semibold text-rose-600 dark:text-rose-400">
                     {formatCurrency(comparison.previous.expense)}
                   </span>
                 </div>
                 <div className="border-t border-surface-200 dark:border-surface-700/60 pt-3 flex items-center justify-between">
-                  <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                  <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
                     {t('dashboard.currentBalance')}
                   </span>
                   <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
@@ -230,7 +230,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-surface-900/30">
                 <div className="mt-1">{getComparisonIcon(comparison.comparison.incomeChange)}</div>
                 <div className="flex-1">
-                  <p className="text-xs text-surface-600 dark:text-surface-400 mb-1">
+                  <p className="text-sm text-surface-600 dark:text-surface-400 mb-1">
                     {t('monthly.incomeChange')}
                   </p>
                   <p className={`text-sm font-semibold ${
@@ -248,7 +248,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-surface-900/30">
                 <div className="mt-1">{getComparisonIcon(-comparison.comparison.expenseChange)}</div>
                 <div className="flex-1">
-                  <p className="text-xs text-surface-600 dark:text-surface-400 mb-1">
+                  <p className="text-sm text-surface-600 dark:text-surface-400 mb-1">
                     {t('monthly.expenseChange')}
                   </p>
                   <p className={`text-sm font-semibold ${
@@ -266,7 +266,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-surface-900/30">
                 <div className="mt-1">{getComparisonIcon(comparison.comparison.balanceChange)}</div>
                 <div className="flex-1">
-                  <p className="text-xs text-surface-600 dark:text-surface-400 mb-1">
+                  <p className="text-sm text-surface-600 dark:text-surface-400 mb-1">
                     {t('monthly.balanceChange')}
                   </p>
                   <p className={`text-sm font-semibold ${

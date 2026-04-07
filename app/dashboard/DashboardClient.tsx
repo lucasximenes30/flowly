@@ -1,14 +1,15 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
 import MonthlyReport from '@/components/MonthlyReport'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import CategorySelect from '@/components/CategorySelect'
 import SettingsPanel from '@/components/SettingsPanel'
+import NotificationDropdown from '@/components/NotificationDropdown'
 import * as Lucide from 'lucide-react'
-import { getInstallmentInfo, formatShortDate } from '@/lib/installments'
+import { getInstallmentInfo, formatShortDate, isInstallmentActiveInMonth, getInstallmentForMonth } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
 interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string }
@@ -200,6 +201,74 @@ export default function DashboardClient({
   // Profile name display only
   const [profileName, setProfileName] = useState(session.name)
 
+  // Month filter for transaction history
+  const now = new Date()
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const [selectedMonth, setSelectedMonth] = useState(currentYM)
+  const [sortDesc, setSortDesc] = useState(true) // true = most recent first
+
+  // Filter transactions for selected month
+  const filteredMonthTransactions = useMemo(() => {
+    if (transactions.length === 0) return []
+    const [yStr, mStr] = selectedMonth.split('-')
+    const year = parseInt(yStr)
+    const month = parseInt(mStr)
+
+    return transactions.filter((txn) => {
+      // Normal transactions — date must be within month
+      if (!txn.isInstallment && !txn.isRecurring) {
+        const d = new Date(txn.date)
+        return d.getFullYear() === year && d.getMonth() + 1 === month
+      }
+
+      // Installment — show if active in this month
+      if (txn.isInstallment && txn.totalInstallments && txn.purchaseDate) {
+        return isInstallmentActiveInMonth(new Date(txn.purchaseDate), txn.totalInstallments, year, month)
+      }
+
+      // Recurring — show if isActive and endDate hasn't passed this month
+      if (txn.isRecurring) {
+        if (!txn.isActive) return false
+        if (txn.endDate) {
+          const end = new Date(txn.endDate)
+          return end.getFullYear() > year || (end.getFullYear() === year && end.getMonth() + 1 >= month)
+        }
+        return true
+      }
+
+      return false
+    }).sort((a, b) => {
+      const dateA = a.isRecurring ? now : new Date(a.date)
+      const dateB = b.isRecurring ? now : new Date(b.date)
+      return sortDesc ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime()
+    }).map((txn) => {
+      // Inject _activeInstallment for the selected month
+      if (txn.isInstallment && txn.totalInstallments && txn.purchaseDate) {
+        return {
+          ...txn,
+          _activeInstallment: getInstallmentForMonth(new Date(txn.purchaseDate), txn.totalInstallments, year, month),
+        }
+      }
+      return txn
+    })
+  }, [transactions, selectedMonth, sortDesc])
+
+  // Get last 6 months for selector
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = []
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = (() => {
+        const monthName = d.toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { month: 'long' })
+        const year = d.getFullYear()
+        return `${monthName} de ${year}`
+      })()
+      opts.push({ value: ym, label })
+    }
+    return opts
+  }, [isBRL])
+
   // Cancel recurring
   const [cancelRecurringId, setCancelRecurringId] = useState<string | null>(null)
   const [cancelRecurringMessage, setCancelRecurringMessage] = useState('')
@@ -315,6 +384,9 @@ export default function DashboardClient({
               </svg>
             </button>
 
+            {/* Notification bell */}
+            <NotificationDropdown transactions={transactions} isBRL={isBRL} />
+
             <button onClick={handleLogout} className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors">
               {t('common.signOut')}
             </button>
@@ -376,14 +448,16 @@ export default function DashboardClient({
         {/* Exchange rate notice (EN only) */}
         {!isBRL && rateLoading && (
           <div className="card bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/40 py-3">
-            <p className="text-xs text-amber-700 dark:text-amber-400">{isBRL ? 'Carregando taxa de câmbio...' : 'Loading exchange rate...'}</p>
+            <p className="text-sm text-amber-700 dark:text-amber-400">{isBRL ? 'Carregando taxa de câmbio...' : 'Loading exchange rate...'}</p>
           </div>
         )}
 
         {/* Transactions Section */}
         <div className="card">
           <div className="mb-5">
-            <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">{t('dashboard.recentTransactions')}</h2>
+            <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+              {isBRL ? 'Transações' : 'Transactions'}
+            </h2>
           </div>
 
           {/* Add Transaction Form */}
@@ -392,26 +466,26 @@ export default function DashboardClient({
             <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-5 dark:bg-surface-800/50 dark:border-surface-700/60 transition-all duration-500">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.title')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.title')}</label>
                   <input type="text" required className="input-field" placeholder={t('transaction.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.amount')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.amount')}</label>
                   <input type="number" required min="0.01" step="0.01" className="input-field" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.type')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.type')}</label>
                   <select value={type} onChange={(e) => setType(e.target.value as 'INCOME' | 'EXPENSE')} className="input-field">
                     <option value="EXPENSE">{t('dashboard.expense')}</option>
                     <option value="INCOME">{t('dashboard.income')}</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.category')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.category')}</label>
                   <CategorySelect value={category} onChange={setCategory} type={type} />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.date')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.date')}</label>
                   <input type="date" required className="input-field" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
                 {/* Installment toggle */}
@@ -442,7 +516,7 @@ export default function DashboardClient({
                 {isInstallment && (
                   <>
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
                         {isBRL ? 'Quantas parcelas?' : 'How many installments?'}
                       </label>
                       <input
@@ -456,7 +530,7 @@ export default function DashboardClient({
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
                         {isBRL ? 'Dia do vencimento' : 'Payment day'}
                       </label>
                       <input
@@ -468,12 +542,12 @@ export default function DashboardClient({
                         value={dueDay}
                         onChange={(e) => setDueDay(e.target.value)}
                       />
-                      <p className="text-[10px] text-surface-400 mt-0.5">
+                      <p className="text-xs text-surface-400 mt-1">
                         {isBRL ? 'Ex: Se paga dia 12 todo mês, selecione 12' : 'e.g., if you pay on the 12th every month, select 12'}
                       </p>
                     </div>
                     <div className="space-y-1.5 sm:col-span-2">
-                      <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
                         {isBRL ? 'Data da compra' : 'Purchase date'}
                       </label>
                       <input
@@ -514,7 +588,7 @@ export default function DashboardClient({
                 {/* Recurring fields */}
                 {isRecurring && (
                   <div className="sm:col-span-2 space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                    <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
                       {isBRL ? 'Dia da recorrência' : 'Recurring day'}
                     </label>
                     <input
@@ -526,7 +600,7 @@ export default function DashboardClient({
                       value={recurringDay}
                       onChange={(e) => setRecurringDay(e.target.value)}
                     />
-                    <p className="text-[10px] text-surface-400 mt-0.5">
+                    <p className="text-xs text-surface-400 mt-1">
                       {isBRL
                         ? 'Ex: Se esse pagamento acontece todo dia 10, selecione 10'
                         : 'e.g., if this payment happens every day 10, select 10'}
@@ -552,18 +626,58 @@ export default function DashboardClient({
             </div>
           )}
 
-          {/* Transaction List */}
-          {transactions.length === 0 ? (
+          {/* Transaction List — Month Filter */}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+              {isBRL ? 'Histórico de transações' : 'Transaction history'}
+            </h3>
+            <div className="flex items-center gap-2">
+              {/* Sort toggle button */}
+              <button
+                type="button"
+                onClick={() => setSortDesc((v) => !v)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-all duration-200"
+                title={sortDesc
+                  ? (isBRL ? 'Mais recentes primeiro' : 'Most recent first')
+                  : (isBRL ? 'Mais antigos primeiro' : 'Oldest first')
+                }
+              >
+                {sortDesc ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
+                  </svg>
+                )}
+              </button>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="input-field text-sm py-1.5 px-3 w-44 border-surface-200 h-9"
+              >
+                {monthOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filteredMonthTransactions.length === 0 ? (
             <div className="py-16 text-center">
               <svg className="mx-auto h-12 w-12 text-surface-300 dark:text-surface-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
               </svg>
-              <p className="mt-4 text-sm text-surface-500 dark:text-surface-400">{t('dashboard.noTransactions')}</p>
-              <p className="text-xs text-surface-400 dark:text-surface-500">{t('dashboard.addFirstTransaction')}</p>
+              <p className="mt-4 text-sm text-surface-500 dark:text-surface-400">
+              {isBRL ? 'Nenhuma transação neste mês' : 'No transactions this month'}
+            </p>
             </div>
           ) : (
             <div className="divide-y divide-surface-100 dark:divide-surface-800">
-              {transactions.slice(0, 20).map((txn) => (
+              {filteredMonthTransactions.map((txn) => (
                 <div key={txn.id} className="group flex items-center justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
                   <div className="flex items-center gap-3">
                     {/* Edit button */}
@@ -594,21 +708,21 @@ export default function DashboardClient({
                     </button>
                     <div className="space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
+                        <p className="text-base font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
                         {txn.isInstallment && (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-brand-100 px-1.5 py-0.5 text-[10px] font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
-                            <Lucide.ReceiptText className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
+                            <Lucide.ReceiptText className="w-3.5 h-3.5" />
                             Parcelado
                           </span>
                         )}
                         {txn.isRecurring && (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
-                            <Lucide.Repeat className="w-3 h-3" />
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            <Lucide.Repeat className="w-3.5 h-3.5" />
                             {isBRL ? 'Recorrente' : 'Recurring'}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-surface-400 dark:text-surface-500">{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</p>
+                      <p className="text-sm text-surface-500 dark:text-surface-400">{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</p>
                       {txn.isInstallment && txn.totalInstallments && txn.dueDay && txn.purchaseDate && (() => {
                         // Use _activeInstallment if provided (from month-aware query), otherwise compute from today
                         const currentInstallment = txn._activeInstallment ?? getInstallmentInfo(
@@ -632,14 +746,14 @@ export default function DashboardClient({
                         const statusColor = info.status === 'LATE' ? 'text-red-600 dark:text-red-400' : info.status === 'PAID' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
                         return (
                           <div className="flex items-center gap-3 mt-1">
-                            <span className={`text-[10px] font-medium ${statusColor}`}>
+                            <span className={`text-xs font-medium ${statusColor}`}>
                               {isBRL ? `Parcela ${displayInstallment}/${txn.totalInstallments}` : `Installment ${displayInstallment}/${txn.totalInstallments}`}
                             </span>
-                            <span className="text-[10px] text-surface-400">
+                            <span className="text-xs text-surface-500">
                               {formatCurrency(perMonth)} {isBRL ? 'por mês' : 'per month'}
                             </span>
                             {displayInstallment < txn.totalInstallments && (
-                              <span className="text-[10px] text-surface-400">
+                              <span className="text-xs text-surface-500">
                                 {isBRL ? `Restam ${txn.totalInstallments - displayInstallment}` : `${txn.totalInstallments - displayInstallment} remaining`}
                               </span>
                             )}
@@ -647,27 +761,27 @@ export default function DashboardClient({
                         )
                       })()}
                       {txn.isRecurring && txn.isActive === false && txn.endDate && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Lucide.CircleSlash2 className="w-3 h-3 text-surface-400 dark:text-surface-500" />
-                          <span className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Lucide.CircleSlash2 className="w-3.5 h-3.5 text-surface-500 dark:text-surface-400" />
+                          <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
                             {isBRL ? 'Cancelado' : 'Cancelled'}
                           </span>
                         </div>
                       )}
                       {txn.isRecurring && txn.isActive !== false && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <Lucide.Repeat className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Lucide.Repeat className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                           {txn.recurringDay ? (
-                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                               {isBRL ? `Todo dia ${txn.recurringDay}` : `Every day ${txn.recurringDay}`}
                             </span>
                           ) : (
-                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
                               {isBRL ? 'Recorrente' : 'Recurring'}
                             </span>
                           )}
                           {txn._recurringStatus && (
-                            <span className="text-[10px] text-surface-400">
+                            <span className="text-xs text-surface-500">
                               {txn._recurringStatus.status === 'UPCOMING' && txn._recurringStatus.daysUntil
                                 ? isBRL ? `${txn._recurringStatus.daysUntil}d` : `in ${txn._recurringStatus.daysUntil}d`
                                 : ''}
@@ -696,7 +810,7 @@ export default function DashboardClient({
                               {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(perMonth)}
                             </span>
                             {!isBRL && (
-                              <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
+                              <p className="text-xs font-medium text-surface-400 dark:text-surface-500">
                                 ≈ {formatConverted(perMonth)}
                               </p>
                             )}
@@ -708,7 +822,7 @@ export default function DashboardClient({
                             {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(parseFloat(txn.amount))}
                           </span>
                           {!isBRL && (
-                            <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
+                            <p className="text-xs font-medium text-surface-400 dark:text-surface-500">
                               ≈ {formatConverted(parseFloat(txn.amount))}
                             </p>
                           )}
