@@ -11,7 +11,7 @@ import * as Lucide from 'lucide-react'
 import { getInstallmentInfo, formatShortDate } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null } }
+interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
 
@@ -199,6 +199,30 @@ export default function DashboardClient({
 
   // Profile name display only
   const [profileName, setProfileName] = useState(session.name)
+
+  // Cancel recurring
+  const [cancelRecurringId, setCancelRecurringId] = useState<string | null>(null)
+  const [cancelRecurringMessage, setCancelRecurringMessage] = useState('')
+  const [isCancellingRecurring, setIsCancellingRecurring] = useState(false)
+  const [cancelRecurringModalOpen, setCancelRecurringModalOpen] = useState(false)
+
+  const handleCancelRecurring = async (id: string) => {
+    setIsCancellingRecurring(true)
+    try {
+      const res = await fetch(`/api/transactions/${id}/cancel-recurring`, { method: 'POST' })
+      const data = await res.json()
+      setCancelRecurringMessage(data.message ?? '')
+      if (res.ok) {
+        setCancelRecurringId(null)
+        setCancelRecurringModalOpen(false)
+        router.refresh()
+      }
+    } catch {
+      setCancelRecurringMessage(isBRL ? 'Erro de rede' : 'Network error')
+    } finally {
+      setIsCancellingRecurring(false)
+    }
+  }
 
   // Confirmation modals
   const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false)
@@ -622,12 +646,26 @@ export default function DashboardClient({
                           </div>
                         )
                       })()}
-                      {txn.isRecurring && txn.recurringDay && (
+                      {txn.isRecurring && txn.isActive === false && txn.endDate && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Lucide.CircleSlash2 className="w-3 h-3 text-surface-400 dark:text-surface-500" />
+                          <span className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
+                            {isBRL ? 'Cancelado' : 'Cancelled'}
+                          </span>
+                        </div>
+                      )}
+                      {txn.isRecurring && txn.isActive !== false && (
                         <div className="flex items-center gap-1.5 mt-1">
                           <Lucide.Repeat className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                          <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
-                            {isBRL ? `Todo dia ${txn.recurringDay}` : `Every day ${txn.recurringDay}`}
-                          </span>
+                          {txn.recurringDay ? (
+                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                              {isBRL ? `Todo dia ${txn.recurringDay}` : `Every day ${txn.recurringDay}`}
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                              {isBRL ? 'Recorrente' : 'Recurring'}
+                            </span>
+                          )}
                           {txn._recurringStatus && (
                             <span className="text-[10px] text-surface-400">
                               {txn._recurringStatus.status === 'UPCOMING' && txn._recurringStatus.daysUntil
@@ -635,6 +673,15 @@ export default function DashboardClient({
                                 : ''}
                             </span>
                           )}
+                          {/* Cancel button for active recurring (shown on hover) */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setCancelRecurringId(txn.id); setCancelRecurringModalOpen(true) }}
+                            className="ml-1 invisible group-hover:visible opacity-0 group-hover:opacity-100 text-surface-400 hover:text-red-500 dark:hover:text-red-400 transition-all duration-200"
+                            title={isBRL ? 'Cancelar assinatura' : 'Cancel subscription'}
+                          >
+                            <Lucide.CircleStop className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
                     </div>
@@ -781,6 +828,56 @@ export default function DashboardClient({
           onSave={handleEditSave}
           formatCurrency={formatCurrency}
         />
+      )}
+
+      {/* Cancel Recurring Confirmation Modal */}
+      {cancelRecurringModalOpen && cancelRecurringId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => { setCancelRecurringModalOpen(false); setCancelRecurringMessage('') }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
+              <Lucide.CircleStop className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">
+              {isBRL ? 'Cancelar recorrência?' : 'Cancel recurring?'}
+            </h3>
+            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">
+              {isBRL
+                ? 'Esta ação não pode ser desfeita. O pagamento recorrente será encerrado.'
+                : 'This action cannot be undone. The recurring payment will be terminated.'}
+            </p>
+            {cancelRecurringMessage && (
+              <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 text-center">
+                {cancelRecurringMessage}
+              </div>
+            )}
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => { setCancelRecurringModalOpen(false); setCancelRecurringMessage('') }}
+                disabled={isCancellingRecurring}
+                className="btn-secondary flex-1"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={() => handleCancelRecurring(cancelRecurringId)}
+                disabled={isCancellingRecurring}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700"
+              >
+                {isCancellingRecurring ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                      <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
+                    </svg>
+                    {isBRL ? 'Cancelando...' : 'Cancelling...'}
+                  </span>
+                ) : (
+                  isBRL ? 'Confirmar cancelamento' : 'Confirm cancellation'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

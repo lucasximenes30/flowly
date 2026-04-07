@@ -16,6 +16,10 @@ function serializeData(transactions: any[], balance: any, monthly: any) {
     totalInstallments: t.totalInstallments,
     purchaseDate: t.purchaseDate?.toISOString(),
     dueDay: t.dueDay,
+    isRecurring: t.isRecurring,
+    recurringDay: t.recurringDay,
+    isActive: t.isActive,
+    endDate: t.endDate?.toISOString(),
   }))
 
   return {

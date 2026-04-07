@@ -90,6 +90,63 @@ export async function updateTransaction(id: string, userId: string, input: Updat
   })
 }
 
+export interface CancelRecurringResult {
+  isActive: false
+  endDate: Date
+  message: string
+  monthExcluded: boolean
+}
+
+/**
+ * Cancel a recurring transaction with correct financial behavior.
+ *
+ * Case 1 (current day >= recurringDay): this month already counted.
+ *   endDate = last day of current month.
+ * Case 2 (current day < recurringDay): current month should not be counted.
+ *   endDate = today.
+ */
+export async function cancelRecurring(
+  id: string,
+  userId: string,
+): Promise<CancelRecurringResult> {
+  const tx = await prisma.transaction.findUnique({ where: { id } })
+  if (!tx || tx.userId !== userId) {
+    throw new Error('Transaction not found or unauthorized')
+  }
+  if (!tx.isRecurring) {
+    throw new Error('Transaction is not recurring')
+  }
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dayOfMonth = today.getDate()
+  const rDay = tx.recurringDay ?? 1
+
+  let endDate: Date
+  let message: string
+  if (dayOfMonth >= rDay) {
+    // Current month already counted — end at last day of this month
+    endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
+    message =
+      'Cancelamento concluído, mas o pagamento deste mês já foi considerado.'
+    await prisma.transaction.update({
+      where: { id },
+      data: { isActive: false, endDate },
+    })
+    return { isActive: false, endDate, message, monthExcluded: false }
+  } else {
+    // Current month should NOT be counted
+    endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+    message =
+      'Recorrência cancelada. Nenhum pagamento será considerado este mês.'
+    await prisma.transaction.update({
+      where: { id },
+      data: { isActive: false, endDate },
+    })
+    return { isActive: false, endDate, message, monthExcluded: true }
+  }
+}
+
 export async function getTransactionsByUser(userId: string) {
   return prisma.transaction.findMany({
     where: { userId },
@@ -159,13 +216,21 @@ export async function getTransactionsByMonth(userId: string, year: number, month
       : false,
   )
 
-  // Recurring transactions — always included, every month
+  // Recurring transactions — always included if active or endDate covers this month
   const recurring = await prisma.transaction.findMany({
     where: {
       userId,
       isRecurring: true,
     },
     orderBy: { date: 'desc' },
+  })
+
+  const activeRecurring = recurring.filter((t) => {
+    if (!t.isActive) return false
+    if (t.endDate) {
+      return t.endDate >= startOfMonth
+    }
+    return true
   })
 
   // Merge and mark with current installment info
@@ -180,7 +245,7 @@ export async function getTransactionsByMonth(userId: string, year: number, month
   }))
 
   // Enrich recurring with payment status for the month
-  const enrichedRecurring = recurring.map((t) => ({
+  const enrichedRecurring = activeRecurring.map((t) => ({
     ...t,
     _recurringStatus: getRecurringStatusForMonth(t.recurringDay, year, month),
   }))
@@ -219,7 +284,15 @@ export async function getMonthSummary(userId: string, year: number, month: numbe
     },
   })
 
-  return computeMonthSummary(installments, nonInstallments, year, month, recurring)
+  const activeRecurring = recurring.filter((t) => {
+    if (!t.isActive) return false
+    if (t.endDate) {
+      return t.endDate >= startOfMonth
+    }
+    return true
+  })
+
+  return computeMonthSummary(installments, nonInstallments, year, month, activeRecurring)
 }
 
 // Pure function to compute a month's summary from transaction lists
@@ -390,6 +463,8 @@ export async function getExpensesByCategory(userId: string, year: number, month:
     select: {
       category: true,
       amount: true,
+      isActive: true,
+      endDate: true,
     },
   })
 
@@ -410,8 +485,17 @@ export async function getExpensesByCategory(userId: string, year: number, month:
     }
   }
 
-  // Add recurring expenses
-  for (const t of recurring) {
+  // Add active recurring expenses
+  const activeRecurring = recurring.filter((t) => {
+    if (!t.isActive) return false
+    if (t.endDate) {
+      const startOfMonth = new Date(year, month - 1, 1)
+      return t.endDate >= startOfMonth
+    }
+    return true
+  })
+
+  for (const t of activeRecurring) {
     const current = categoryMap.get(t.category) ?? 0
     categoryMap.set(t.category, current + Number(t.amount))
   }
