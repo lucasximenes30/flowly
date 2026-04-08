@@ -12,14 +12,23 @@ import * as Lucide from 'lucide-react'
 import { getInstallmentInfo, formatShortDate, isInstallmentActiveInMonth, getInstallmentForMonth } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string }
+interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string; cardId?: string }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
+interface Card { id: string; name: string; lastFourDigits: string; dueDay: number; closingDay: number }
 
 // Cache de taxa de câmbio (atualiza a cada 5 min)
 const cacheKey = 'flowly_exchange_rate'
 const cacheTimeKey = 'flowly_exchange_rate_time'
 let cachedRate: { value: number; time: number } | null = null
+
+interface Props {
+  session: Session
+  transactions: Transaction[]
+  balance: Balance
+  monthly: Monthly
+  cards?: Card[]
+}
 
 async function getExchangeRate(): Promise<number> {
   if (cachedRate && Date.now() - cachedRate.time < 5 * 60 * 1000) {
@@ -38,13 +47,8 @@ async function getExchangeRate(): Promise<number> {
 }
 
 export default function DashboardClient({
-  session, transactions, balance, monthly,
-}: {
-  session: Session
-  transactions: Transaction[]
-  balance: Balance
-  monthly: Monthly
-}) {
+  session, transactions, balance, monthly, cards = [],
+}: Props) {
   const router = useRouter()
   const { t, locale } = useApp()
 
@@ -141,6 +145,21 @@ export default function DashboardClient({
   const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
   const [dueDay, setDueDay] = useState('')
 
+  // Card fields
+  const [paymentMethod, setPaymentMethod] = useState<'none' | 'credit_card'>('none')
+  const [selectedCardId, setSelectedCardId] = useState<string>('')
+
+  // Update logic: if user chooses card, auto-fill dueDay if we're in installment
+  // We'll run a useEffect to auto-fill dueDay when selectedCardId and isInstallment changes
+  useEffect(() => {
+    if (isInstallment && paymentMethod === 'credit_card' && selectedCardId) {
+      const card = cards.find(c => c.id === selectedCardId)
+      if (card && card.dueDay) {
+         setDueDay(card.dueDay.toString())
+      }
+    }
+  }, [selectedCardId, isInstallment, paymentMethod, cards])
+
   // Recurring fields
   const [isRecurring, setIsRecurring] = useState(false)
   const [recurringDay, setRecurringDay] = useState('')
@@ -176,6 +195,7 @@ export default function DashboardClient({
           dueDay: isInstallment ? parseInt(dueDay) : null,
           isRecurring,
           recurringDay: isRecurring ? parseInt(recurringDay) : null,
+          cardId: paymentMethod === 'credit_card' && selectedCardId ? selectedCardId : null,
         }),
       })
 
@@ -189,6 +209,7 @@ export default function DashboardClient({
       setDate(new Date().toISOString().split('T')[0])
       setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay('')
       setIsRecurring(false); setRecurringDay('')
+      setPaymentMethod('none'); setSelectedCardId('')
       setShowForm(false)
       router.refresh()
     } catch {
@@ -206,6 +227,22 @@ export default function DashboardClient({
   const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const [selectedMonth, setSelectedMonth] = useState(currentYM)
   const [sortDesc, setSortDesc] = useState(true) // true = most recent first
+
+  // Update Document Title Dynamically
+  useEffect(() => {
+    if (selectedMonth) {
+      const [year, monthStr] = selectedMonth.split('-')
+      const monthNames = [
+        t('month.january'), t('month.february'), t('month.march'), t('month.april'),
+        t('month.may'), t('month.june'), t('month.july'), t('month.august'),
+        t('month.september'), t('month.october'), t('month.november'), t('month.december')
+      ]
+      const monthName = monthNames[parseInt(monthStr) - 1]
+      document.title = `${monthName} ${year} | ${t('dashboard.title')} | Flowly`
+    } else {
+      document.title = `${t('dashboard.title')} | Flowly`
+    }
+  }, [selectedMonth, t])
 
   // Filter transactions for selected month
   const filteredMonthTransactions = useMemo(() => {
@@ -385,7 +422,7 @@ export default function DashboardClient({
             </button>
 
             {/* Notification bell */}
-            <NotificationDropdown transactions={transactions} isBRL={isBRL} />
+            <NotificationDropdown transactions={transactions} cards={cards} isBRL={isBRL} />
 
             <button onClick={handleLogout} className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors">
               {t('common.signOut')}
@@ -429,8 +466,14 @@ export default function DashboardClient({
             {/* RIGHT SECTION - Buttons */}
             <div className="w-full md:w-auto flex flex-row md:flex-col gap-3">
               <button
+                onClick={() => router.push('/cards')}
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm border border-white/10 transition-all duration-250 hover:bg-white/22 hover:scale-[1.025] hover:border-white/20 hover:shadow-lg hover:shadow-black/12 active:scale-[0.975]"
+              >
+                {isBRL ? 'Cartões' : 'Cards'}
+              </button>
+              <button
                 onClick={() => router.push('/reports')}
-                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur border border-white/10 transition-all duration-300 hover:bg-white/25 hover:scale-[1.02] hover:border-white/20 hover:shadow-lg active:scale-[0.98]"
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm border border-white/10 transition-all duration-250 hover:bg-white/22 hover:scale-[1.025] hover:border-white/20 hover:shadow-lg hover:shadow-black/12 active:scale-[0.975]"
               >
                 {isBRL ? 'Ver relatórios' : 'View reports'}
               </button>
@@ -580,7 +623,7 @@ export default function DashboardClient({
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Lucide.Repeat className={`w-4 h-4 ${isRecurring ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400'}`} />
+                      <Lucide.Repeat className={`w-4 h-4 ${isRecurring ? 'text-emerald-600 dark:emerald-400' : 'text-surface-400'}`} />
                       <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
                         {isBRL ? 'Pagamento recorrente?' : 'Recurring payment?'}
                       </span>
@@ -591,6 +634,58 @@ export default function DashboardClient({
                       <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm" />
                     </div>
                   </button>
+                </div>
+
+                <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                      {isBRL ? 'Forma de pagamento' : 'Payment Method'}
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => {
+                        const val = e.target.value as 'none' | 'credit_card'
+                        setPaymentMethod(val)
+                        if (val === 'credit_card' && cards.length > 0) {
+                          setSelectedCardId(cards[0].id)
+                        } else {
+                          setSelectedCardId('')
+                        }
+                      }}
+                      className="input-field"
+                    >
+                      <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
+                      <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
+                    </select>
+                  </div>
+
+                  {paymentMethod === 'credit_card' && (
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        {isBRL ? 'Cartão' : 'Card'}
+                      </label>
+                      {cards.length === 0 ? (
+                        <div className="flex h-10 items-center justify-between rounded-xl border border-dashed border-surface-300 px-3 text-sm dark:border-surface-700">
+                          <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
+                          <button type="button" onClick={() => router.push('/cards')} className="text-brand-500 hover:text-brand-600 font-medium">
+                            {isBRL ? 'Adicionar' : 'Add'}
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedCardId}
+                          onChange={(e) => setSelectedCardId(e.target.value)}
+                          className="input-field"
+                        >
+                          {cards.map(c => (
+                            <option key={c.id} value={c.id}>
+                              **** {c.lastFourDigits} — {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Recurring fields */}
@@ -730,7 +825,25 @@ export default function DashboardClient({
                           </span>
                         )}
                       </div>
-                      <p className="text-sm text-surface-500 dark:text-surface-400">{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</p>
+                      <div className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
+                        <span>{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</span>
+                        {txn.cardId && (() => {
+                          const card = cards.find(c => c.id === txn.cardId)
+                          if (card) {
+                            return (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1 bg-surface-100 dark:bg-surface-800 px-1.5 rounded text-[10px] font-medium tracking-wide">
+                                  <Lucide.CreditCard className="h-3 w-3 opacity-70" />
+                                  <span className="font-mono">**** {card.lastFourDigits}</span>
+                                </span>
+                              </>
+                            )
+                          }
+                          return null
+                        })()}
+                        {txn.isRecurring && <span>• {t('dashboard.recurring')}</span>}
+                      </div>
                       {txn.isInstallment && txn.totalInstallments && txn.dueDay && txn.purchaseDate && (() => {
                         // Use _activeInstallment if provided (from month-aware query), otherwise compute from today
                         const currentInstallment = txn._activeInstallment ?? getInstallmentInfo(

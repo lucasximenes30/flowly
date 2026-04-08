@@ -26,6 +26,7 @@ export const translations = {
     'auth.hasAccount': 'Já tem conta?',
 
     // Dashboard
+    'dashboard.title': 'Dashboard',
     'dashboard.currentBalance': 'Saldo Atual',
     'dashboard.totalIncome': 'Receitas',
     'dashboard.totalExpenses': 'Despesas',
@@ -41,6 +42,7 @@ export const translations = {
     'dashboard.categoryPlaceholder': 'Selecione a categoria',
     'dashboard.datePickerLabel': 'Data',
     'dashboard.editTransaction': 'Editar Transação',
+    'dashboard.recurring': 'Recorrente',
     'transaction.saveChanges': 'Salvar Alterações',
 
     // Transaction form
@@ -140,7 +142,7 @@ export const translations = {
     'month.december': 'Dezembro',
 
     // Reports
-    'reports.title': 'Relatórios Financeiros',
+    'reports.title': 'Relatórios',
     'reports.subtitle': 'Análise mensal dos seus gastos',
     'reports.income': 'Receita',
     'reports.expenses': 'Despesas',
@@ -153,6 +155,9 @@ export const translations = {
     'reports.noExpenses': 'Nenhuma despesa neste mês',
     'reports.noData': 'Sem dados suficientes',
     'reports.backToDashboard': 'Voltar ao Dashboard',
+
+    // Cards
+    'cards.title': 'Cartões',
   },
   'en': {
     'common.signIn': 'Sign In',
@@ -172,6 +177,7 @@ export const translations = {
     'auth.creatingAccount': 'Creating account...',
     'auth.noAccount': "Don't have an account? ",
     'auth.hasAccount': 'Already have an account? ',
+    'dashboard.title': 'Dashboard',
     'dashboard.currentBalance': 'Current Balance',
     'dashboard.totalIncome': 'Total Income',
     'dashboard.totalExpenses': 'Total Expenses',
@@ -187,6 +193,7 @@ export const translations = {
     'dashboard.categoryPlaceholder': 'Select category',
     'dashboard.datePickerLabel': 'Date',
     'dashboard.editTransaction': 'Edit Transaction',
+    'dashboard.recurring': 'Recurring',
     'transaction.saveChanges': 'Save Changes',
     'transaction.title': 'Title',
     'transaction.amount': 'Amount',
@@ -276,6 +283,8 @@ export const translations = {
     'month.october': 'October',
     'month.november': 'November',
     'month.december': 'December',
+
+    'cards.title': 'Cards',
   },
 }
 

@@ -3,7 +3,10 @@ import { AppProvider } from '@/lib/i18n'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Flowly — Finanças Pessoais',
+  title: {
+    template: '%s | Flowly',
+    default: 'Flowly — Finanças Pessoais',
+  },
   description: 'Gestão financeira pessoal, de um jeito simples e bonito.',
 }
 

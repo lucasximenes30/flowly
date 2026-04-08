@@ -19,6 +19,7 @@ model User {
   monthlyReports       MonthlyReport[]
   customCategories     Category[]
   notifications        Notification[]
+  cards                Card[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -26,40 +27,58 @@ model User {
 }
 
 model Transaction {
-  id               String   @id @default(uuid())
-  title            String
+  id                String   @id @default(uuid())
+  title             String
   amount            Decimal  @db.Decimal(12, 2)
   installmentAmount Decimal? @db.Decimal(12, 2)
-  type             TransactionType
-  category         String
-  date             DateTime
-  userId           String
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  isInstallment    Boolean  @default(false)
+  type              TransactionType
+  category          String
+  date              DateTime
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isInstallment     Boolean  @default(false)
   totalInstallments Int?
-  purchaseDate     DateTime?
-  dueDay           Int?     // day of month (1–31) — used for installments
-  isRecurring      Boolean  @default(false)
-  recurringDay     Int?     // day of month (1–31) — used for recurring
-  isActive         Boolean  @default(true)
-  endDate          DateTime? // set when recurring is cancelled
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  purchaseDate      DateTime?
+  dueDay            Int?     // day of month (1-31) - used for installments
+  isRecurring       Boolean  @default(false)
+  recurringDay      Int?     // day of month (1-31) - used for recurring
+  isActive          Boolean  @default(true)
+  endDate           DateTime? // set when recurring is cancelled
+  cardId            String?  // optional link to a Card (null when card is deleted)
+  card              Card?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   @@map("transactions")
 }
 
+model Card {
+  id             String        @id @default(uuid())
+  userId         String
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String        // friendly label e.g. "Nubank", "Inter"
+  lastFourDigits String        // e.g. "9421"
+  dueDay         Int           // dia de vencimento da fatura (1-31)
+  closingDay     Int           // dia de fechamento da fatura (1-31)
+  color          String        @default("blue")
+  transactions   Transaction[]
+  createdAt      DateTime      @default(now())
+
+  @@index([userId])
+  @@map("cards")
+}
+
 model MonthlyReport {
-  id              String   @id @default(uuid())
-  userId          String
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  year            Int
-  month           Int      // 1-12
-  income          Decimal  @db.Decimal(12, 2) @default(0)
-  expense         Decimal  @db.Decimal(12, 2) @default(0)
-  transactionCount Int     @default(0)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  year             Int
+  month            Int      // 1-12
+  income           Decimal  @db.Decimal(12, 2) @default(0)
+  expense          Decimal  @db.Decimal(12, 2) @default(0)
+  transactionCount Int      @default(0)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   @@unique([userId, year, month])
   @@index([userId, year, month])

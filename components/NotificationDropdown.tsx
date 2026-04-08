@@ -13,16 +13,24 @@ interface Props {
     isInstallment?: boolean
     isRecurring?: boolean
     dueDay?: number | null
-    recurringDay?: number
+    recurringDay?: number | null
     totalInstallments?: number | null
     purchaseDate?: string | null
     isActive?: boolean
     endDate?: string | null
+    cardId?: string | null
+  }>
+  cards?: Array<{
+    id: string
+    name: string
+    lastFourDigits: string
+    dueDay: number
+    closingDay: number
   }>
   isBRL: boolean
 }
 
-export default function NotificationDropdown({ transactions, isBRL }: Props) {
+export default function NotificationDropdown({ transactions, cards = [], isBRL }: Props) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -39,9 +47,10 @@ export default function NotificationDropdown({ transactions, isBRL }: Props) {
       purchaseDate: t.purchaseDate ? new Date(t.purchaseDate) : null,
       isActive: t.isActive ?? true,
       endDate: t.endDate ? new Date(t.endDate) : null,
+      cardId: t.cardId ?? null,
     }))
-    return generateNotifications(tx)
-  }, [transactions])
+    return generateNotifications(tx, cards)
+  }, [transactions, cards])
 
   const count = notifications.length
   const lateCount = notifications.filter((n) => n.type === 'late').length

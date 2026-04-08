@@ -88,7 +88,15 @@ export function generateNotifications(
     purchaseDate: Date | null
     isActive: boolean
     endDate: Date | null
+    cardId?: string | null
   }>,
+  cards: Array<{
+    id: string
+    name: string
+    lastFourDigits: string
+    dueDay: number
+    closingDay: number
+  }> = [],
   today?: Date,
 ): Notification[] {
   const now = today ?? new Date()
@@ -130,16 +138,42 @@ export function generateNotifications(
       const type = diff > 0 && diff <= 5 ? 'upcoming' : diff === 0 ? 'today' : diff < 0 ? 'late' : null
 
       if (type) {
+        let displayTitle = tx.title
+        if (tx.cardId) {
+          const card = cards.find(c => c.id === tx.cardId)
+          if (card) {
+             displayTitle = `${tx.title} (Cartão **** ${card.lastFourDigits})`
+          }
+        }
+
         const absDays = Math.abs(diff)
         notifications.push({
           id: `installment-${tx.id}`,
-          title: tx.title,
+          title: displayTitle,
           description: getDescription(type, absDays),
           type,
           days: absDays,
           sourceTxId: tx.id,
         })
       }
+    }
+  }
+
+  // --- Card Bills (Fatura do Cartão) ---
+  for (const card of cards) {
+    const diff = getDaysDiffForDay(now, card.dueDay)
+    const type = diff > 0 && diff <= 5 ? 'upcoming' : diff === 0 ? 'today' : diff < 0 ? 'late' : null
+    
+    if (type) {
+      const absDays = Math.abs(diff)
+      notifications.push({
+        id: `cardbill-${card.id}`,
+        title: `Fatura ${card.name} (**** ${card.lastFourDigits})`,
+        description: getDescription(type, absDays),
+        type,
+        days: absDays,
+        sourceTxId: card.id,
+      })
     }
   }
 

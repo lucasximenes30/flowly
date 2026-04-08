@@ -121,7 +121,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 p-1 rounded-xl bg-surface-100 dark:bg-surface-800/50 w-fit">
+      <div className="flex gap-1 p-1 rounded-xl bg-surface-100 dark:bg-surface-800/50 w-fit ring-1 ring-surface-200 dark:ring-surface-700">
         {[
           { key: 'score' as const, label: isBRL ? 'Score' : 'Score' },
           { key: 'weekly' as const, label: isBRL ? 'Semanal' : 'Weekly' },
@@ -147,17 +147,24 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
           {/* Score Circle + Breakdown */}
           <div className="grid gap-6 sm:grid-cols-2">
             {/* Score Circle */}
-            <div className="card flex flex-col items-center justify-center py-8">
-              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
+            <div className="card relative flex flex-col items-center justify-center py-8 overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent dark:from-white/5 pointer-events-none" />
+              <h3 className="relative text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
                 {isBRL ? 'Score Financeiro' : 'Financial Score'}
               </h3>
               <div className="relative">
                 <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
+                  <defs>
+                    <filter id="scoreGlow" x="-50%" y="-50%" width="200%" height="200%">
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                    </filter>
+                  </defs>
                   <circle
                     cx="60" cy="60" r="54"
                     fill="none"
                     stroke="currentColor"
-                    className="text-surface-200 dark:text-surface-700"
+                    className="text-surface-150 dark:text-surface-750"
                     strokeWidth="8"
                   />
                   <circle
@@ -169,63 +176,98 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                     strokeDasharray={circumference}
                     strokeDashoffset={circumference - scoreProgress}
                     className="transition-all duration-1000 ease-out"
+                    style={{ filter: `drop-shadow(0 0 8px ${scoreColor}40)` }}
                   />
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-3xl font-bold" style={{ color: scoreColor }}>
+                  <span className="text-3xl font-bold drop-shadow-sm" style={{ color: scoreColor }}>
                     {score.score}
                   </span>
-                  <span className="text-xs text-surface-500">{score.label}</span>
+                  <span className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
+                    {isBRL ? score.label : (
+                      score.label === 'Excelente' ? 'Excellent' :
+                      score.label === 'Muito Bom' ? 'Very Good' :
+                      score.label === 'Bom' ? 'Good' :
+                      score.label === 'Regular' ? 'Fair' :
+                      'Needs Improvement'
+                    )}
+                  </span>
                 </div>
               </div>
-              <p className="text-xs text-surface-400 dark:text-surface-500 mt-2">
+              <p className="relative text-xs text-surface-400 dark:text-surface-500 mt-2.5 text-center">
                 {isBRL ? 'Baseado nos seus hábitos deste mês' : 'Based on your habits this month'}
               </p>
             </div>
 
             {/* Breakdown */}
-            <div className="card space-y-4">
-              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
-                {isBRL ? 'Detalhamento' : 'Breakdown'}
-              </h3>
-              {score.breakdown.map((item) => (
-                <div key={item.category}>
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="text-sm text-surface-600 dark:text-surface-400">{item.category}</span>
-                    <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-                      {item.score}/{item.max}
-                    </span>
-                  </div>
-                  <div className="h-2 rounded-full bg-surface-100 dark:bg-surface-800">
-                    <div
-                      className="h-2 rounded-full transition-all duration-500"
-                      style={{
-                        width: `${item.max > 0 ? (item.score / item.max) * 100 : 0}%`,
-                        backgroundColor: (item.score / item.max) >= 0.7 ? '#22c55e' : (item.score / item.max) >= 0.5 ? '#fbbf24' : '#f43f5e',
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
+            <div className="card relative space-y-4">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent dark:from-white/5 pointer-events-none" />
+              <div className="relative">
+                <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
+                  {isBRL ? 'Detalhamento' : 'Breakdown'}
+                </h3>
+                {score.breakdown.map((item, i) => {
+                  const pct = item.max > 0 ? (item.score / item.max) : 0
+                  const barColor = pct >= 0.7 ? '#22c55e' : pct >= 0.5 ? '#fbbf24' : '#f43f5e'
+                  return (
+                    <div key={item.category} className="animate-fade-in" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'forwards', opacity: 0 }}>
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-sm text-surface-600 dark:text-surface-400">
+                          {isBRL ? item.category : (
+                            item.category === 'Poupança' ? 'Savings' :
+                            item.category === 'Diversificação' ? 'Diversification' :
+                            item.category === 'Consistência' ? 'Consistency' :
+                            'Control'
+                          )}
+                        </span>
+                        <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                          {item.score}/{item.max}
+                        </span>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-surface-100 dark:bg-surface-800 overflow-hidden ring-1 ring-inset ring-surface-200 dark:ring-surface-700">
+                        <div
+                          className="h-1.5 rounded-full transition-all duration-700 ease-out"
+                          style={{
+                            width: `${pct * 100}%`,
+                            backgroundColor: barColor,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
           {/* Recommendations */}
           {score.recommendations.length > 0 && (
-            <div className="card bg-gradient-to-br from-violet-50 to-violet-100/50 dark:from-violet-900/20 dark:to-violet-800/10 border border-violet-200/50 dark:border-violet-800/30">
-              <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-3">
-                {isBRL ? 'Recomendações' : 'Recommendations'}
-              </h3>
-              <ul className="space-y-2">
-                {score.recommendations.map((rec, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <svg className="w-4 h-4 text-violet-500 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div className="card relative overflow-hidden bg-gradient-to-br from-violet-50/90 to-violet-100/40 dark:from-violet-900/25 dark:to-violet-800/15 border-violet-200/60 dark:border-violet-800/40 transition-all duration-200 hover:shadow-md">
+              <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent dark:from-white/5 pointer-events-none" />
+              <div className="relative">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-800/40 flex items-center justify-center ring-1 ring-violet-200 dark:ring-violet-700/50">
+                    <svg className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
-                    <span className="text-sm text-violet-700 dark:text-violet-300">{rec}</span>
-                  </li>
-                ))}
-              </ul>
+                  </div>
+                  <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+                    {isBRL ? 'Recomendações' : 'Recommendations'}
+                  </h3>
+                </div>
+                <ul className="space-y-2.5">
+                  {score.recommendations.map((rec, i) => (
+                    <li key={i} className="flex items-start gap-2.5 group">
+                      <svg className="w-4 h-4 text-violet-500 mt-0.5 shrink-0 transition-transform group-hover:scale-110" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm leading-relaxed text-violet-700 dark:text-violet-300">
+                        {rec}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
           )}
         </div>
@@ -242,14 +284,14 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
         ) : (
           <div className="space-y-6">
             {/* Weekly Trend Chart */}
-            <div className="card">
+            <div className="card relative overflow-hidden transition-all duration-200">
               <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
                 {isBRL ? 'Tendência Semanal' : 'Weekly Trend'}
               </h3>
-              <div style={{ width: '100%', height: 300 }}>
+              <div style={{ width: '100%', height: 300 }} className="opacity-100 animate-fade-in">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={weeklyChartData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isBRL ? '#282a32' : '#e2e5ed'} />
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-surface-200 dark:text-surface-700/60" />
                     <XAxis
                       dataKey="week"
                       tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
@@ -264,14 +306,16 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}
                     />
                     <RechartsTooltip
-                      formatter={(value) => formatCurrency(Number(value))}
+                      formatter={(value, name) => [formatCurrency(Number(value)), name === 'income' ? (isBRL ? 'Receita' : 'Income') : (isBRL ? 'Despesa' : 'Expense')]}
                       contentStyle={{
                         backgroundColor: isBRL ? '#16171d' : '#fff',
                         border: 'none',
                         borderRadius: '12px',
                         color: isBRL ? '#f1f3f7' : '#16171d',
                         fontSize: '13px',
+                        boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
                       }}
+                      wrapperStyle={{ outline: 'none' }}
                     />
                     <Legend
                       formatter={(value: string) => value === 'income' ? (isBRL ? 'Receita' : 'Income') : isBRL ? 'Despesa' : 'Expense'}
@@ -287,43 +331,50 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
             {/* Weekly Cards */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {weekly.slice(-6).map((w, i) => (
-                <div key={w.week} className="card p-4">
-                  <p className="text-xs text-surface-400 dark:text-surface-500 mb-3">{w.week.slice(5)}</p>
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between">
-                      <span className="text-xs text-emerald-600 dark:text-emerald-400">
-                        {isBRL ? 'Receita' : 'Income'}
-                      </span>
-                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                        {formatCurrency(w.income)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-xs text-rose-600 dark:text-rose-400">
-                        {isBRL ? 'Despesa' : 'Expense'}
-                      </span>
-                      <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-                        {formatCurrency(w.expense)}
-                      </span>
-                    </div>
-                    <div className="border-t border-surface-100 dark:border-surface-800 pt-1.5 flex justify-between">
-                      <span className={`text-xs font-medium ${w.balance >= 0 ? 'text-surface-600 dark:text-surface-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {isBRL ? 'Saldo' : 'Balance'}
-                      </span>
-                      <span className={`text-xs font-bold ${w.balance >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {formatCurrency(w.balance)}
-                      </span>
-                    </div>
-                    {w.topCategory && (
-                      <div className="flex justify-between pt-1">
-                        <span className="text-xs text-surface-400 dark:text-surface-500">
-                          {isBRL ? 'Top' : 'Top'}
-                        </span>
+                <div
+                  key={w.week}
+                  className="card p-4 relative overflow-hidden transition-all duration-200 hover:shadow-card-hover group"
+                  style={{ animationDelay: `${(i + 1) * 80}ms` }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent dark:from-white/5 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <p className="text-xs text-surface-400 dark:text-surface-500 mb-3 font-medium">{w.week.slice(5)}</p>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
                         <span className="text-xs text-surface-500 dark:text-surface-400">
-                          {w.topCategory}
+                          {isBRL ? 'Receita' : 'Income'}
+                        </span>
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(w.income)}
                         </span>
                       </div>
-                    )}
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-surface-500 dark:text-surface-400">
+                          {isBRL ? 'Despesa' : 'Expense'}
+                        </span>
+                        <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
+                          {formatCurrency(w.expense)}
+                        </span>
+                      </div>
+                      <div className="border-t border-surface-150 dark:border-surface-700/60 pt-2 flex justify-between items-center">
+                        <span className={`text-xs font-medium ${w.balance >= 0 ? 'text-surface-600 dark:text-surface-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {isBRL ? 'Saldo' : 'Balance'}
+                        </span>
+                        <span className={`text-xs font-bold ${w.balance >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                          {formatCurrency(w.balance)}
+                        </span>
+                      </div>
+                      {w.topCategory && (
+                        <div className="flex justify-between items-center pt-0.5">
+                          <span className="text-xs text-surface-400 dark:text-surface-500">
+                            {isBRL ? 'Principal' : 'Main'}
+                          </span>
+                          <span className="text-xs text-surface-500 dark:text-surface-400 truncate max-w-[120px]">
+                            {t(`category.${w.topCategory}`) ?? w.topCategory}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -380,7 +431,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                         {a.title}
                       </p>
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                        {a.category} · {new Date(a.date).toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short' })}
+                        {t(`category.${a.category}`) ?? a.category} · {new Date(a.date).toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short' })}
                       </p>
                     </div>
                     <div className="text-right shrink-0">

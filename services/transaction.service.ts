@@ -17,6 +17,7 @@ export interface CreateTransactionInput {
   dueDay?: number
   isRecurring?: boolean
   recurringDay?: number
+  cardId?: string | null
 }
 
 export interface UpdateTransactionInput {
@@ -54,6 +55,7 @@ export async function createTransaction(input: CreateTransactionInput) {
       ...(input.dueDay !== undefined && { dueDay: input.dueDay }),
       ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
       ...(input.recurringDay !== undefined && { recurringDay: input.recurringDay }),
+      ...(input.cardId !== undefined && { cardId: input.cardId ?? null }),
     },
   })
 }
@@ -373,7 +375,9 @@ export async function getMonthComparison(userId: string, refYear: number, refMon
   }
 }
 
-// 🆕 Get available months — includes all months where any installment is active or recurring exists
+// 🆕 Get available months — scoped strictly to the authenticated user's data.
+// Only expands recurring months if the user actually has recurring transactions.
+// Always includes current month as minimum (for new users with no data).
 export async function getAvailableMonths(userId: string) {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
@@ -383,16 +387,26 @@ export async function getAvailableMonths(userId: string) {
 
   const months = new Set<string>()
 
-  // Add months from non-installment, non-recurring transactions
+  // Always include current month so new users always see at least one option
+  const now = new Date()
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  months.add(currentYM)
+
+  // If user has no transactions at all, return only current month
+  if (transactions.length === 0) {
+    return [currentYM]
+  }
+
+  // Add months from regular (non-installment, non-recurring) transactions
   transactions.forEach((t) => {
-    const year = t.date.getFullYear()
-    const month = t.date.getMonth() + 1
     if (!t.isInstallment && !t.isRecurring) {
+      const year = t.date.getFullYear()
+      const month = t.date.getMonth() + 1
       months.add(`${year}-${String(month).padStart(2, '0')}`)
     }
   })
 
-  // Expand installment transactions to include all months they cover
+  // Expand installment transactions to cover all months in their timeline
   for (const t of transactions) {
     if (t.isInstallment && t.totalInstallments && t.purchaseDate) {
       const pd = new Date(t.purchaseDate)
@@ -408,11 +422,14 @@ export async function getAvailableMonths(userId: string) {
     }
   }
 
-  // Add the last 6 months for recurring transactions
-  const now = new Date()
-  for (let i = 0; i < 6; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  // Only add the rolling 6-month window if this user actually has recurring transactions.
+  // This prevents new users or non-recurring users from seeing months they have no data for.
+  const hasRecurring = transactions.some((t) => t.isRecurring)
+  if (hasRecurring) {
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.add(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+    }
   }
 
   return Array.from(months).sort().reverse()

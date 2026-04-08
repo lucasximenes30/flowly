@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { createTransaction, getTransactionsByUser, getUserBalance, getMonthlySummary } from '@/services/transaction.service'
+import { verifyCardOwnership } from '@/services/card.service'
 
 
 const createSchema = z.object({
@@ -16,6 +17,7 @@ const createSchema = z.object({
   dueDay: z.number().int().min(1).max(31).optional().nullable(),
   isRecurring: z.boolean().optional(),
   recurringDay: z.number().int().min(1).max(31).optional().nullable(),
+  cardId: z.string().uuid().optional().nullable(),
 })
 
 export async function GET() {
@@ -38,7 +40,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = createSchema.parse(body)
-    const { isInstallment, totalInstallments, purchaseDate, dueDay, isRecurring, recurringDay, ...rest } = data
+    const { isInstallment, totalInstallments, purchaseDate, dueDay, isRecurring, recurringDay, cardId, ...rest } = data
+
+    // Security: verify the cardId belongs to this user before saving
+    if (cardId) {
+      const owned = await verifyCardOwnership(cardId, session.userId)
+      if (!owned) {
+        return NextResponse.json({ success: false, error: 'Card not found' }, { status: 403 })
+      }
+    }
 
     const transaction = await createTransaction({
       ...rest,
@@ -49,6 +59,7 @@ export async function POST(request: NextRequest) {
       ...(dueDay && { dueDay }),
       ...(isRecurring !== undefined && { isRecurring }),
       ...(recurringDay && { recurringDay }),
+      cardId: cardId ?? null,
     })
     return NextResponse.json({ success: true, transaction })
   } catch (error: any) {
