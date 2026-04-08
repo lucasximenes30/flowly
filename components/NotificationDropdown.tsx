@@ -92,7 +92,7 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 z-[60] mt-2 w-80 origin-top-right rounded-2xl border border-surface-200 bg-white shadow-xl dark:border-surface-700/60 dark:bg-surface-900 transition-all duration-200 animate-in fade-in zoom-in-95">
+        <div className="absolute right-0 z-[60] mt-2 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-surface-200 bg-white shadow-xl dark:border-surface-700/60 dark:bg-surface-900 transition-all duration-200 animate-in fade-in zoom-in-95">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-surface-100 px-4 py-3 dark:border-surface-700/60">
             <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-200">

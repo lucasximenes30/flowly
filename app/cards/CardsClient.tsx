@@ -188,7 +188,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 flex flex-col transition-colors duration-300 reports-page-enter">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-4">
             <button
               onClick={() => router.push('/dashboard')}
@@ -199,7 +199,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
             <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-surface-500 dark:text-surface-400">
+            <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
               {isBRL ? `Olá` : `Hi`}, {session.name}
             </span>
 
@@ -213,7 +213,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl w-full flex-1 p-6 space-y-6">
+      <main className="mx-auto max-w-6xl w-full flex-1 px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         
         {/* Error message */}
         {error && (

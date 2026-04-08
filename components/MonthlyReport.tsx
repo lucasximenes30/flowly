@@ -115,14 +115,14 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
     <div className="space-y-6">
       {/* Month Selector */}
       <div className="card">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
             {t('monthly.selectMonth')}
           </label>
           <select
             value={selectedYearMonth}
             onChange={(e) => setSelectedYearMonth(e.target.value)}
-            className="input-field w-50 py-2 transition-all duration-200 focus:ring-brand-500/30"
+            className="input-field w-full sm:w-50 py-2 transition-all duration-200 focus:ring-brand-500/30"
             disabled={loading}
           >
             {availableMonths.map((ym) => (
@@ -237,7 +237,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-5">
                 {t('monthly.comparison')}
               </p>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 {/* Income Change */}
                 <div className="group flex items-start gap-3 p-3.5 rounded-xl bg-white/60 dark:bg-surface-900/40 transition-all duration-200 hover:bg-white/80 dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
                   <div className="mt-0.5 shrink-0">{getComparisonIcon(comparison.comparison.incomeChange)}</div>
