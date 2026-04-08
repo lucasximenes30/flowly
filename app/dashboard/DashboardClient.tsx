@@ -1,24 +1,34 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
-import ThemeToggle from '@/components/ThemeToggle'
-import LanguageToggle from '@/components/LanguageToggle'
 import MonthlyReport from '@/components/MonthlyReport'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import CategorySelect from '@/components/CategorySelect'
-import ManageCategoriesModal from '@/components/ManageCategoriesModal'
+import SettingsPanel from '@/components/SettingsPanel'
+import NotificationDropdown from '@/components/NotificationDropdown'
+import * as Lucide from 'lucide-react'
+import { getInstallmentInfo, formatShortDate, isInstallmentActiveInMonth, getInstallmentForMonth } from '@/lib/installments'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; type: 'INCOME' | 'EXPENSE'; category: string; date: string }
+interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string; cardId?: string }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
+interface Card { id: string; name: string; lastFourDigits: string; dueDay: number; closingDay: number }
 
 // Cache de taxa de câmbio (atualiza a cada 5 min)
 const cacheKey = 'flowly_exchange_rate'
 const cacheTimeKey = 'flowly_exchange_rate_time'
 let cachedRate: { value: number; time: number } | null = null
+
+interface Props {
+  session: Session
+  transactions: Transaction[]
+  balance: Balance
+  monthly: Monthly
+  cards?: Card[]
+}
 
 async function getExchangeRate(): Promise<number> {
   if (cachedRate && Date.now() - cachedRate.time < 5 * 60 * 1000) {
@@ -37,15 +47,17 @@ async function getExchangeRate(): Promise<number> {
 }
 
 export default function DashboardClient({
-  session, transactions, balance, monthly,
-}: {
-  session: Session
-  transactions: Transaction[]
-  balance: Balance
-  monthly: Monthly
-}) {
+  session, transactions, balance, monthly, cards = [],
+}: Props) {
   const router = useRouter()
   const { t, locale } = useApp()
+
+  // Loading animation
+  const [isLoading, setIsLoading] = useState(true)
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Exchange rate
   const [rate, setRate] = useState<number>(5.5)
@@ -78,7 +90,7 @@ export default function DashboardClient({
     if (isBRL) return null
     const convertedBRL = value
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(convertedBRL)
-  }, [isBRL])
+  }, [isBRL, rate])
 
   const formatDate = (dateStr: string) => {
     const loc = isBRL ? 'pt-BR' : 'en-US'
@@ -117,6 +129,7 @@ export default function DashboardClient({
 
   // Add transaction
   const [showForm, setShowForm] = useState(false)
+  const formRef = useRef<HTMLDivElement>(null)
   const [showSettings, setShowSettings] = useState(false)
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
@@ -125,6 +138,41 @@ export default function DashboardClient({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
+
+  // Installment fields
+  const [isInstallment, setIsInstallment] = useState(false)
+  const [totalInstallments, setTotalInstallments] = useState('')
+  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
+  const [dueDay, setDueDay] = useState('')
+
+  // Card fields
+  const [paymentMethod, setPaymentMethod] = useState<'none' | 'credit_card'>('none')
+  const [selectedCardId, setSelectedCardId] = useState<string>('')
+
+  // Update logic: if user chooses card, auto-fill dueDay if we're in installment
+  // We'll run a useEffect to auto-fill dueDay when selectedCardId and isInstallment changes
+  useEffect(() => {
+    if (isInstallment && paymentMethod === 'credit_card' && selectedCardId) {
+      const card = cards.find(c => c.id === selectedCardId)
+      if (card && card.dueDay) {
+         setDueDay(card.dueDay.toString())
+      }
+    }
+  }, [selectedCardId, isInstallment, paymentMethod, cards])
+
+  // Recurring fields
+  const [isRecurring, setIsRecurring] = useState(false)
+  const [recurringDay, setRecurringDay] = useState('')
+
+  // Mutual exclusion: can't be both installment and recurring
+  const toggleInstallment = (value: boolean) => {
+    setIsInstallment(value)
+    if (value) setIsRecurring(false)
+  }
+  const toggleRecurring = (value: boolean) => {
+    setIsRecurring(value)
+    if (value) setIsInstallment(false)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -135,7 +183,20 @@ export default function DashboardClient({
       const res = await fetch('/api/transactions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title, amount: parseFloat(amount), type, category: category.trim() || 'General', date }),
+        body: JSON.stringify({
+          title,
+          amount: parseFloat(amount),
+          type,
+          category: category.trim() || 'General',
+          date,
+          isInstallment,
+          totalInstallments: isInstallment ? parseInt(totalInstallments) : null,
+          purchaseDate: isInstallment ? purchaseDate : null,
+          dueDay: isInstallment ? parseInt(dueDay) : null,
+          isRecurring,
+          recurringDay: isRecurring ? parseInt(recurringDay) : null,
+          cardId: paymentMethod === 'credit_card' && selectedCardId ? selectedCardId : null,
+        }),
       })
 
       if (!res.ok) {
@@ -146,6 +207,9 @@ export default function DashboardClient({
 
       setTitle(''); setAmount(''); setCategory('')
       setDate(new Date().toISOString().split('T')[0])
+      setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay('')
+      setIsRecurring(false); setRecurringDay('')
+      setPaymentMethod('none'); setSelectedCardId('')
       setShowForm(false)
       router.refresh()
     } catch {
@@ -155,65 +219,194 @@ export default function DashboardClient({
     }
   }
 
-  // Change password
-  const [currentPassword, setCurrentPassword] = useState('')
-  const [newPassword, setNewPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [isChangingPassword, setIsChangingPassword] = useState(false)
-  const [passwordMessage, setPasswordMessage] = useState('')
+  // Profile name display only
+  const [profileName, setProfileName] = useState(session.name)
 
-  // Manage categories
-  const [showManageCategories, setShowManageCategories] = useState(false)
-  const [categoriesVersion, setCategoriesVersion] = useState(0)
+  // Month filter for transaction history
+  const now = new Date()
+  const currentYM = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const [selectedMonth, setSelectedMonth] = useState(currentYM)
+  const [sortDesc, setSortDesc] = useState(true) // true = most recent first
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPasswordMessage('')
-
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage(t('settings.passwordMismatch'))
-      return
+  // Update Document Title Dynamically
+  useEffect(() => {
+    if (selectedMonth) {
+      const [year, monthStr] = selectedMonth.split('-')
+      const monthNames = [
+        t('month.january'), t('month.february'), t('month.march'), t('month.april'),
+        t('month.may'), t('month.june'), t('month.july'), t('month.august'),
+        t('month.september'), t('month.october'), t('month.november'), t('month.december')
+      ]
+      const monthName = monthNames[parseInt(monthStr) - 1]
+      document.title = `${monthName} ${year} | ${t('dashboard.title')} | Flowly`
+    } else {
+      document.title = `${t('dashboard.title')} | Flowly`
     }
-    if (newPassword === currentPassword) {
-      setPasswordMessage(t('settings.passwordSame'))
-      return
-    }
+  }, [selectedMonth, t])
 
-    setIsChangingPassword(true)
-    try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword }),
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        setPasswordMessage(data.error ?? 'Erro ao alterar senha')
-        return
+  // Filter transactions for selected month
+  const filteredMonthTransactions = useMemo(() => {
+    if (transactions.length === 0) return []
+    const [yStr, mStr] = selectedMonth.split('-')
+    const year = parseInt(yStr)
+    const month = parseInt(mStr)
+
+    return transactions.filter((txn) => {
+      // Normal transactions — date must be within month
+      if (!txn.isInstallment && !txn.isRecurring) {
+        const d = new Date(txn.date)
+        return d.getFullYear() === year && d.getMonth() + 1 === month
       }
-      setPasswordMessage(t('settings.passwordUpdated'))
-      setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
+
+      // Installment — show if active in this month
+      if (txn.isInstallment && txn.totalInstallments && txn.purchaseDate) {
+        return isInstallmentActiveInMonth(new Date(txn.purchaseDate), txn.totalInstallments, year, month)
+      }
+
+      // Recurring — show if isActive and endDate hasn't passed this month
+      if (txn.isRecurring) {
+        if (!txn.isActive) return false
+        if (txn.endDate) {
+          const end = new Date(txn.endDate)
+          return end.getFullYear() > year || (end.getFullYear() === year && end.getMonth() + 1 >= month)
+        }
+        return true
+      }
+
+      return false
+    }).sort((a, b) => {
+      const dateA = a.isRecurring ? now : new Date(a.date)
+      const dateB = b.isRecurring ? now : new Date(b.date)
+      return sortDesc ? dateB.getTime() - dateA.getTime() : dateA.getTime() - dateB.getTime()
+    }).map((txn) => {
+      // Inject _activeInstallment for the selected month
+      if (txn.isInstallment && txn.totalInstallments && txn.purchaseDate) {
+        return {
+          ...txn,
+          _activeInstallment: getInstallmentForMonth(new Date(txn.purchaseDate), txn.totalInstallments, year, month),
+        }
+      }
+      return txn
+    })
+  }, [transactions, selectedMonth, sortDesc])
+
+  // Get last 6 months for selector
+  const monthOptions = useMemo(() => {
+    const opts: { value: string; label: string }[] = []
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = (() => {
+        const monthName = d.toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { month: 'long' })
+        const year = d.getFullYear()
+        return `${monthName} de ${year}`
+      })()
+      opts.push({ value: ym, label })
+    }
+    return opts
+  }, [isBRL])
+
+  // Cancel recurring
+  const [cancelRecurringId, setCancelRecurringId] = useState<string | null>(null)
+  const [cancelRecurringMessage, setCancelRecurringMessage] = useState('')
+  const [isCancellingRecurring, setIsCancellingRecurring] = useState(false)
+  const [cancelRecurringModalOpen, setCancelRecurringModalOpen] = useState(false)
+
+  const handleCancelRecurring = async (id: string) => {
+    setIsCancellingRecurring(true)
+    try {
+      const res = await fetch(`/api/transactions/${id}/cancel-recurring`, { method: 'POST' })
+      const data = await res.json()
+      setCancelRecurringMessage(data.message ?? '')
+      if (res.ok) {
+        setCancelRecurringId(null)
+        setCancelRecurringModalOpen(false)
+        router.refresh()
+      }
     } catch {
-      setPasswordMessage('Erro de rede')
+      setCancelRecurringMessage(isBRL ? 'Erro de rede' : 'Network error')
     } finally {
-      setIsChangingPassword(false)
+      setIsCancellingRecurring(false)
     }
   }
+
+  // Confirmation modals
+  const [showDeleteConfirm1, setShowDeleteConfirm1] = useState(false)
+  const [showDeleteConfirm2, setShowDeleteConfirm2] = useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
+  const [deleteMessage, setDeleteMessage] = useState('')
+
+  // Manage categories - handled inside SettingsPanel
+
+  // Listen for delete account trigger from SettingsPanel
+  useEffect(() => {
+    const handler = () => setShowDeleteConfirm1(true)
+    window.addEventListener('flowly:deleteAccount', handler)
+    return () => window.removeEventListener('flowly:deleteAccount', handler)
+  }, [])
+
+  // Listen for name updates from SettingsPanel
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const name = (e as CustomEvent<string>).detail
+      setProfileName(name)
+    }
+    window.addEventListener('flowly:nameUpdated', handler)
+    return () => window.removeEventListener('flowly:nameUpdated', handler)
+  }, [])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
   }
 
+  // Delete account
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.trim() !== 'EXCLUIR' && deleteConfirmText.trim() !== 'DELETE') {
+      setDeleteMessage(isBRL ? 'Digite EXCLUIR para confirmar' : 'Type DELETE to confirm')
+      return
+    }
+    setIsDeletingAccount(true)
+    try {
+      const res = await fetch('/api/auth/delete-account', { method: 'DELETE' })
+      if (!res.ok) {
+        const data = await res.json()
+        setDeleteMessage(data.error ?? 'Erro ao excluir conta')
+        return
+      }
+      setDeleteMessage(t('settings.accountDeleted'))
+      setTimeout(() => router.push('/login'), 1000)
+    } catch {
+      setDeleteMessage('Erro de rede')
+    } finally {
+      setIsDeletingAccount(false)
+    }
+  }
+
+  // ── Loading screen ──
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400" />
+          <p className="text-sm font-medium text-surface-500 dark:text-surface-400">
+            {isBRL ? 'Carregando...' : 'Loading...'}
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
+    <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 animate-dashboard-fade">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
           <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
           <div className="flex items-center gap-3">
             <span className="text-sm text-surface-500 dark:text-surface-400">
-              {isBRL ? `Olá` : `Hi`}, {session.name}
+              {isBRL ? `Olá` : `Hi`}, {profileName}
             </span>
 
             {/* Settings button */}
@@ -228,6 +421,9 @@ export default function DashboardClient({
               </svg>
             </button>
 
+            {/* Notification bell */}
+            <NotificationDropdown transactions={transactions} cards={cards} isBRL={isBRL} />
+
             <button onClick={handleLogout} className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors">
               {t('common.signOut')}
             </button>
@@ -237,75 +433,65 @@ export default function DashboardClient({
 
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         {/* Balance Card */}
-        <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white shadow-lg dark:shadow-brand-700/20">
-          <div className="flex items-start justify-between gap-6">
-            <div className="space-y-1">
-              <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
-              <div className="flex items-baseline gap-3">
-                <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
-                {!isBRL && (
-                  <span className="text-sm font-medium text-white/50">
-                    ≈ {formatConverted(balance.balance)}
-                  </span>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => router.push('/reports')}
-              className="shrink-0 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98]"
-            >
-              {isBRL ? 'Ver relatórios' : 'View reports'}
-            </button>
-          </div>
-          <div className="mt-6 flex gap-8">
-            <div className="space-y-0.5">
-              <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
-              <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
-            </div>
-            <div className="space-y-0.5">
-              <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalExpenses')}</p>
-              <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.expense)}</p>
-            </div>
-            {!isBRL && !rateLoading && (
-              <div className="ml-auto text-right">
-                <p className="text-xs/5 font-medium text-white/40">1 USD = R$ {rate.toFixed(2)}</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <div className="rounded-2xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-10 text-white shadow-lg dark:shadow-brand-700/20 border border-white/20 relative overflow-hidden">
+          {/* Subtle inner glow for premium effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
-        {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <div className="card">
-            <div className="space-y-1">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">
-                {t('dashboard.thisMonth')}
-                {!isBRL && (
-                  <span className="ml-1 font-normal text-surface-400 lowercase">
-                    (≈ {formatConverted(monthly.balance)})
-                  </span>
-                )}
-              </p>
-              <p className="text-2xl font-semibold text-surface-900 dark:text-surface-100">{formatCurrency(monthly.balance)}</p>
-              <p className="text-xs text-surface-400 dark:text-surface-500">{monthly.transactionCount} {isBRL ? 'transações' : 'transactions'}</p>
+          <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8">
+            {/* LEFT SECTION */}
+            <div className="flex-1">
+              <div className="space-y-1">
+                <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
+                <div className="flex items-baseline gap-3">
+                  <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
+                  {!isBRL && (
+                    <span className="text-sm font-medium text-white/50">
+                      ≈ {formatConverted(balance.balance)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="mt-6 flex gap-6 md:gap-8">
+                <div className="space-y-0.5">
+                  <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
+                  <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalExpenses')}</p>
+                  <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.expense)}</p>
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="card">
-            <div className="space-y-1">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">{t('dashboard.monthlyIncome')}</p>
-              <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">+{formatCurrency(monthly.income)}</p>
-            </div>
-          </div>
-          <div className="card">
-            <div className="space-y-1">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider">{t('dashboard.monthlyExpenses')}</p>
-              <p className="text-2xl font-semibold text-rose-600 dark:text-rose-400">-{formatCurrency(monthly.expense)}</p>
+
+            {/* RIGHT SECTION - Buttons */}
+            <div className="w-full md:w-auto flex flex-row md:flex-col gap-3">
+              <button
+                onClick={() => router.push('/cards')}
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm border border-white/10 transition-all duration-250 hover:bg-white/22 hover:scale-[1.025] hover:border-white/20 hover:shadow-lg hover:shadow-black/12 active:scale-[0.975]"
+              >
+                {isBRL ? 'Cartões' : 'Cards'}
+              </button>
+              <button
+                onClick={() => router.push('/reports')}
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm border border-white/10 transition-all duration-250 hover:bg-white/22 hover:scale-[1.025] hover:border-white/20 hover:shadow-lg hover:shadow-black/12 active:scale-[0.975]"
+              >
+                {isBRL ? 'Ver relatórios' : 'View reports'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowForm((prev) => !prev)
+                  setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+                }}
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur border border-white/10 transition-all duration-300 hover:bg-white/25 hover:scale-[1.02] hover:border-white/20 hover:shadow-lg active:scale-[0.98]"
+              >
+                {showForm ? (isBRL ? 'Cancelar' : 'Cancel') : (isBRL ? 'Nova Transação' : 'New Transaction')}
+              </button>
             </div>
           </div>
         </div>
 
         {/* Monthly Report Section */}
-        <MonthlyReport 
+        <MonthlyReport
           formatCurrency={formatCurrency}
           formatConverted={formatConverted}
         />
@@ -313,68 +499,288 @@ export default function DashboardClient({
         {/* Exchange rate notice (EN only) */}
         {!isBRL && rateLoading && (
           <div className="card bg-amber-50 border-amber-200 dark:bg-amber-900/10 dark:border-amber-800/40 py-3">
-            <p className="text-xs text-amber-700 dark:text-amber-400">{isBRL ? 'Carregando taxa de câmbio...' : 'Loading exchange rate...'}</p>
+            <p className="text-sm text-amber-700 dark:text-amber-400">{isBRL ? 'Carregando taxa de câmbio...' : 'Loading exchange rate...'}</p>
           </div>
         )}
 
         {/* Transactions Section */}
         <div className="card">
-          <div className="mb-5 flex items-center justify-between">
-            <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100">{t('dashboard.recentTransactions')}</h2>
-            <button onClick={() => setShowForm(!showForm)} className="btn-primary text-xs px-4 py-2">
-              {showForm ? t('common.cancel') : t('dashboard.addTransaction')}
-            </button>
+          <div className="mb-5">
+            <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+              {isBRL ? 'Transações' : 'Transactions'}
+            </h2>
           </div>
 
           {/* Add Transaction Form */}
           {showForm && (
-            <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-5 dark:bg-surface-800/50 dark:border-surface-700/60">
+            <div ref={formRef}>
+            <form onSubmit={handleSubmit} className="mb-6 rounded-xl border border-surface-200 bg-surface-50 p-5 dark:bg-surface-800/50 dark:border-surface-700/60 transition-all duration-500">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.title')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.title')}</label>
                   <input type="text" required className="input-field" placeholder={t('transaction.titlePlaceholder')} value={title} onChange={(e) => setTitle(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.amount')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.amount')}</label>
                   <input type="number" required min="0.01" step="0.01" className="input-field" placeholder="0,00" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.type')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.type')}</label>
                   <select value={type} onChange={(e) => setType(e.target.value as 'INCOME' | 'EXPENSE')} className="input-field">
                     <option value="EXPENSE">{t('dashboard.expense')}</option>
                     <option value="INCOME">{t('dashboard.income')}</option>
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.category')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.category')}</label>
                   <CategorySelect value={category} onChange={setCategory} type={type} />
                 </div>
                 <div className="space-y-1.5 sm:col-span-2">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">{t('transaction.date')}</label>
+                  <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">{t('transaction.date')}</label>
                   <input type="date" required className="input-field" value={date} onChange={(e) => setDate(e.target.value)} />
                 </div>
+                {/* Installment toggle */}
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsInstallment(!isInstallment)}
+                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
+                      isInstallment
+                        ? 'border-brand-300 bg-brand-50 dark:border-brand-700/50 dark:bg-brand-900/20'
+                        : 'border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lucide.ReceiptText className={`w-4 h-4 ${isInstallment ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400'}`} />
+                      <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                        {isBRL ? 'É parcelado?' : 'Installment?'}
+                      </span>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
+                      isInstallment ? 'bg-brand-600 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start'
+                    }`}>
+                      <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm transition-transform" />
+                    </div>
+                  </button>
+                </div>
+                {/* Installment fields */}
+                {isInstallment && (
+                  <>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
+                        {isBRL ? 'Quantas parcelas?' : 'How many installments?'}
+                      </label>
+                      <input
+                        type="number"
+                        min="2"
+                        max="48"
+                        className="input-field"
+                        placeholder="12"
+                        value={totalInstallments}
+                        onChange={(e) => setTotalInstallments(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
+                        {isBRL ? 'Dia do vencimento' : 'Payment day'}
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        className="input-field"
+                        placeholder="12"
+                        value={dueDay}
+                        onChange={(e) => setDueDay(e.target.value)}
+                      />
+                      <p className="text-xs text-surface-400 mt-1">
+                        {isBRL ? 'Ex: Se paga dia 12 todo mês, selecione 12' : 'e.g., if you pay on the 12th every month, select 12'}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
+                        {isBRL ? 'Data da compra' : 'Purchase date'}
+                      </label>
+                      <input
+                        type="date"
+                        className="input-field"
+                        value={purchaseDate}
+                        onChange={(e) => setPurchaseDate(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Recurring toggle */}
+                <div className="sm:col-span-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleRecurring(!isRecurring)}
+                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
+                      isRecurring
+                        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700/50 dark:bg-emerald-900/20'
+                        : 'border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lucide.Repeat className={`w-4 h-4 ${isRecurring ? 'text-emerald-600 dark:emerald-400' : 'text-surface-400'}`} />
+                      <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                        {isBRL ? 'Pagamento recorrente?' : 'Recurring payment?'}
+                      </span>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
+                      isRecurring ? 'bg-emerald-600 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start'
+                    }`}>
+                      <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm" />
+                    </div>
+                  </button>
+                </div>
+
+                <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                      {isBRL ? 'Forma de pagamento' : 'Payment Method'}
+                    </label>
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => {
+                        const val = e.target.value as 'none' | 'credit_card'
+                        setPaymentMethod(val)
+                        if (val === 'credit_card' && cards.length > 0) {
+                          setSelectedCardId(cards[0].id)
+                        } else {
+                          setSelectedCardId('')
+                        }
+                      }}
+                      className="input-field"
+                    >
+                      <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
+                      <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
+                    </select>
+                  </div>
+
+                  {paymentMethod === 'credit_card' && (
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                        {isBRL ? 'Cartão' : 'Card'}
+                      </label>
+                      {cards.length === 0 ? (
+                        <div className="flex h-10 items-center justify-between rounded-xl border border-dashed border-surface-300 px-3 text-sm dark:border-surface-700">
+                          <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
+                          <button type="button" onClick={() => router.push('/cards')} className="text-brand-500 hover:text-brand-600 font-medium">
+                            {isBRL ? 'Adicionar' : 'Add'}
+                          </button>
+                        </div>
+                      ) : (
+                        <select
+                          value={selectedCardId}
+                          onChange={(e) => setSelectedCardId(e.target.value)}
+                          className="input-field"
+                        >
+                          {cards.map(c => (
+                            <option key={c.id} value={c.id}>
+                              **** {c.lastFourDigits} — {c.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recurring fields */}
+                {isRecurring && (
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
+                      {isBRL ? 'Dia da recorrência' : 'Recurring day'}
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="31"
+                      className="input-field"
+                      placeholder="10"
+                      value={recurringDay}
+                      onChange={(e) => setRecurringDay(e.target.value)}
+                    />
+                    <p className="text-xs text-surface-400 mt-1">
+                      {isBRL
+                        ? 'Ex: Se esse pagamento acontece todo dia 10, selecione 10'
+                        : 'e.g., if this payment happens every day 10, select 10'}
+                    </p>
+                  </div>
+                )}
               </div>
               {formError && <p className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{formError}</p>}
-              <div className="mt-4 flex justify-end">
+              <div className="mt-4 flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(new Date().toISOString().split('T')[0]); setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay(''); }}
+                  className="btn-secondary"
+                  disabled={submitting}
+                >
+                  {t('common.cancel')}
+                </button>
                 <button type="submit" disabled={submitting} className="btn-primary">
                   {submitting ? t('transaction.saving') : t('transaction.save')}
                 </button>
               </div>
             </form>
+            </div>
           )}
 
-          {/* Transaction List */}
-          {transactions.length === 0 ? (
+          {/* Transaction List — Month Filter */}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
+              {isBRL ? 'Histórico de transações' : 'Transaction history'}
+            </h3>
+            <div className="flex items-center gap-2">
+              {/* Sort toggle button */}
+              <button
+                type="button"
+                onClick={() => setSortDesc((v) => !v)}
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-all duration-200"
+                title={sortDesc
+                  ? (isBRL ? 'Mais recentes primeiro' : 'Most recent first')
+                  : (isBRL ? 'Mais antigos primeiro' : 'Oldest first')
+                }
+              >
+                {sortDesc ? (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
+                  </svg>
+                )}
+              </button>
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+                className="input-field text-sm py-1.5 px-3 w-44 border-surface-200 h-9"
+              >
+                {monthOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {filteredMonthTransactions.length === 0 ? (
             <div className="py-16 text-center">
               <svg className="mx-auto h-12 w-12 text-surface-300 dark:text-surface-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
               </svg>
-              <p className="mt-4 text-sm text-surface-500 dark:text-surface-400">{t('dashboard.noTransactions')}</p>
-              <p className="text-xs text-surface-400 dark:text-surface-500">{t('dashboard.addFirstTransaction')}</p>
+              <p className="mt-4 text-sm text-surface-500 dark:text-surface-400">
+              {isBRL ? 'Nenhuma transação neste mês' : 'No transactions this month'}
+            </p>
             </div>
           ) : (
             <div className="divide-y divide-surface-100 dark:divide-surface-800">
-              {transactions.slice(0, 20).map((txn) => (
+              {filteredMonthTransactions.map((txn) => (
                 <div key={txn.id} className="group flex items-center justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
                   <div className="flex items-center gap-3">
                     {/* Edit button */}
@@ -404,19 +810,144 @@ export default function DashboardClient({
                       )}
                     </button>
                     <div className="space-y-0.5">
-                      <p className="text-sm font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
-                      <p className="text-xs text-surface-400 dark:text-surface-500">{t(`category.${txn.category}`) ?? txn.category} · {formatDate(txn.date)}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="text-base font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
+                        {txn.isInstallment && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
+                            <Lucide.ReceiptText className="w-3.5 h-3.5" />
+                            Parcelado
+                          </span>
+                        )}
+                        {txn.isRecurring && (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            <Lucide.Repeat className="w-3.5 h-3.5" />
+                            {isBRL ? 'Recorrente' : 'Recurring'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
+                        <span>{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</span>
+                        {txn.cardId && (() => {
+                          const card = cards.find(c => c.id === txn.cardId)
+                          if (card) {
+                            return (
+                              <>
+                                <span>•</span>
+                                <span className="flex items-center gap-1 bg-surface-100 dark:bg-surface-800 px-1.5 rounded text-[10px] font-medium tracking-wide">
+                                  <Lucide.CreditCard className="h-3 w-3 opacity-70" />
+                                  <span className="font-mono">**** {card.lastFourDigits}</span>
+                                </span>
+                              </>
+                            )
+                          }
+                          return null
+                        })()}
+                        {txn.isRecurring && <span>• {t('dashboard.recurring')}</span>}
+                      </div>
+                      {txn.isInstallment && txn.totalInstallments && txn.dueDay && txn.purchaseDate && (() => {
+                        // Use _activeInstallment if provided (from month-aware query), otherwise compute from today
+                        const currentInstallment = txn._activeInstallment ?? getInstallmentInfo(
+                          txn.purchaseDate ? new Date(txn.purchaseDate) : null,
+                          txn.totalInstallments,
+                          txn.dueDay,
+                          txn.date,
+                        ).currentInstallment
+
+                        const info = getInstallmentInfo(
+                          txn.purchaseDate ? new Date(txn.purchaseDate) : null,
+                          txn.totalInstallments,
+                          txn.dueDay,
+                          txn.date,
+                        )
+
+                        // Override currentInstallment with the active one if available
+                        const displayInstallment = txn._activeInstallment ?? info.currentInstallment
+
+                        const perMonth = txn.installmentAmount ?? (parseFloat(txn.amount) / txn.totalInstallments)
+                        const statusColor = info.status === 'LATE' ? 'text-red-600 dark:text-red-400' : info.status === 'PAID' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                        return (
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className={`text-xs font-medium ${statusColor}`}>
+                              {isBRL ? `Parcela ${displayInstallment}/${txn.totalInstallments}` : `Installment ${displayInstallment}/${txn.totalInstallments}`}
+                            </span>
+                            <span className="text-xs text-surface-500">
+                              {formatCurrency(perMonth)} {isBRL ? 'por mês' : 'per month'}
+                            </span>
+                            {displayInstallment < txn.totalInstallments && (
+                              <span className="text-xs text-surface-500">
+                                {isBRL ? `Restam ${txn.totalInstallments - displayInstallment}` : `${txn.totalInstallments - displayInstallment} remaining`}
+                              </span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                      {txn.isRecurring && txn.isActive === false && txn.endDate && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Lucide.CircleSlash2 className="w-3.5 h-3.5 text-surface-500 dark:text-surface-400" />
+                          <span className="text-xs font-medium text-surface-500 dark:text-surface-400">
+                            {isBRL ? 'Cancelado' : 'Cancelled'}
+                          </span>
+                        </div>
+                      )}
+                      {txn.isRecurring && txn.isActive !== false && (
+                        <div className="flex items-center gap-2 mt-1.5">
+                          <Lucide.Repeat className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                          {txn.recurringDay ? (
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                              {isBRL ? `Todo dia ${txn.recurringDay}` : `Every day ${txn.recurringDay}`}
+                            </span>
+                          ) : (
+                            <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                              {isBRL ? 'Recorrente' : 'Recurring'}
+                            </span>
+                          )}
+                          {txn._recurringStatus && (
+                            <span className="text-xs text-surface-500">
+                              {txn._recurringStatus.status === 'UPCOMING' && txn._recurringStatus.daysUntil
+                                ? isBRL ? `${txn._recurringStatus.daysUntil}d` : `in ${txn._recurringStatus.daysUntil}d`
+                                : ''}
+                            </span>
+                          )}
+                          {/* Cancel button for active recurring (shown on hover) */}
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setCancelRecurringId(txn.id); setCancelRecurringModalOpen(true) }}
+                            className="ml-1 invisible group-hover:visible opacity-0 group-hover:opacity-100 text-surface-400 hover:text-red-500 dark:hover:text-red-400 transition-all duration-200"
+                            title={isBRL ? 'Cancelar assinatura' : 'Cancel subscription'}
+                          >
+                            <Lucide.CircleStop className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
-                      <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                        {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(parseFloat(txn.amount))}
-                      </span>
-                      {!isBRL && (
-                        <p className="text-[10px] font-medium text-surface-400 dark:text-surface-500">
-                          ≈ {formatConverted(parseFloat(txn.amount))}
-                        </p>
+                      {txn.isInstallment && txn.totalInstallments ? (() => {
+                        const perMonth = txn.installmentAmount ?? (parseFloat(txn.amount) / txn.totalInstallments)
+                        return (
+                          <>
+                            <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                              {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(perMonth)}
+                            </span>
+                            {!isBRL && (
+                              <p className="text-xs font-medium text-surface-400 dark:text-surface-500">
+                                ≈ {formatConverted(perMonth)}
+                              </p>
+                            )}
+                          </>
+                        )
+                      })() : (
+                        <>
+                          <span className={`text-sm font-semibold ${txn.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                            {txn.type === 'INCOME' ? '+' : '-'}{formatCurrency(parseFloat(txn.amount))}
+                          </span>
+                          {!isBRL && (
+                            <p className="text-xs font-medium text-surface-400 dark:text-surface-500">
+                              ≈ {formatConverted(parseFloat(txn.amount))}
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -427,74 +958,87 @@ export default function DashboardClient({
         </div>
       </main>
 
-      {/* Settings Modal */}
-      {showSettings && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setShowSettings(false)}>
-          <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
-            <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">{t('settings.title')}</h2>
-              <button onClick={() => setShowSettings(false)} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+      {/* Settings Panel */}
+      <SettingsPanel
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        session={session}
+      />
+
+      {/* Delete Account - Step 1 Confirmation */}
+      {showDeleteConfirm1 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setShowDeleteConfirm1(false)}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
+              <Lucide.AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.deleteAccountConfirm')}</h3>
+            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">{t('settings.deleteAccountWarning')}</p>
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setShowDeleteConfirm1(false)} className="btn-secondary flex-1">
+                {t('settings.cancel')}
+              </button>
+              <button
+                onClick={() => { setShowDeleteConfirm1(false); setShowDeleteConfirm2(true) }}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-700 transition-colors"
+              >
+                {isBRL ? 'Continuar' : 'Continue'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
-            <div className="space-y-5">
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.general')}</h3>
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.theme')}</label>
-                    <ThemeToggle />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.language')}</label>
-                    <LanguageToggle />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
-                      {isBRL ? 'Categorias' : 'Categories'}
-                    </label>
-                    <button
-                      onClick={() => setShowManageCategories(true)}
-                      className="w-full flex items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 py-2.5 text-sm text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-600 transition-colors"
-                    >
-                      <span>{isBRL ? 'Gerenciar Categorias' : 'Manage Categories'}</span>
-                      <svg className="w-4 h-4 text-surface-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+      {/* Delete Account - Step 2 Final Confirmation */}
+      {showDeleteConfirm2 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => { setShowDeleteConfirm2(false); setDeleteConfirmText('') }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30 mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">{t('settings.deleteAccountFinalConfirm')}</h3>
+            <div className="mt-4 space-y-3">
+              <input
+                type="text"
+                className="input-field text-center font-mono text-sm uppercase"
+                placeholder={t('settings.deleteConfirmationText')}
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleDeleteAccount()
+                }}
+              />
+              {deleteMessage && (
+                <p className="text-sm rounded-lg p-3 bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                  {deleteMessage}
+                </p>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => { setShowDeleteConfirm2(false); setDeleteConfirmText('') }}
+                  className="btn-secondary flex-1"
+                >
+                  {t('settings.cancel')}
+                </button>
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={isDeletingAccount || (deleteConfirmText !== 'EXCLUIR' && deleteConfirmText !== 'DELETE')}
+                  className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700"
+                >
+                  {isDeletingAccount ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                        <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
                       </svg>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t border-surface-200 dark:border-surface-700/60" />
-
-              <div>
-                <h3 className="text-xs font-medium uppercase tracking-wider text-surface-500 dark:text-surface-400 mb-3">{t('settings.changePassword')}</h3>
-                <form onSubmit={handleChangePassword} className="space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.currentPassword')}</label>
-                    <input type="password" required className="input-field" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.newPassword')}</label>
-                    <input type="password" required minLength={6} className="input-field" placeholder="••••••••" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-medium text-surface-600 dark:text-surface-400">{t('settings.confirmPassword')}</label>
-                    <input type="password" required minLength={6} className="input-field" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
-                  </div>
-                  {passwordMessage && (
-                    <p className={`text-sm rounded-lg p-3 ${passwordMessage.includes('sucesso') || passwordMessage.includes('updated') ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
-                      {passwordMessage}
-                    </p>
+                      {t('settings.deletingAccount')}
+                    </span>
+                  ) : (
+                    t('settings.deleteAccount')
                   )}
-                  <button type="submit" disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword} className="btn-secondary w-full">
-                    {isChangingPassword ? t('settings.changingPassword') : t('settings.update')}
-                  </button>
-                </form>
+                </button>
               </div>
             </div>
           </div>
@@ -521,13 +1065,56 @@ export default function DashboardClient({
         />
       )}
 
-      {/* Manage Categories Modal */}
-      {showManageCategories && (
-        <ManageCategoriesModal
-          onClose={() => setShowManageCategories(false)}
-          onRefresh={() => setCategoriesVersion((v) => v + 1)}
-        />
+      {/* Cancel Recurring Confirmation Modal */}
+      {cancelRecurringModalOpen && cancelRecurringId && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => { setCancelRecurringModalOpen(false); setCancelRecurringMessage('') }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-elevated dark:bg-surface-900 dark:border dark:border-surface-700/60" onClick={(e) => e.stopPropagation()}>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-4">
+              <Lucide.CircleStop className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+            </div>
+            <h3 className="text-base font-semibold text-center text-surface-900 dark:text-surface-100">
+              {isBRL ? 'Cancelar recorrência?' : 'Cancel recurring?'}
+            </h3>
+            <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">
+              {isBRL
+                ? 'Esta ação não pode ser desfeita. O pagamento recorrente será encerrado.'
+                : 'This action cannot be undone. The recurring payment will be terminated.'}
+            </p>
+            {cancelRecurringMessage && (
+              <div className="mt-3 rounded-lg bg-emerald-50 p-3 text-sm text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 text-center">
+                {cancelRecurringMessage}
+              </div>
+            )}
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => { setCancelRecurringModalOpen(false); setCancelRecurringMessage('') }}
+                disabled={isCancellingRecurring}
+                className="btn-secondary flex-1"
+              >
+                {t('common.cancel')}
+              </button>
+              <button
+                onClick={() => handleCancelRecurring(cancelRecurringId)}
+                disabled={isCancellingRecurring}
+                className="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700"
+              >
+                {isCancellingRecurring ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                      <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
+                    </svg>
+                    {isBRL ? 'Cancelando...' : 'Cancelling...'}
+                  </span>
+                ) : (
+                  isBRL ? 'Confirmar cancelamento' : 'Confirm cancellation'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
+
     </div>
   )
 }

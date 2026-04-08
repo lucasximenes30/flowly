@@ -32,7 +32,7 @@ export default async function ReportsPage() {
   const [balance, monthly, comparison] = await Promise.all([
     getUserBalance(session.userId),
     getMonthSummary(session.userId, now.getFullYear(), now.getMonth() + 1),
-    getMonthComparison(session.userId),
+    getMonthComparison(session.userId, now.getFullYear(), now.getMonth() + 1),
   ])
 
   const data = serializeData(balance, monthly, comparison)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
@@ -13,6 +13,11 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Update Document Title Dynamically
+  useEffect(() => {
+    document.title = `${mode === 'login' ? t('common.signIn') : t('common.signUp')} | Flowly`
+  }, [mode, t])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -47,7 +52,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-6 transition-colors duration-300 bg-surface-50 dark:bg-surface-950">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-8 animate-auth-fade">
         {/* Logo */}
         <div className="text-center">
           <h1 className="text-3xl font-semibold tracking-tight text-surface-900 dark:text-surface-100">Flowly</h1>

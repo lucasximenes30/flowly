@@ -26,6 +26,7 @@ export const translations = {
     'auth.hasAccount': 'Já tem conta?',
 
     // Dashboard
+    'dashboard.title': 'Dashboard',
     'dashboard.currentBalance': 'Saldo Atual',
     'dashboard.totalIncome': 'Receitas',
     'dashboard.totalExpenses': 'Despesas',
@@ -41,6 +42,7 @@ export const translations = {
     'dashboard.categoryPlaceholder': 'Selecione a categoria',
     'dashboard.datePickerLabel': 'Data',
     'dashboard.editTransaction': 'Editar Transação',
+    'dashboard.recurring': 'Recorrente',
     'transaction.saveChanges': 'Salvar Alterações',
 
     // Transaction form
@@ -72,6 +74,26 @@ export const translations = {
     'settings.passwordSame': 'A nova senha deve ser diferente da atual.',
     'settings.changingPassword': 'Alterando senha...',
     'settings.update': 'Alterar Senha',
+    'settings.profile': 'Perfil',
+    'settings.profileName': 'Nome',
+    'settings.namePlaceholder': 'Seu nome',
+    'settings.updateName': 'Atualizar Nome',
+    'settings.updatingName': 'Atualizando...',
+    'settings.nameUpdated': 'Nome atualizado com sucesso!',
+    'settings.nameSame': 'O novo nome deve ser diferente do atual.',
+    'settings.confirmNameChange': 'Tem certeza que deseja alterar seu nome?',
+    'settings.dangerZone': 'Zona de Perigo',
+    'settings.deleteAccount': 'Excluir Conta',
+    'settings.deleteAccountTitle': 'Excluir sua Conta',
+    'settings.deleteAccountWarning': 'Essa ação é irreversível e todos os seus dados serão removidos permanentemente.',
+    'settings.deleteAccountConfirm': 'Tem certeza que deseja excluir sua conta?',
+    'settings.deleteAccountFinalConfirm': 'Essa é a sua última chance. Digite "EXCLUIR" para confirmar.',
+    'settings.deleteConfirmationText': 'EXCLUIR',
+    'settings.deletingAccount': 'Excluindo conta...',
+    'settings.accountDeleted': 'Conta excluída com sucesso.',
+    'settings.confirmPasswordChange': 'Tem certeza que deseja alterar sua senha?',
+    'settings.cancel': 'Cancelar',
+    'settings.confirm': 'Confirmar',
 
     // Landing
     'landing.tagline': 'Gestão financeira pessoal, de um jeito simples e bonito.',
@@ -120,7 +142,7 @@ export const translations = {
     'month.december': 'Dezembro',
 
     // Reports
-    'reports.title': 'Relatórios Financeiros',
+    'reports.title': 'Relatórios',
     'reports.subtitle': 'Análise mensal dos seus gastos',
     'reports.income': 'Receita',
     'reports.expenses': 'Despesas',
@@ -133,6 +155,9 @@ export const translations = {
     'reports.noExpenses': 'Nenhuma despesa neste mês',
     'reports.noData': 'Sem dados suficientes',
     'reports.backToDashboard': 'Voltar ao Dashboard',
+
+    // Cards
+    'cards.title': 'Cartões',
   },
   'en': {
     'common.signIn': 'Sign In',
@@ -152,6 +177,7 @@ export const translations = {
     'auth.creatingAccount': 'Creating account...',
     'auth.noAccount': "Don't have an account? ",
     'auth.hasAccount': 'Already have an account? ',
+    'dashboard.title': 'Dashboard',
     'dashboard.currentBalance': 'Current Balance',
     'dashboard.totalIncome': 'Total Income',
     'dashboard.totalExpenses': 'Total Expenses',
@@ -167,6 +193,7 @@ export const translations = {
     'dashboard.categoryPlaceholder': 'Select category',
     'dashboard.datePickerLabel': 'Date',
     'dashboard.editTransaction': 'Edit Transaction',
+    'dashboard.recurring': 'Recurring',
     'transaction.saveChanges': 'Save Changes',
     'transaction.title': 'Title',
     'transaction.amount': 'Amount',
@@ -194,6 +221,26 @@ export const translations = {
     'settings.passwordSame': 'New password must be different from current password.',
     'settings.changingPassword': 'Changing password...',
     'settings.update': 'Change Password',
+    'settings.profile': 'Profile',
+    'settings.profileName': 'Name',
+    'settings.namePlaceholder': 'Your name',
+    'settings.updateName': 'Update Name',
+    'settings.updatingName': 'Updating...',
+    'settings.nameUpdated': 'Name updated successfully!',
+    'settings.nameSame': 'New name must be different from current name.',
+    'settings.confirmNameChange': 'Are you sure you want to change your name?',
+    'settings.dangerZone': 'Danger Zone',
+    'settings.deleteAccount': 'Delete Account',
+    'settings.deleteAccountTitle': 'Delete Your Account',
+    'settings.deleteAccountWarning': 'This action is irreversible and all your data will be permanently removed.',
+    'settings.deleteAccountConfirm': 'Are you sure you want to delete your account?',
+    'settings.deleteAccountFinalConfirm': 'This is your last chance. Type "DELETE" to confirm.',
+    'settings.deleteConfirmationText': 'DELETE',
+    'settings.deletingAccount': 'Deleting account...',
+    'settings.accountDeleted': 'Account deleted successfully.',
+    'settings.confirmPasswordChange': 'Are you sure you want to change your password?',
+    'settings.cancel': 'Cancel',
+    'settings.confirm': 'Confirm',
     'landing.tagline': 'Effortless financial tracking, beautifully simple.',
     'category.Salary': 'Salary',
     'category.Freelance': 'Freelance',
@@ -236,6 +283,8 @@ export const translations = {
     'month.october': 'October',
     'month.november': 'November',
     'month.december': 'December',
+
+    'cards.title': 'Cards',
   },
 }
 

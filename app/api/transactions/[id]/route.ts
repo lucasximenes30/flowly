@@ -42,7 +42,7 @@ export async function PUT(
   if (!session) return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
 
   const body = await request.json()
-  const { title, amount, type, category, date } = body
+  const { title, amount, type, category, date, isInstallment, totalInstallments, purchaseDate, dueDay, isRecurring, recurringDay } = body
 
   if (!title || typeof title !== 'string') return NextResponse.json({ error: 'Título inválido' }, { status: 400 })
   if (!amount || typeof amount !== 'number' || amount <= 0) return NextResponse.json({ error: 'Valor inválido' }, { status: 400 })
@@ -58,6 +58,12 @@ export async function PUT(
       type,
       category,
       date,
+      ...(isInstallment !== undefined && { isInstallment }),
+      totalInstallments: totalInstallments ?? undefined,
+      purchaseDate,
+      dueDay,
+      ...(isRecurring !== undefined && { isRecurring }),
+      ...(recurringDay !== undefined && { recurringDay: recurringDay ?? undefined }),
     })
 
     return NextResponse.json({ success: true, transaction })

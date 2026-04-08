@@ -27,12 +27,11 @@ interface MonthlyReportProps {
 
 export default function MonthlyReport({ formatCurrency, formatConverted }: MonthlyReportProps) {
   const { t } = useApp()
-  const [selectedMonth, setSelectedMonth] = useState<string>('')
+  const [selectedYearMonth, setSelectedYearMonth] = useState<string>('')
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
   const [comparison, setComparison] = useState<MonthComparison | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Get current month in YYYY-MM format
   const getCurrentMonth = useCallback(() => {
     const now = new Date()
     const year = now.getFullYear()
@@ -48,25 +47,32 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
         if (res.ok) {
           const data = await res.json()
           setAvailableMonths(data.months)
-          // Set current month as default
           const current = getCurrentMonth()
-          setSelectedMonth(current)
+          // Use current month even if not in available months yet (for new users)
+          setSelectedYearMonth(current)
+          if (data.months.length > 0 && !data.months.includes(current)) {
+            setAvailableMonths(prev => [current, ...prev])
+          }
         }
       } catch (error) {
         console.error('Failed to fetch available months:', error)
+        setSelectedYearMonth(getCurrentMonth())
       }
     }
     fetchAvailableMonths()
   }, [getCurrentMonth])
 
-  // Fetch comparison data
+  // Fetch comparison data when selected month changes
   useEffect(() => {
-    if (!selectedMonth) return
+    if (!selectedYearMonth) return
 
+    const [year, month] = selectedYearMonth.split('-')
     const fetchComparison = async () => {
       setLoading(true)
       try {
-        const res = await fetch('/api/transactions/monthly?type=comparison')
+        const res = await fetch(
+          `/api/transactions/monthly?type=comparison&refYear=${year}&refMonth=${month}`
+        )
         if (res.ok) {
           const data = await res.json()
           setComparison(data)
@@ -79,9 +85,9 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
     }
 
     fetchComparison()
-  }, [selectedMonth])
+  }, [selectedYearMonth])
 
-  const getMonthName = (monthNumber: number): string => {
+  const getMonthNames = (monthNumber: number): string => {
     const monthNames = [
       'month.january', 'month.february', 'month.march', 'month.april',
       'month.may', 'month.june', 'month.july', 'month.august',
@@ -92,7 +98,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
 
   const formatMonthLabel = (yearMonth: string): string => {
     const [year, month] = yearMonth.split('-')
-    return `${getMonthName(parseInt(month))} ${year}`
+    return `${getMonthNames(parseInt(month))} ${year}`
   }
 
   const getComparisonIcon = (value: number) => {
@@ -109,19 +115,19 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
     <div className="space-y-6">
       {/* Month Selector */}
       <div className="card">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
           <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
             {t('monthly.selectMonth')}
           </label>
           <select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(e.target.value)}
-            className="input-field w-48"
+            value={selectedYearMonth}
+            onChange={(e) => setSelectedYearMonth(e.target.value)}
+            className="input-field w-50 py-2 transition-all duration-200 focus:ring-brand-500/30"
             disabled={loading}
           >
-            {availableMonths.map((month) => (
-              <option key={month} value={month}>
-                {formatMonthLabel(month)}
+            {availableMonths.map((ym) => (
+              <option key={ym} value={ym}>
+                {formatMonthLabel(ym)}
               </option>
             ))}
           </select>
@@ -141,136 +147,149 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
         <>
           {/* Comparison Cards */}
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Current Month */}
-            <div className="card border-l-4 border-brand-600">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
-                {t('monthly.currentMonth')}
-              </p>
-              <p className="text-sm text-surface-400 dark:text-surface-500 mb-4">
-                {getMonthName(comparison.current.month)} {comparison.current.year}
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
-                    {t('dashboard.monthlyIncome')}
-                  </span>
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                    {formatCurrency(comparison.current.income)}
-                  </span>
+            {/* Selected Month */}
+            <div className="card relative overflow-hidden border-l-[3px] border-brand-500 transition-all duration-200 hover:shadow-card-hover hover:border-surface-200 dark:hover:border-surface-700">
+              <div className="absolute inset-0 bg-gradient-to-br from-brand-50/30 to-transparent dark:from-brand-500/5 pointer-events-none" />
+              <div className="relative space-y-4">
+                <div>
+                  <p className="text-xs font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">
+                    {selectedYearMonth === getCurrentMonth() ? t('monthly.currentMonth') : t('monthly.selectedMonth') ?? 'Mês Selecionado'}
+                  </p>
+                  <p className="text-sm text-surface-500 dark:text-surface-400">
+                    {getMonthNames(comparison.current.month)} {comparison.current.year}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
-                    {t('dashboard.monthlyExpenses')}
-                  </span>
-                  <span className="text-sm font-semibold text-rose-600 dark:text-rose-400">
-                    {formatCurrency(comparison.current.expense)}
-                  </span>
-                </div>
-                <div className="border-t border-surface-200 dark:border-surface-700/60 pt-3 flex items-center justify-between">
-                  <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
-                    {t('dashboard.currentBalance')}
-                  </span>
-                  <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
-                    {formatCurrency(comparison.current.balance)}
-                  </span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      {t('dashboard.monthlyIncome')}
+                    </span>
+                    <span className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(comparison.current.income)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      {t('dashboard.monthlyExpenses')}
+                    </span>
+                    <span className="text-base font-semibold text-rose-600 dark:text-rose-400">
+                      {formatCurrency(comparison.current.expense)}
+                    </span>
+                  </div>
+                  <div className="border-t border-surface-150 dark:border-surface-700/60 pt-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                      {t('dashboard.currentBalance')}
+                    </span>
+                    <span className="text-base font-bold text-brand-600 dark:text-brand-400">
+                      {formatCurrency(comparison.current.balance)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Previous Month */}
-            <div className="card border-l-4 border-surface-300 dark:border-surface-700">
-              <p className="text-xs/5 font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
-                {t('monthly.previousMonth')}
-              </p>
-              <p className="text-sm text-surface-400 dark:text-surface-500 mb-4">
-                {getMonthName(comparison.previous.month)} {comparison.previous.year}
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
-                    {t('dashboard.monthlyIncome')}
-                  </span>
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                    {formatCurrency(comparison.previous.income)}
-                  </span>
+            <div className="card relative overflow-hidden border-l-[3px] border-surface-300 dark:border-surface-600 transition-all duration-200 hover:shadow-card-hover hover:border-surface-200 dark:hover:border-surface-700">
+              <div className="absolute inset-0 bg-gradient-to-br from-surface-50/50 to-transparent dark:from-surface-900/30 pointer-events-none" />
+              <div className="relative space-y-4">
+                <div>
+                  <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-1">
+                    {t('monthly.previousMonth')}
+                  </p>
+                  <p className="text-sm text-surface-400 dark:text-surface-500">
+                    {getMonthNames(comparison.previous.month)} {comparison.previous.year}
+                  </p>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-surface-600 dark:text-surface-400">
-                    {t('dashboard.monthlyExpenses')}
-                  </span>
-                  <span className="text-sm font-semibold text-rose-600 dark:text-rose-400">
-                    {formatCurrency(comparison.previous.expense)}
-                  </span>
-                </div>
-                <div className="border-t border-surface-200 dark:border-surface-700/60 pt-3 flex items-center justify-between">
-                  <span className="text-xs font-medium text-surface-700 dark:text-surface-300">
-                    {t('dashboard.currentBalance')}
-                  </span>
-                  <span className="text-sm font-bold text-brand-600 dark:text-brand-400">
-                    {formatCurrency(comparison.previous.balance)}
-                  </span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      {t('dashboard.monthlyIncome')}
+                    </span>
+                    <span className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                      {formatCurrency(comparison.previous.income)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-surface-600 dark:text-surface-400">
+                      {t('dashboard.monthlyExpenses')}
+                    </span>
+                    <span className="text-base font-semibold text-rose-600 dark:text-rose-400">
+                      {formatCurrency(comparison.previous.expense)}
+                    </span>
+                  </div>
+                  <div className="border-t border-surface-150 dark:border-surface-700/60 pt-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                      {t('dashboard.currentBalance')}
+                    </span>
+                    <span className="text-base font-bold text-brand-600 dark:text-brand-400">
+                      {formatCurrency(comparison.previous.balance)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
           {/* Comparison Metrics */}
-          <div className="card bg-gradient-to-br from-brand-50 to-brand-100/50 dark:from-brand-900/20 dark:to-brand-800/10 border border-brand-200/50 dark:border-brand-800/30">
-            <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
-              {t('monthly.comparison')}
-            </p>
-            <div className="grid gap-4 sm:grid-cols-3">
-              {/* Income Change */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-surface-900/30">
-                <div className="mt-1">{getComparisonIcon(comparison.comparison.incomeChange)}</div>
-                <div className="flex-1">
-                  <p className="text-xs text-surface-600 dark:text-surface-400 mb-1">
-                    {t('monthly.incomeChange')}
-                  </p>
-                  <p className={`text-sm font-semibold ${
-                    comparison.comparison.incomeChange >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-rose-600 dark:text-rose-400'
-                  }`}>
-                    {comparison.comparison.incomeChange >= 0 ? '+' : ''}
-                    {formatCurrency(Math.abs(comparison.comparison.incomeChange))}
-                  </p>
+          <div className="card relative overflow-hidden bg-gradient-to-br from-brand-50 to-brand-100/40 dark:from-brand-900/20 dark:to-brand-800/8 border-brand-200/50 dark:border-brand-800/30 transition-all duration-200 hover:shadow-card-hover">
+            <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent dark:from-white/5 pointer-events-none" />
+            <div className="relative">
+              <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-5">
+                {t('monthly.comparison')}
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                {/* Income Change */}
+                <div className="group flex items-start gap-3 p-3.5 rounded-xl bg-white/60 dark:bg-surface-900/40 transition-all duration-200 hover:bg-white/80 dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
+                  <div className="mt-0.5 shrink-0">{getComparisonIcon(comparison.comparison.incomeChange)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mb-1.5">
+                      {t('monthly.incomeChange')}
+                    </p>
+                    <p className={`text-sm font-semibold ${
+                      comparison.comparison.incomeChange >= 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {comparison.comparison.incomeChange >= 0 ? '+' : ''}
+                      {formatCurrency(Math.abs(comparison.comparison.incomeChange))}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Expense Change */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-surface-900/30">
-                <div className="mt-1">{getComparisonIcon(-comparison.comparison.expenseChange)}</div>
-                <div className="flex-1">
-                  <p className="text-xs text-surface-600 dark:text-surface-400 mb-1">
-                    {t('monthly.expenseChange')}
-                  </p>
-                  <p className={`text-sm font-semibold ${
-                    comparison.comparison.expenseChange <= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-rose-600 dark:text-rose-400'
-                  }`}>
-                    {comparison.comparison.expenseChange <= 0 ? '-' : '+'}
-                    {formatCurrency(Math.abs(comparison.comparison.expenseChange))}
-                  </p>
+                {/* Expense Change */}
+                <div className="group flex items-start gap-3 p-3.5 rounded-xl bg-white/60 dark:bg-surface-900/40 transition-all duration-200 hover:bg-white/80 dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
+                  <div className="mt-0.5 shrink-0">{getComparisonIcon(-comparison.comparison.expenseChange)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mb-1.5">
+                      {t('monthly.expenseChange')}
+                    </p>
+                    <p className={`text-sm font-semibold ${
+                      comparison.comparison.expenseChange <= 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {comparison.comparison.expenseChange <= 0 ? '-' : '+'}
+                      {formatCurrency(Math.abs(comparison.comparison.expenseChange))}
+                    </p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Balance Change */}
-              <div className="flex items-start gap-3 p-3 rounded-lg bg-white/50 dark:bg-surface-900/30">
-                <div className="mt-1">{getComparisonIcon(comparison.comparison.balanceChange)}</div>
-                <div className="flex-1">
-                  <p className="text-xs text-surface-600 dark:text-surface-400 mb-1">
-                    {t('monthly.balanceChange')}
-                  </p>
-                  <p className={`text-sm font-semibold ${
-                    comparison.comparison.balanceChange >= 0
-                      ? 'text-emerald-600 dark:text-emerald-400'
-                      : 'text-rose-600 dark:text-rose-400'
-                  }`}>
-                    {comparison.comparison.balanceChange >= 0 ? '+' : ''}
-                    {formatCurrency(Math.abs(comparison.comparison.balanceChange))}
-                  </p>
+                {/* Balance Change */}
+                <div className="group flex items-start gap-3 p-3.5 rounded-xl bg-white/60 dark:bg-surface-900/40 transition-all duration-200 hover:bg-white/80 dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
+                  <div className="mt-0.5 shrink-0">{getComparisonIcon(comparison.comparison.balanceChange)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-surface-500 dark:text-surface-400 mb-1.5">
+                      {t('monthly.balanceChange')}
+                    </p>
+                    <p className={`text-sm font-semibold ${
+                      comparison.comparison.balanceChange >= 0
+                        ? 'text-emerald-600 dark:text-emerald-400'
+                        : 'text-rose-600 dark:text-rose-400'
+                    }`}>
+                      {comparison.comparison.balanceChange >= 0 ? '+' : ''}
+                      {formatCurrency(Math.abs(comparison.comparison.balanceChange))}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
