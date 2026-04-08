@@ -396,46 +396,54 @@ export default function DashboardClient({
 
       <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
         {/* Balance Card */}
-        <div className="rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 p-8 text-white shadow-lg dark:shadow-brand-700/20">
-          <div className="flex items-start justify-between gap-6">
-            <div className="space-y-1">
-              <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
-              <div className="flex items-baseline gap-3">
-                <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
-                {!isBRL && (
-                  <span className="text-sm font-medium text-white/50">
-                    ≈ {formatConverted(balance.balance)}
-                  </span>
-                )}
+        <div className="rounded-2xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-10 text-white shadow-lg dark:shadow-brand-700/20 border border-white/20 relative overflow-hidden">
+          {/* Subtle inner glow for premium effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col md:flex-row gap-6 md:gap-8">
+            {/* LEFT SECTION */}
+            <div className="flex-1">
+              <div className="space-y-1">
+                <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
+                <div className="flex items-baseline gap-3">
+                  <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
+                  {!isBRL && (
+                    <span className="text-sm font-medium text-white/50">
+                      ≈ {formatConverted(balance.balance)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="mt-6 flex gap-6 md:gap-8">
+                <div className="space-y-0.5">
+                  <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
+                  <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalExpenses')}</p>
+                  <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.expense)}</p>
+                </div>
               </div>
             </div>
-            <button
-              onClick={() => router.push('/reports')}
-              className="shrink-0 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98]"
-            >
-              {isBRL ? 'Ver relatórios' : 'View reports'}
-            </button>
-          </div>
-          <div className="mt-6 flex items-center justify-between gap-8">
-            <div className="flex gap-8">
-              <div className="space-y-0.5">
-                <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
-                <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
-              </div>
-              <div className="space-y-0.5">
-                <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalExpenses')}</p>
-                <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.expense)}</p>
-              </div>
+
+            {/* RIGHT SECTION - Buttons */}
+            <div className="w-full md:w-auto flex flex-row md:flex-col gap-3">
+              <button
+                onClick={() => router.push('/reports')}
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur border border-white/10 transition-all duration-300 hover:bg-white/25 hover:scale-[1.02] hover:border-white/20 hover:shadow-lg active:scale-[0.98]"
+              >
+                {isBRL ? 'Ver relatórios' : 'View reports'}
+              </button>
+              <button
+                onClick={() => {
+                  setShowForm((prev) => !prev)
+                  setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+                }}
+                className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur border border-white/10 transition-all duration-300 hover:bg-white/25 hover:scale-[1.02] hover:border-white/20 hover:shadow-lg active:scale-[0.98]"
+              >
+                {showForm ? (isBRL ? 'Cancelar' : 'Cancel') : (isBRL ? 'Nova Transação' : 'New Transaction')}
+              </button>
             </div>
-            <button
-              onClick={() => {
-                setShowForm((prev) => !prev)
-                setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
-              }}
-              className="shrink-0 rounded-xl bg-white/15 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/25 hover:scale-[1.03] active:scale-[0.98]"
-            >
-              {showForm ? (isBRL ? 'Cancelar' : 'Cancel') : (isBRL ? 'Nova Transação' : 'New Transaction')}
-            </button>
           </div>
         </div>
 
