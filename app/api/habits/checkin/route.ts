@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = checkinSchema.parse(body)
-    const checkin = await toggleCheckin(data.habitId, session.userId, data.date, data.completed)
-    return NextResponse.json({ checkin })
+    const { checkin, currentStreak, bestStreak } = await toggleCheckin(data.habitId, session.userId, data.date, data.completed)
+    return NextResponse.json({ checkin, currentStreak, bestStreak })
   } catch (error: any) {
     const message =
       error instanceof z.ZodError

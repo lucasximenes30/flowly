@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
-import { getHabitsByUser, getCheckinsForWeek } from '@/services/habit.service'
+import { getHabitsByUser, getCheckinsForWeek, getHistoricalScore } from '@/services/habit.service'
 import HabitsClient from './HabitsClient'
 
 /** Returns the 7 dates (YYYY-MM-DD) of the current week, Sun → Sat */
@@ -23,14 +23,31 @@ function getWeekDates(): string[] {
   return dates
 }
 
+/** Returns the 7 dates (YYYY-MM-DD) of the previous week, Sun → Sat */
+function getPrevWeekDates(): string[] {
+  const dates = getWeekDates()
+  return dates.map(dateStr => {
+    const d = new Date(dateStr + 'T12:00:00')
+    d.setDate(d.getDate() - 7)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${y}-${m}-${day}`
+  })
+}
+
 export default async function HabitsPage() {
   const session = await getSession()
   if (!session) redirect('/login')
 
   const weekDates = getWeekDates()
-  const [habits, checkins] = await Promise.all([
-    getHabitsByUser(session.userId),
+  const prevWeekDates = getPrevWeekDates()
+  const habits = await getHabitsByUser(session.userId)
+  
+  const [checkins, prevCheckins, historicalScore] = await Promise.all([
     getCheckinsForWeek(session.userId, weekDates),
+    getCheckinsForWeek(session.userId, prevWeekDates),
+    getHistoricalScore(session.userId, weekDates, habits.length),
   ])
 
   return (
@@ -38,7 +55,9 @@ export default async function HabitsPage() {
       session={session}
       initialHabits={habits}
       initialCheckins={checkins}
+      initialPrevCheckins={prevCheckins}
       weekDates={weekDates}
+      initialHistoricalScore={historicalScore}
     />
   )
 }
