@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { AppProvider } from '@/lib/i18n'
+import SidebarLayout from '@/components/SidebarLayout'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -36,7 +37,11 @@ export default function RootLayout({
         `}} />
       </head>
       <body className="min-h-screen">
-        <AppProvider>{children}</AppProvider>
+        <AppProvider>
+          <SidebarLayout>
+            {children}
+          </SidebarLayout>
+        </AppProvider>
       </body>
     </html>
   )
