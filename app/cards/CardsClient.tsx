@@ -504,16 +504,16 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                     {/* Card Stats Below */}
                     <div className="card p-4 space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-surface-500 dark:text-surface-400 font-medium uppercase tracking-wider">{isBRL ? 'Fatura Atual' : 'Current Invoice'}</span>
-                        <span className="text-sm font-bold text-surface-900 dark:text-surface-100">
+                        <span className="text-sm text-surface-500 dark:text-surface-400 font-semibold uppercase tracking-wider">{isBRL ? 'Fatura Atual' : 'Current Invoice'}</span>
+                        <span className="text-base font-bold text-surface-900 dark:text-surface-100">
                           {isBRL ? 'R$' : '$'}{card.currentInvoiceAmount.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex justify-between text-xs">
-                          <span className="text-surface-500">{isBRL ? 'Limite Utilizado' : 'Used Limit'}</span>
-                          <span className="font-semibold text-surface-700 dark:text-surface-300">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm text-surface-500 dark:text-surface-400/70">{isBRL ? 'Limite Utilizado' : 'Used Limit'}</span>
+                          <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
                             {isBRL ? 'R$' : '$'}{card.usedLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -523,9 +523,9 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                             style={{ width: `${Math.min(card.usagePercent, 100)}%` }}
                           />
                         </div>
-                        <div className="flex justify-between text-[10px] text-surface-400">
-                          <span>{isBRL ? 'Disponível' : 'Available'}: {isBRL ? 'R$' : '$'}{card.availableLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</span>
-                          <span>{isBRL ? 'Total' : 'Total'}: {isBRL ? 'R$' : '$'}{card.totalLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-surface-400 dark:text-surface-500">{isBRL ? 'Disponível' : 'Available'}: <span className="font-medium text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.availableLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</span></span>
+                          <span className="text-xs text-surface-400 dark:text-surface-500">{isBRL ? 'Total' : 'Total'}: <span className="font-medium text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.totalLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</span></span>
                         </div>
                       </div>
                     </div>
