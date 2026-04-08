@@ -89,6 +89,7 @@ export function generateNotifications(
     isActive: boolean
     endDate: Date | null
     cardId?: string | null
+    amount?: number | string | null
   }>,
   cards: Array<{
     id: string
@@ -96,6 +97,7 @@ export function generateNotifications(
     lastFourDigits: string
     dueDay: number
     closingDay: number
+    limitAmount?: number | string | null
   }> = [],
   today?: Date,
 ): Notification[] {
@@ -159,8 +161,9 @@ export function generateNotifications(
     }
   }
 
-  // --- Card Bills (Fatura do Cartão) ---
+  // --- Card Bills (Fatura do Cartão) & Limits ---
   for (const card of cards) {
+    // 1. Check Due Date
     const diff = getDaysDiffForDay(now, card.dueDay)
     const type = diff > 0 && diff <= 5 ? 'upcoming' : diff === 0 ? 'today' : diff < 0 ? 'late' : null
     
@@ -174,6 +177,32 @@ export function generateNotifications(
         days: absDays,
         sourceTxId: card.id,
       })
+    }
+
+    // 2. Check Limit Usage
+    const cardLimit = card.limitAmount ? Number(card.limitAmount) : 0
+    if (cardLimit > 0) {
+      // Calculate used limit: all pending expenses on this card
+      const usedLimit = transactions
+        .filter(tx => tx.cardId === card.id && tx.type === 'EXPENSE')
+        .reduce((sum, tx) => {
+           // For installments, we count the full amount for limit purposes? 
+           // Or just the remaining installments? 
+           // Standard banking: the full amount of the purchase blocks the limit.
+           return sum + Number(tx.amount || 0)
+        }, 0)
+
+      const usagePercent = (usedLimit / cardLimit) * 100
+      if (usagePercent >= 85) {
+        notifications.push({
+          id: `cardlimit-${card.id}`,
+          title: `Limite alto: ${card.name}`,
+          description: `Você já utilizou ${usagePercent.toFixed(0)}% do limite do seu cartão.`,
+          type: 'upcoming', // Use 'upcoming' as a warning
+          days: 0,
+          sourceTxId: card.id,
+        })
+      }
     }
   }
 

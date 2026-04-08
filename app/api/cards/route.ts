@@ -9,6 +9,7 @@ const createCardSchema = z.object({
   dueDay: z.number().int().min(1).max(31),
   closingDay: z.number().int().min(1).max(31),
   color: z.enum(['blue', 'purple', 'pink', 'red', 'orange', 'black', 'gray']),
+  limitAmount: z.number().min(0, 'Limit must be positive'),
 })
 
 export async function GET() {

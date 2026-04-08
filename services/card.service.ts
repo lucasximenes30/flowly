@@ -8,6 +8,7 @@ export interface CreateCardInput {
   dueDay: number
   closingDay: number
   color: string
+  limitAmount: number
 }
 
 export interface CardDTO {
@@ -17,6 +18,7 @@ export interface CardDTO {
   dueDay: number
   closingDay: number
   color: string
+  limitAmount: string
   createdAt: string
 }
 
@@ -32,6 +34,7 @@ export async function getCardsByUser(userId: string): Promise<CardDTO[]> {
     dueDay: c.dueDay,
     closingDay: c.closingDay,
     color: c.color,
+    limitAmount: c.limitAmount.toString(),
     createdAt: c.createdAt.toISOString(),
   }))
 }
@@ -45,6 +48,7 @@ export async function createCard(userId: string, input: CreateCardInput): Promis
       dueDay: input.dueDay,
       closingDay: input.closingDay,
       color: input.color,
+      limitAmount: input.limitAmount,
     },
   })
   return {
@@ -54,6 +58,7 @@ export async function createCard(userId: string, input: CreateCardInput): Promis
     dueDay: card.dueDay,
     closingDay: card.closingDay,
     color: card.color,
+    limitAmount: card.limitAmount.toString(),
     createdAt: card.createdAt.toISOString(),
   }
 }

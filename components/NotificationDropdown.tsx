@@ -26,6 +26,7 @@ interface Props {
     lastFourDigits: string
     dueDay: number
     closingDay: number
+    limitAmount?: string | number | null
   }>
   isBRL: boolean
 }
@@ -48,6 +49,7 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
       isActive: t.isActive ?? true,
       endDate: t.endDate ? new Date(t.endDate) : null,
       cardId: t.cardId ?? null,
+      amount: t.amount,
     }))
     return generateNotifications(tx, cards)
   }, [transactions, cards])
