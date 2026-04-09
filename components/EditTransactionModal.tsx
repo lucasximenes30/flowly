@@ -18,16 +18,22 @@ interface Transaction {
   dueDay?: number
   isRecurring?: boolean
   recurringDay?: number
+  cardId?: string
 }
+
+interface Card { id: string; name: string; lastFourDigits: string; dueDay: number; closingDay: number }
+
 
 interface EditTransactionModalProps {
   transaction: Transaction
   onClose: () => void
   onSave: () => void
   formatCurrency: (value: number) => string
+  cards?: Card[]
 }
 
-export default function EditTransactionModal({ transaction, onClose, onSave, formatCurrency }: EditTransactionModalProps) {
+
+export default function EditTransactionModal({ transaction, onClose, onSave, formatCurrency, cards = [] }: EditTransactionModalProps) {
   const { t, locale } = useApp()
   const isBRL = locale === 'pt-BR'
   const [title, setTitle] = useState(transaction.title)
@@ -48,6 +54,21 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
   // Recurring fields
   const [isRecurring, setIsRecurring] = useState(transaction.isRecurring ?? false)
   const [recurringDay, setRecurringDay] = useState(transaction.recurringDay?.toString() ?? '')
+
+  // Card fields
+  const [paymentMethod, setPaymentMethod] = useState<'none' | 'credit_card'>(transaction.cardId ? 'credit_card' : 'none')
+  const [selectedCardId, setSelectedCardId] = useState<string>(transaction.cardId ?? '')
+
+  // Update logic: if user chooses card, auto-fill dueDay if we're in installment
+  useEffect(() => {
+    if (isInstallment && paymentMethod === 'credit_card' && selectedCardId) {
+      const card = cards.find(c => c.id === selectedCardId)
+      if (card && card.dueDay) {
+         setDueDay(card.dueDay.toString())
+      }
+    }
+  }, [selectedCardId, isInstallment, paymentMethod, cards])
+
 
   const toggleInstallment = (value: boolean) => {
     setIsInstallment(value)
@@ -89,7 +110,9 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
           dueDay: isInstallment ? parseInt(dueDay) : null,
           isRecurring,
           recurringDay: isRecurring ? parseInt(recurringDay) : null,
+          cardId: paymentMethod === 'credit_card' && selectedCardId ? selectedCardId : null,
         }),
+
       })
 
       if (!res.ok) {
@@ -317,7 +340,61 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 </p>
               </div>
             )}
+
+            {/* Payment Method Flow (same as Dashboard) — Only for Expenses */}
+            {type === 'EXPENSE' && (
+              <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-surface-100 dark:border-surface-800/50">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                    {isBRL ? 'Forma de pagamento' : 'Payment Method'}
+                  </label>
+                  <select
+                    value={paymentMethod}
+                    onChange={(e) => {
+                      const val = e.target.value as 'none' | 'credit_card'
+                      setPaymentMethod(val)
+                      if (val === 'credit_card' && cards.length > 0 && !selectedCardId) {
+                        setSelectedCardId(cards[0].id)
+                      } else if (val === 'none') {
+                        setSelectedCardId('')
+                      }
+                    }}
+                    className="input-field"
+                  >
+                    <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
+                    <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
+                  </select>
+                </div>
+
+                {paymentMethod === 'credit_card' && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                      {isBRL ? 'Cartão' : 'Card'}
+                    </label>
+                    {cards.length === 0 ? (
+                      <div className="flex h-10 items-center justify-between rounded-xl border border-dashed border-surface-300 px-3 text-[11px] dark:border-surface-700">
+                        <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
+                      </div>
+                    ) : (
+                      <select
+                        value={selectedCardId}
+                        onChange={(e) => setSelectedCardId(e.target.value)}
+                        className="input-field"
+                      >
+                        <option value="">{isBRL ? 'Selecionar...' : 'Select...'}</option>
+                        {cards.map(c => (
+                          <option key={c.id} value={c.id}>
+                            **** {c.lastFourDigits} — {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
 
           {error && (
             <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
