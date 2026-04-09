@@ -20,6 +20,7 @@ model User {
   customCategories     Category[]
   notifications        Notification[]
   cards                Card[]
+  habits               Habit[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -129,4 +130,36 @@ enum UserSubscriptionStatus {
 enum TransactionType {
   INCOME
   EXPENSE
+}
+
+model Habit {
+  id          String         @id @default(uuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  icon        String         @default("Target")
+  color       String         @default("blue")
+  order       Int            @default(0)
+  isActive    Boolean        @default(true)
+  checkins    HabitCheckin[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([userId])
+  @@map("habits")
+}
+
+model HabitCheckin {
+  id        String   @id @default(uuid())
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      String   // YYYY-MM-DD
+  completed Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([habitId, date])
+  @@index([habitId])
+  @@map("habit_checkins")
 }

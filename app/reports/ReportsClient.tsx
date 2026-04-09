@@ -237,7 +237,7 @@ export default function ReportsClient({
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 reports-page-enter">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/dashboard')}
@@ -251,7 +251,7 @@ export default function ReportsClient({
             <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-surface-500 dark:text-surface-400">
+            <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
               {isBRL ? `Olá` : `Hi`}, {session.name}
             </span>
             <button
@@ -264,7 +264,7 @@ export default function ReportsClient({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6 py-8 space-y-6">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
         {/* Title + Filters Row */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -280,7 +280,7 @@ export default function ReportsClient({
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="input-field w-52 py-2.5 transition-all duration-200 focus:ring-brand-500/30"
+              className="input-field w-full sm:w-52 py-2.5 transition-all duration-200 focus:ring-brand-500/30"
             >
               {availableMonths.length === 0 && <option value={selectedMonth}>{selectedMonth}</option>}
               {availableMonths.map((m) => {
@@ -292,7 +292,7 @@ export default function ReportsClient({
         </div>
 
         {/* Summary Cards */}
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <div className="card group relative overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-surface-200 dark:hover:border-surface-700">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
@@ -527,7 +527,7 @@ export default function ReportsClient({
                 <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-5">
                   {isBRL ? 'Comparação Mensal' : 'Monthly Comparison'}
                 </p>
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                   {/* Income Change */}
                   <div className="group flex flex-col rounded-xl bg-white/70 dark:bg-surface-900/40 p-4 transition-all duration-200 hover:bg-white dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">

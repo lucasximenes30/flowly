@@ -402,10 +402,10 @@ export default function DashboardClient({
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 animate-dashboard-fade">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-surface-500 dark:text-surface-400">
+            <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
               {isBRL ? `Olá` : `Hi`}, {profileName}
             </span>
 
@@ -431,9 +431,9 @@ export default function DashboardClient({
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl space-y-6 px-6 py-8">
+      <main className="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 py-6 sm:py-8">
         {/* Balance Card */}
-        <div className="rounded-2xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-10 text-white shadow-lg dark:shadow-brand-700/20 border border-white/20 relative overflow-hidden">
+        <div className="rounded-2xl bg-gradient-to-br from-brand-500 via-brand-600 to-brand-800 p-6 sm:p-10 text-white shadow-lg dark:shadow-brand-700/20 border border-white/20 relative overflow-hidden">
           {/* Subtle inner glow for premium effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
 
@@ -442,8 +442,8 @@ export default function DashboardClient({
             <div className="flex-1">
               <div className="space-y-1">
                 <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
-                <div className="flex items-baseline gap-3">
-                  <p className="text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <p className="text-3xl sm:text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
                   {!isBRL && (
                     <span className="text-sm font-medium text-white/50">
                       ≈ {formatConverted(balance.balance)}
@@ -451,7 +451,7 @@ export default function DashboardClient({
                   )}
                 </div>
               </div>
-              <div className="mt-6 flex gap-6 md:gap-8">
+              <div className="mt-4 sm:mt-6 flex flex-wrap gap-6 md:gap-8">
                 <div className="space-y-0.5">
                   <p className="text-xs/5 font-medium text-white/60">{t('dashboard.totalIncome')}</p>
                   <p className="text-lg font-semibold text-white/90">{formatCurrency(balance.income)}</p>
@@ -464,7 +464,7 @@ export default function DashboardClient({
             </div>
 
             {/* RIGHT SECTION - Buttons */}
-            <div className="w-full md:w-auto flex flex-row md:flex-col gap-3">
+            <div className="w-full md:w-auto flex flex-row flex-wrap md:flex-col gap-3">
               <button
                 onClick={() => router.push('/cards')}
                 className="flex-1 md:flex-none md:w-48 rounded-xl bg-white/12 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm border border-white/10 transition-all duration-250 hover:bg-white/22 hover:scale-[1.025] hover:border-white/20 hover:shadow-lg hover:shadow-black/12 active:scale-[0.975]"
@@ -730,7 +730,7 @@ export default function DashboardClient({
           )}
 
           {/* Transaction List — Month Filter */}
-          <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
               {isBRL ? 'Histórico de transações' : 'Transaction history'}
             </h3>
@@ -758,7 +758,7 @@ export default function DashboardClient({
               <select
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
-                className="input-field text-sm py-1.5 px-3 w-44 border-surface-200 h-9"
+                className="input-field text-sm py-1.5 px-3 w-full sm:w-44 border-surface-200 h-9"
               >
                 {monthOptions.map((opt) => (
                   <option key={opt.value} value={opt.value}>
@@ -781,12 +781,12 @@ export default function DashboardClient({
           ) : (
             <div className="divide-y divide-surface-100 dark:divide-surface-800">
               {filteredMonthTransactions.map((txn) => (
-                <div key={txn.id} className="group flex items-center justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
-                  <div className="flex items-center gap-3">
+                <div key={txn.id} className="group flex items-start justify-between rounded-lg px-2 py-3.5 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50">
+                  <div className="flex items-start gap-2 sm:gap-3 min-w-0 flex-1">
                     {/* Edit button */}
                     <button
                       onClick={() => setEditingTransaction(txn)}
-                      className="invisible group-hover:visible flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-surface-400 hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                      className="flex sm:invisible sm:group-hover:visible h-8 w-8 shrink-0 items-center justify-center rounded-lg text-surface-400 hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200"
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
@@ -796,7 +796,7 @@ export default function DashboardClient({
                     <button
                       onClick={() => handleDelete(txn.id)}
                       disabled={deletingId === txn.id}
-                      className="invisible group-hover:visible flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-surface-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all duration-200"
+                      className="flex sm:invisible sm:group-hover:visible h-8 w-8 shrink-0 items-center justify-center rounded-lg text-surface-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20 dark:hover:text-red-400 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200"
                     >
                       {deletingId === txn.id ? (
                         <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -809,8 +809,8 @@ export default function DashboardClient({
                         </svg>
                       )}
                     </button>
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-2">
+                    <div className="space-y-0.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="text-base font-medium text-surface-800 dark:text-surface-200">{txn.title}</p>
                         {txn.isInstallment && (
                           <span className="inline-flex items-center gap-0.5 rounded-md bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">
@@ -825,8 +825,8 @@ export default function DashboardClient({
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400">
-                        <span>{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</span>
+                      <div className="flex items-center gap-1.5 text-xs text-surface-500 dark:text-surface-400 flex-wrap">
+                        <span className="truncate max-w-[180px] sm:max-w-none">{t(`category.${txn.category}`) || txn.category} · {formatDate(txn.date)}</span>
                         {txn.cardId && (() => {
                           const card = cards.find(c => c.id === txn.cardId)
                           if (card) {
@@ -866,7 +866,7 @@ export default function DashboardClient({
                         const perMonth = txn.installmentAmount ?? (parseFloat(txn.amount) / txn.totalInstallments)
                         const statusColor = info.status === 'LATE' ? 'text-red-600 dark:text-red-400' : info.status === 'PAID' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
                         return (
-                          <div className="flex items-center gap-3 mt-1">
+                          <div className="flex items-center gap-3 mt-1 flex-wrap">
                             <span className={`text-xs font-medium ${statusColor}`}>
                               {isBRL ? `Parcela ${displayInstallment}/${txn.totalInstallments}` : `Installment ${displayInstallment}/${txn.totalInstallments}`}
                             </span>
@@ -921,7 +921,7 @@ export default function DashboardClient({
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
                       {txn.isInstallment && txn.totalInstallments ? (() => {
                         const perMonth = txn.installmentAmount ?? (parseFloat(txn.amount) / txn.totalInstallments)
