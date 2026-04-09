@@ -3,9 +3,9 @@
 import { useRouter, usePathname } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   {
-    Icon: Lucide.LayoutDashboard,
+    Icon: Lucide.DollarSign,
     label: 'Financeiro',
     href: '/dashboard',
     match: (p: string) =>
@@ -24,7 +24,7 @@ export default function Sidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-16 z-40 flex flex-col items-center pt-3 pb-4 gap-1 bg-white dark:bg-surface-900 border-r border-surface-200/80 dark:border-surface-800 transition-colors duration-300">
+    <aside className="fixed left-0 top-0 h-screen w-16 z-40 hidden md:flex flex-col items-center pt-3 pb-4 gap-1 bg-white dark:bg-surface-900 border-r border-surface-200/80 dark:border-surface-800 transition-colors duration-300">
       {/* Brand mark */}
       <div className="mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white text-sm font-bold shadow-sm select-none">
         F
