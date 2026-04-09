@@ -636,57 +636,61 @@ export default function DashboardClient({
                   </button>
                 </div>
 
-                <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                      {isBRL ? 'Forma de pagamento' : 'Payment Method'}
-                    </label>
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => {
-                        const val = e.target.value as 'none' | 'credit_card'
-                        setPaymentMethod(val)
-                        if (val === 'credit_card' && cards.length > 0) {
-                          setSelectedCardId(cards[0].id)
-                        } else {
-                          setSelectedCardId('')
-                        }
-                      }}
-                      className="input-field"
-                    >
-                      <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
-                      <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
-                    </select>
-                  </div>
-
-                  {paymentMethod === 'credit_card' && (
+                {/* Payment Method Flow (same as Edit Modal) — Only for Expenses */}
+                {type === 'EXPENSE' && (
+                  <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-surface-100 dark:border-surface-800/50">
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                        {isBRL ? 'Cartão' : 'Card'}
+                        {isBRL ? 'Forma de pagamento' : 'Payment Method'}
                       </label>
-                      {cards.length === 0 ? (
-                        <div className="flex h-10 items-center justify-between rounded-xl border border-dashed border-surface-300 px-3 text-sm dark:border-surface-700">
-                          <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
-                          <button type="button" onClick={() => router.push('/cards')} className="text-brand-500 hover:text-brand-600 font-medium">
-                            {isBRL ? 'Adicionar' : 'Add'}
-                          </button>
-                        </div>
-                      ) : (
-                        <select
-                          value={selectedCardId}
-                          onChange={(e) => setSelectedCardId(e.target.value)}
-                          className="input-field"
-                        >
-                          {cards.map(c => (
-                            <option key={c.id} value={c.id}>
-                              **** {c.lastFourDigits} — {c.name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => {
+                          const val = e.target.value as 'none' | 'credit_card'
+                          setPaymentMethod(val)
+                          if (val === 'credit_card' && cards.length > 0) {
+                            setSelectedCardId(cards[0].id)
+                          } else {
+                            setSelectedCardId('')
+                          }
+                        }}
+                        className="input-field"
+                      >
+                        <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
+                        <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
+                      </select>
                     </div>
-                  )}
-                </div>
+
+                    {paymentMethod === 'credit_card' && (
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                          {isBRL ? 'Cartão' : 'Card'}
+                        </label>
+                        {cards.length === 0 ? (
+                          <div className="flex h-10 items-center justify-between rounded-xl border border-dashed border-surface-300 px-3 text-sm dark:border-surface-700">
+                            <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
+                            <button type="button" onClick={() => router.push('/cards')} className="text-brand-500 hover:text-brand-600 font-medium">
+                              {isBRL ? 'Adicionar' : 'Add'}
+                            </button>
+                          </div>
+                        ) : (
+                          <select
+                            value={selectedCardId}
+                            onChange={(e) => setSelectedCardId(e.target.value)}
+                            className="input-field"
+                          >
+                            {cards.map(c => (
+                              <option key={c.id} value={c.id}>
+                                **** {c.lastFourDigits} — {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
 
                 {/* Recurring fields */}
                 {isRecurring && (
@@ -1062,6 +1066,7 @@ export default function DashboardClient({
           onClose={() => setEditingTransaction(null)}
           onSave={handleEditSave}
           formatCurrency={formatCurrency}
+          cards={cards}
         />
       )}
 

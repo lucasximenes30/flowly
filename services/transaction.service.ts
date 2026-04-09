@@ -32,6 +32,7 @@ export interface UpdateTransactionInput {
   dueDay?: number
   isRecurring?: boolean
   recurringDay?: number
+  cardId?: string | null
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
@@ -88,6 +89,7 @@ export async function updateTransaction(id: string, userId: string, input: Updat
       dueDay: input.dueDay ?? null,
       ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
       ...(recurringDay !== undefined && { recurringDay: recurringDay ?? null }),
+      ...(input.cardId !== undefined && { cardId: input.cardId ?? null }),
     },
   })
 }
