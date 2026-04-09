@@ -136,14 +136,14 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-200 ${
-        visible ? 'opacity-100' : 'opacity-0'
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 transition-all duration-300 ${
+        visible ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'
       }`}
       onClick={handleBackdropClick}
     >
       <div
-        className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-200 ${
-          visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-6 shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+          visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 sm:translate-y-8 opacity-0 scale-95'
         }`}
       >
         <div className="mb-5 flex items-center justify-between">
@@ -158,10 +158,10 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid gap-5 sm:gap-6 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                 {t('transaction.title')}
               </label>
               <input
@@ -173,8 +173,8 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                 {t('transaction.amount')}
               </label>
               <input
@@ -188,8 +188,8 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 onChange={(e) => setAmount(e.target.value)}
               />
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                 {t('transaction.type')}
               </label>
               <select
@@ -201,20 +201,20 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 <option value="INCOME">{t('dashboard.income')}</option>
               </select>
             </div>
-            <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+            <div className="space-y-2">
+              <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                 {t('transaction.category')}
               </label>
               <CategorySelect value={category} onChange={setCategory} type={type} />
             </div>
-            <div className="space-y-1.5 sm:col-span-2">
-              <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+            <div className="space-y-2 sm:col-span-2 min-w-0 w-full">
+              <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                 {t('transaction.date')}
               </label>
               <input
                 type="date"
                 required
-                className="input-field"
+                className="input-field max-w-full min-w-0 flex-1 appearance-none block w-full box-border"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
               />
@@ -248,8 +248,8 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             {/* Installment fields */}
             {isInstallment && (
               <>
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                     {isBRL ? 'Quantas parcelas?' : 'How many installments?'}
                   </label>
                   <input
@@ -262,8 +262,8 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                     onChange={(e) => setTotalInstallments(e.target.value)}
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                     {isBRL ? 'Dia do vencimento' : 'Payment day'}
                   </label>
                   <input
@@ -275,17 +275,17 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                     value={dueDay}
                     onChange={(e) => setDueDay(e.target.value)}
                   />
-                  <p className="text-[10px] text-surface-400 mt-0.5">
+                  <p className="text-xs text-surface-400 mt-1">
                     {isBRL ? 'Ex: Se paga dia 12 todo mês, selecione 12' : 'e.g., if you pay on the 12th every month, select 12'}
                   </p>
                 </div>
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                <div className="space-y-2 sm:col-span-2 min-w-0 w-full">
+                  <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                     {isBRL ? 'Data da compra' : 'Purchase date'}
                   </label>
                   <input
                     type="date"
-                    className="input-field"
+                    className="input-field max-w-full min-w-0 flex-1 appearance-none block w-full box-border"
                     value={purchaseDate}
                     onChange={(e) => setPurchaseDate(e.target.value)}
                   />
@@ -320,8 +320,8 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
 
             {/* Recurring fields */}
             {isRecurring && (
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+              <div className="sm:col-span-2 space-y-2 min-w-0 w-full">
+                <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                   {isBRL ? 'Dia da recorrência' : 'Recurring day'}
                 </label>
                 <input
@@ -333,7 +333,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                   value={recurringDay}
                   onChange={(e) => setRecurringDay(e.target.value)}
                 />
-                <p className="text-[10px] text-surface-400 mt-0.5">
+                <p className="text-xs text-surface-400 mt-1">
                   {isBRL
                     ? 'Ex: Se esse pagamento acontece todo dia 10, selecione 10'
                     : 'e.g., if this payment happens every day 10, select 10'}
@@ -343,9 +343,9 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
 
             {/* Payment Method Flow (same as Dashboard) — Only for Expenses */}
             {type === 'EXPENSE' && (
-              <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-surface-100 dark:border-surface-800/50">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-surface-700 dark:text-surface-300">
+              <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-surface-100 dark:border-surface-800/50 mt-2">
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                     {isBRL ? 'Forma de pagamento' : 'Payment Method'}
                   </label>
                   <select
@@ -367,12 +367,12 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 </div>
 
                 {paymentMethod === 'credit_card' && (
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-surface-700 dark:text-surface-300">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                       {isBRL ? 'Cartão' : 'Card'}
                     </label>
                     {cards.length === 0 ? (
-                      <div className="flex h-10 items-center justify-between rounded-xl border border-dashed border-surface-300 px-3 text-[11px] dark:border-surface-700">
+                      <div className="flex h-[42px] items-center justify-between rounded-xl border border-dashed border-surface-300 px-4 text-[13px] dark:border-surface-700">
                         <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
                       </div>
                     ) : (
@@ -397,16 +397,16 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
 
 
           {error && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 mt-2">
               {error}
             </p>
           )}
 
-          <div className="flex gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 mt-4 border-t border-surface-100 dark:border-surface-800/50">
             <button
               type="button"
               onClick={handleClose}
-              className="btn-secondary flex-1"
+              className="btn-secondary w-full sm:flex-1 py-3"
               disabled={submitting}
             >
               {t('common.cancel')}
@@ -414,7 +414,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary flex-1"
+              className="btn-primary w-full sm:flex-1 py-3"
             >
               {submitting ? t('transaction.saving') : t('transaction.saveChanges')}
             </button>
