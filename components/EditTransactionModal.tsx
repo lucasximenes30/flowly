@@ -368,7 +368,6 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                     <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
                     <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
                     <option value="debit_card">{isBRL ? 'Débito' : 'Debit'}</option>
-                    <option value="contactless">{isBRL ? 'Aproximação' : 'Contactless'}</option>
                     <option value="pix">Pix</option>
                   </select>
                 </div>

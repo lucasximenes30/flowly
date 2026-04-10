@@ -79,3 +79,26 @@ export async function verifyCardOwnership(cardId: string, userId: string): Promi
   const card = await prisma.card.findUnique({ where: { id: cardId } })
   return card?.userId === userId
 }
+
+export async function updateCard(id: string, userId: string, input: Partial<CreateCardInput>): Promise<CardDTO> {
+  const card = await prisma.card.findUnique({ where: { id } })
+  if (!card || card.userId !== userId) {
+    throw new Error('Card not found or unauthorized')
+  }
+
+  const updated = await prisma.card.update({
+    where: { id },
+    data: input,
+  })
+  
+  return {
+    id: updated.id,
+    name: updated.name,
+    lastFourDigits: updated.lastFourDigits,
+    dueDay: updated.dueDay,
+    closingDay: updated.closingDay,
+    color: updated.color,
+    limitAmount: updated.limitAmount.toString(),
+    createdAt: updated.createdAt.toISOString(),
+  }
+}
