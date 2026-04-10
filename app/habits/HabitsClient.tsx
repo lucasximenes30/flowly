@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
+import { useApp } from '@/lib/i18n'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HabitDTO {
@@ -31,6 +32,7 @@ interface Props {
   initialPrevCheckins: CheckinDTO[]
   weekDates: string[] // 7 dates YYYY-MM-DD, Sun → Sat
   initialHistoricalScore: number
+  initialRanking: { userId: string; userName: string; totalScore: number; currentStreak: number; bestStreak: number; rankingPoints: number }[]
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -71,6 +73,58 @@ function todayLocal(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+function getHabitInsights(habits: HabitDTO[], checkins: CheckinDTO[], weekDates: string[], today: string, isBRL: boolean) {
+  if (habits.length === 0) return []
+  const insights: { type: 'positive' | 'negative' | 'neutral'; text: string }[] = []
+
+  const todayCheckins = checkins.filter(c => c.date === today && c.completed)
+  
+  if (todayCheckins.length === habits.length) {
+    insights.push({
+      type: 'positive',
+      text: isBRL ? 'Você completou todos os seus hábitos hoje! Excelente trabalho.' : 'You completed all your habits today! Excellent work.'
+    })
+  } else if (todayCheckins.length === 0) {
+    insights.push({
+      type: 'negative',
+      text: isBRL ? 'Você ainda não concluiu nenhum hábito hoje. Mantenha o foco!' : 'You haven\'t completed any habits today. Stay focused!'
+    })
+  } else if (todayCheckins.length > 0 && todayCheckins.length < habits.length) {
+    const remaining = habits.length - todayCheckins.length
+    insights.push({
+      type: 'neutral',
+      text: isBRL ? `Falta pouco! Conclua mais ${remaining} hábito${remaining > 1 ? 's' : ''} para fechar o dia.` : `Almost there! Complete ${remaining} more habit${remaining > 1 ? 's' : ''} to finish the day.`
+    })
+  }
+
+  const bestHabit = habits.reduce((prev, curr) => (prev.currentStreak > curr.currentStreak) ? prev : curr, habits[0])
+  if (bestHabit && bestHabit.currentStreak > 2) {
+    insights.push({
+      type: 'positive',
+      text: isBRL ? `Sua constância em "${bestHabit.title}" está ótima! Já são ${bestHabit.currentStreak} dias seguidos.` : `Your consistency in "${bestHabit.title}" is great! ${bestHabit.currentStreak} days in a row.`
+    })
+  }
+
+  const worstHabit = habits.reduce((prev, curr) => (prev.currentStreak < curr.currentStreak) ? prev : curr, habits[0])
+  if (worstHabit && worstHabit.currentStreak === 0 && insights.length < 3) {
+    insights.push({
+      type: 'negative',
+      text: isBRL ? `Atenção: "${worstHabit.title}" ficou para trás. Que tal retomá-lo hoje?` : `Attention: "${worstHabit.title}" is falling behind. How about resuming it today?`
+    })
+  }
+  
+  const weekCheckins = checkins.filter(c => weekDates.includes(c.date) && c.completed).length
+  const weekPossible = habits.length * 7
+  if (weekPossible > 0 && (weekCheckins / weekPossible) >= 0.8 && insights.length < 3) {
+      insights.push({
+      type: 'positive',
+      text: isBRL ? `Sua performance semanal está acima de 80%. Continue assim!` : `Your weekly performance is above 80%. Keep it up!`
+    })
+  }
+
+  return insights.slice(0, 3)
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function HabitsClient({
   session,
@@ -79,13 +133,17 @@ export default function HabitsClient({
   initialPrevCheckins,
   weekDates,
   initialHistoricalScore,
+  initialRanking,
 }: Props) {
   const router = useRouter()
+  const { locale } = useApp()
+  const isBRL = locale === 'pt-BR'
   const today = todayLocal()
 
   // State
   const [habits, setHabits] = useState<HabitDTO[]>(initialHabits)
   const [checkins, setCheckins] = useState<CheckinDTO[]>(initialCheckins)
+  const [ranking] = useState(initialRanking)
   const [togglingKey, setTogglingKey] = useState<string | null>(null)
 
   // Drag and drop state
@@ -465,7 +523,7 @@ export default function HabitsClient({
                     onDragStart={(e) => handleDragStart(e, habit.id)}
                     onDragOver={(e) => handleDragOver(e, habit.id)}
                     onDragEnd={handleDragEnd}
-                    className={`flex flex-col sm:grid sm:grid-cols-[minmax(160px,1fr)_repeat(7,40px)_68px] gap-3 sm:gap-2 items-start sm:items-center py-4 sm:py-3 px-3 sm:px-1 group transition-transform duration-200 ${
+                    className={`flex flex-col sm:grid sm:grid-cols-[minmax(160px,1fr)_repeat(7,40px)_68px] gap-3 sm:gap-2 items-start sm:items-center py-4 sm:py-3 px-4 sm:px-2 group transition-transform duration-200 ${
                       isDragging ? 'opacity-40 scale-95 origin-center' : 'opacity-100'
                     } hover:bg-surface-50/50 dark:hover:bg-surface-800/30 rounded-xl relative sm:pl-6 border border-surface-200 dark:border-surface-700/60 sm:border-transparent sm:dark:border-transparent shadow-sm sm:shadow-none bg-white sm:bg-transparent dark:bg-surface-900 sm:dark:bg-transparent`}
                   >
@@ -631,24 +689,24 @@ export default function HabitsClient({
 
           return (
             <div className="card overflow-hidden animate-dashboard-fade">
-              <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6 p-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6 sm:gap-4 p-4">
                 <div className="sm:w-1/3 w-full space-y-4 text-center sm:text-left flex flex-col justify-center">
                   <div>
                     <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 flex items-center justify-center sm:justify-start gap-2 mb-2">
                       <Lucide.Activity className="w-5 h-5 text-brand-500" />
                       Desempenho da Semana
                     </h2>
-                    <p className="text-sm text-surface-500 dark:text-surface-400 max-w-[280px] mx-auto sm:mx-0">
+                    <p className="text-xs sm:text-sm text-surface-500 dark:text-surface-400 max-w-[280px] mx-auto sm:mx-0">
                       Sua análise combinando consistência, energia e regularidade para evoluir suas rotinas.
                     </p>
                   </div>
                   
                   {/* Mobile/Accessible Legend */}
-                  <div className="grid grid-cols-2 gap-2 mt-2 w-full max-w-[300px] mx-auto sm:mx-0">
+                  <div className="grid grid-cols-2 gap-2 w-full max-w-[280px] mx-auto sm:mx-0">
                     {radarData.map((item, i) => (
                       <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700/50">
-                        <span className="text-xs font-medium text-surface-600 dark:text-surface-300">{item.subject}</span>
-                        <span className="text-xs font-bold text-brand-600 dark:text-brand-400">{item.A}%</span>
+                        <span className="text-xs font-medium text-surface-600 dark:text-surface-300 truncate">{item.subject}</span>
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-400 flex-shrink-0 ml-1">{item.A}%</span>
                       </div>
                     ))}
                   </div>
@@ -692,13 +750,175 @@ export default function HabitsClient({
           )
         })()}
 
-      </main>
+        {/* ── Insights ── */}
+        {habits.length > 0 && (() => {
+          const insights = getHabitInsights(habits, checkins, weekDates, today, isBRL)
+          if (insights.length === 0) return null
+          
+          return (
+            <div className="card overflow-hidden animate-dashboard-fade">
+              <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
+                <Lucide.Lightbulb className="w-5 h-5 text-brand-500 shrink-0" />
+                <span>{isBRL ? 'Seu Progresso' : 'Your Progress'}</span>
+              </h2>
+              <div className="grid gap-3 sm:gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {insights.map((insight, i) => (
+                  <div
+                    key={i}
+                    className={`flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border transition-all duration-200 ${
+                      insight.type === 'positive'
+                        ? 'bg-emerald-50/80 border-emerald-200/70 dark:bg-emerald-900/20 dark:border-emerald-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/25 hover:shadow-sm'
+                        : insight.type === 'negative'
+                        ? 'bg-rose-50/80 border-rose-200/70 dark:bg-rose-900/20 dark:border-rose-800/50 hover:bg-rose-50 dark:hover:bg-rose-900/25 hover:shadow-sm'
+                        : 'bg-brand-50/80 border-brand-200/70 dark:bg-brand-900/20 dark:border-brand-800/50 hover:bg-brand-50 dark:hover:bg-brand-900/25 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex-shrink-0 mt-0.5">
+                      {insight.type === 'positive' ? (
+                        <div className="w-7 h-7 rounded-full bg-emerald-100 dark:bg-emerald-800/40 flex items-center justify-center">
+                          <Lucide.TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        </div>
+                      ) : insight.type === 'negative' ? (
+                        <div className="w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-800/40 flex items-center justify-center">
+                          <Lucide.AlertCircle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        </div>
+                      ) : (
+                        <div className="w-7 h-7 rounded-full bg-brand-100 dark:bg-brand-800/40 flex items-center justify-center">
+                          <Lucide.Target className="w-3.5 h-3.5 text-brand-600 dark:text-brand-400" />
+                        </div>
+                      )}
+                    </div>
+                    <p className={`text-sm leading-relaxed ${
+                      insight.type === 'positive'
+                        ? 'text-emerald-700 dark:text-emerald-300'
+                        : insight.type === 'negative'
+                        ? 'text-rose-700 dark:text-rose-300'
+                        : 'text-brand-700 dark:text-brand-300'
+                    }`}>
+                      {insight.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
 
-      {/* ── Create Modal ── */}
-      {showModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
-          onClick={closeModal}
+          {/* ── Ranking / Leaderboard ── */}
+          {ranking && ranking.length > 0 && (() => {
+            const currentUserRank = ranking.findIndex(r => r.userId === session.userId)
+            
+            return (
+              <div className="card overflow-hidden animate-dashboard-fade">
+                <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
+                  <Lucide.Trophy className="w-5 h-5 text-amber-500 shrink-0" />
+                  <span>{isBRL ? 'Ranking de Hábitos' : 'Habits Ranking'}</span>
+                </h2>
+
+                {/* Top 3 Podium */}
+                {ranking.slice(0, 3).length > 0 && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-6">
+                    {ranking.slice(0, 3).map((user, idx) => {
+                      const medals = ['🥇', '🥈', '🥉']
+                      const isCurrentUser = user.userId === session.userId
+                      return (
+                        <div
+                          key={user.userId}
+                          className={`flex flex-col items-center p-3 sm:p-4 rounded-xl border transition-all ${
+                            isCurrentUser
+                              ? 'border-brand-400 bg-brand-50/50 dark:bg-brand-900/20 dark:border-brand-400/40'
+                              : 'border-surface-200 dark:border-surface-700/50 bg-surface-50 dark:bg-surface-800/30'
+                          }`}
+                        >
+                          <div className="text-2xl sm:text-3xl mb-1">{medals[idx]}</div>
+                          <p className="text-xs sm:text-sm font-semibold text-surface-900 dark:text-surface-100 line-clamp-2 text-center leading-tight">
+                            {user.userName}
+                          </p>
+                          <div className="flex flex-col items-center gap-0.5 mt-2">
+                            <p className="text-[10px] sm:text-xs text-surface-600 dark:text-surface-400">
+                              {isBRL ? 'Pontos' : 'Points'}
+                            </p>
+                            <p className="text-sm sm:text-base font-bold text-brand-600 dark:text-brand-400">
+                              {user.rankingPoints}
+                            </p>
+                            <p className="text-[9px] sm:text-[10px] text-surface-500 dark:text-surface-500">
+                              🔥 {user.currentStreak}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Full Leaderboard */}
+                <div className="space-y-2 max-h-[400px] sm:max-h-[300px] overflow-y-auto custom-scrollbar">
+                  {ranking.map((user, idx) => {
+                    const isCurrentUser = user.userId === session.userId
+                    const position = idx + 1
+
+                    return (
+                      <div
+                        key={user.userId}
+                        className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                          isCurrentUser
+                            ? 'border-brand-300 bg-brand-50/70 dark:bg-brand-900/30 dark:border-brand-400/50'
+                            : 'border-surface-200 dark:border-surface-700/40 bg-surface-50 dark:bg-surface-800/20'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-surface-200 dark:bg-surface-700 flex-shrink-0">
+                            <span className="text-xs font-bold text-surface-700 dark:text-surface-300">
+                              {position}º
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className={`text-sm font-medium truncate ${
+                              isCurrentUser
+                                ? 'text-brand-700 dark:text-brand-300'
+                                : 'text-surface-900 dark:text-surface-100'
+                            }`}>
+                              {user.userName}
+                              {isCurrentUser && (
+                                <span className="ml-1 text-xs text-brand-600 dark:text-brand-400">
+                                  {isBRL ? '(você)' : '(you)'}
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-surface-500 dark:text-surface-500">
+                              🔥 {isBRL ? 'Sequência:' : 'Streak:'} {user.currentStreak}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="text-right">
+                            <p className={`text-sm font-bold ${
+                              isCurrentUser
+                                ? 'text-brand-600 dark:text-brand-400'
+                                : 'text-surface-900 dark:text-surface-100'
+                            }`}>
+                              {user.rankingPoints}
+                            </p>
+                            <p className="text-[10px] text-surface-500 dark:text-surface-500">
+                              {isBRL ? 'pontos' : 'pts'}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )
+          })()}
+
+        </main>
+
+        {/* ── Create Modal ── */}
+        {showModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+            onClick={closeModal}
         >
           <div
             className="w-full max-w-md rounded-2xl bg-white dark:bg-surface-900 shadow-elevated border border-surface-200 dark:border-surface-700/60 p-6 space-y-5 animate-dashboard-fade"

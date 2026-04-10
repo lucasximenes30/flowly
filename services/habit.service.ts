@@ -245,3 +245,90 @@ export async function getHistoricalScore(userId: string, weekDates: string[], to
   }
   return score
 }
+
+export interface UserRankingEntry {
+  userId: string
+  userName: string
+  totalScore: number
+  currentStreak: number
+  bestStreak: number
+  rankingPoints: number
+}
+
+export async function getUserRanking(limit: number = 10): Promise<UserRankingEntry[]> {
+  const users = await prisma.user.findMany({
+    where: {
+      habits: {
+        some: {
+          isActive: true
+        }
+      }
+    },
+    include: {
+      habits: {
+        where: { isActive: true },
+        include: {
+          checkins: {
+            orderBy: { date: 'desc' },
+            take: 365,
+          }
+        }
+      }
+    }
+  })
+
+  const ranking: UserRankingEntry[] = []
+
+  for (const user of users) {
+    if (user.habits.length === 0) continue
+
+    // Calculate total score
+    const allCheckins = await prisma.habitCheckin.findMany({
+      where: { habit: { userId: user.id }, completed: true }
+    })
+
+    const byDate: Record<string, number> = {}
+    for (const c of allCheckins) {
+      byDate[c.date] = (byDate[c.date] || 0) + 1
+    }
+
+    let totalScore = 0
+    for (const d in byDate) {
+      totalScore += byDate[d] * 10
+      if (byDate[d] === user.habits.length && user.habits.length > 0) {
+        totalScore += 20
+      }
+    }
+
+    // Calculate current streak (best across all habits)
+    let maxCurrentStreak = 0
+    let maxBestStreak = 0
+
+    for (const habit of user.habits) {
+      const { currentStreak, bestStreak } = calculateStreaks(habit.checkins)
+      maxCurrentStreak = Math.max(maxCurrentStreak, currentStreak)
+      maxBestStreak = Math.max(maxBestStreak, bestStreak)
+    }
+
+    const rankingPoints = totalScore + (maxCurrentStreak * 5)
+
+    ranking.push({
+      userId: user.id,
+      userName: user.name,
+      totalScore,
+      currentStreak: maxCurrentStreak,
+      bestStreak: maxBestStreak,
+      rankingPoints
+    })
+  }
+
+  // Sort by rankingPoints descending, then by totalScore
+  ranking.sort((a, b) => {
+    if (b.rankingPoints !== a.rankingPoints) {
+      return b.rankingPoints - a.rankingPoints
+    }
+    return b.totalScore - a.totalScore
+  })
+
+  return ranking.slice(0, limit)
+}
