@@ -127,12 +127,12 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
 
       {/* ── panel ── */}
       <div
-        className={`fixed right-0 top-0 z-50 h-full w-[95vw] sm:w-[460px] md:w-[420px] lg:w-[26vw] lg:min-w-[400px] xl:w-[24vw] bg-white dark:bg-surface-950 border-l border-surface-200/80 dark:border-surface-800 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
+        className={`fixed right-0 top-0 z-50 h-full w-full sm:w-[460px] md:w-[420px] lg:w-[26vw] lg:min-w-[400px] xl:w-[24vw] bg-white dark:bg-surface-950 border-l border-surface-200/80 dark:border-surface-800 shadow-2xl flex flex-col transition-transform duration-300 ease-out ${
           isPanelOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between px-6 py-5 border-b border-surface-200/80 dark:border-surface-800">
+        <header className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-6 sm:py-5 border-b border-surface-200/80 dark:border-surface-800">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-surface-900 dark:text-surface-100">
               {t('settings.title')}
@@ -150,8 +150,8 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
         </header>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-6 py-8 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
-          <div className="space-y-10">
+        <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8 scrollbar-thin" style={{ scrollbarWidth: 'thin' }}>
+          <div className="space-y-8 sm:space-y-10">
 
             {/* ════════ GERAL ════════ */}
             <SettingsSection

@@ -18,6 +18,7 @@ const createSchema = z.object({
   isRecurring: z.boolean().optional(),
   recurringDay: z.number().int().min(1).max(31).optional().nullable(),
   cardId: z.string().uuid().optional().nullable(),
+  paymentMethod: z.string().optional().nullable()
 })
 
 export async function GET() {

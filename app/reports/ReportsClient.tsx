@@ -216,7 +216,11 @@ export default function ReportsClient({
   useEffect(() => {
     if (!selectedMonth) return
     setInsightsLoading(true)
-    fetch('/api/insights', { method: 'POST' })
+    fetch('/api/insights', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language: locale }),
+    })
       .then(async (r) => r.ok ? r.json() : null)
       .then((data) => {
         if (data?.insights) setAiInsights(data.insights)
@@ -417,7 +421,7 @@ export default function ReportsClient({
                   </div>
                 ) : (
                   <>
-                    <div style={{ width: '100%', height: 280 }} className="opacity-100 animate-fade-in">
+                    <div style={{ width: '100%', height: 260 }} className="opacity-100 animate-fade-in mb-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
@@ -426,8 +430,8 @@ export default function ReportsClient({
                             nameKey="category"
                             cx="50%"
                             cy="50%"
-                            innerRadius={70}
-                            outerRadius={105}
+                            innerRadius={65}
+                            outerRadius={95}
                             paddingAngle={2.5}
                             strokeWidth={0}
                           >
@@ -449,15 +453,28 @@ export default function ReportsClient({
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 mt-3">
-                      {categoryData.map((item, i) => (
-                        <div key={i} className="flex items-center gap-1.5">
-                          <div className="h-2.5 w-2.5 rounded-full ring-1 ring-inset ring-surface-100 dark:ring-surface-800" style={{ backgroundColor: pieColors[item.category] || pieColors['Other'] }} />
-                          <span className="text-xs text-surface-600 dark:text-surface-400">
-                            {t(`category.${item.category}`) ?? item.category}
-                          </span>
-                        </div>
-                      ))}
+                    
+                    <div className="flex flex-col gap-2 mt-4 max-h-[220px] overflow-y-auto pr-2 custom-scrollbar">
+                      {categoryData.map((item, i) => {
+                        const total = categoryData.reduce((acc, curr) => acc + curr.amount, 0);
+                        const percent = total > 0 ? ((item.amount / total) * 100).toFixed(1) : '0';
+                        return (
+                          <div key={i} className="flex flex-row items-center justify-between gap-3 text-sm p-2 rounded-lg bg-surface-50 dark:bg-surface-800/40 border border-surface-100 dark:border-surface-800">
+                            <div className="flex items-center gap-2.5 overflow-hidden">
+                              <div className="h-3 w-3 rounded-full ring-2 ring-transparent ring-offset-1 dark:ring-offset-surface-900 flex-shrink-0" style={{ backgroundColor: pieColors[item.category] || pieColors['Other'], ringColor: pieColors[item.category] || pieColors['Other'] }} />
+                              <span className="text-surface-700 dark:text-surface-300 font-medium truncate" title={t(`category.${item.category}`) ?? item.category}>
+                                {t(`category.${item.category}`) ?? item.category}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="text-surface-500 dark:text-surface-400 font-medium">{percent}%</span>
+                              <span className="text-surface-900 dark:text-surface-100 font-semibold text-right min-w-[70px]">
+                                {formatCurrency(item.amount)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </>
                 )}

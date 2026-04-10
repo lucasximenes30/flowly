@@ -6,13 +6,16 @@ import {
   getWeeklyAnalysis,
 } from '@/services/insights.service'
 
-export async function GET() {
+export async function GET(request: Request) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const url = new URL(request.url)
+  const language = url.searchParams.get('language') || 'pt-BR'
+
   try {
     const [score, anomalies, weekly] = await Promise.all([
-      calculateFinancialScore(session.userId),
+      calculateFinancialScore(session.userId, language),
       detectSpendingAnomalies(session.userId),
       getWeeklyAnalysis(session.userId),
     ])

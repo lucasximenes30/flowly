@@ -7,6 +7,13 @@ export async function POST(request: NextRequest) {
   const session = await getSession()
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  let requestData = {}
+  try {
+    requestData = await request.json()
+  } catch (e) {}
+
+  const language = (requestData as any).language || 'pt-BR'
+
   const now = new Date()
   const year = now.getFullYear()
   const month = now.getMonth() + 1
@@ -32,6 +39,7 @@ export async function POST(request: NextRequest) {
       previousExpense: previousSummary.expense,
       previousBalance: previousSummary.balance,
       trend: trendData,
+      language: language as string,
     })
 
     return NextResponse.json({ insights })

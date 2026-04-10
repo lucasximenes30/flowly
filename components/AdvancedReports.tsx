@@ -39,10 +39,15 @@ interface AdvancedReportsProps {
 
 const SCORE_COLORS: Record<string, string> = {
   'Excelente': '#22c55e',
+  'Very Good': '#4ade80',
   'Muito Bom': '#4ade80',
+  'Good': '#a3e635',
   'Bom': '#a3e635',
+  'Fair': '#fbbf24',
   'Regular': '#fbbf24',
+  'Needs Improvement': '#f43f5e',
   'Precisa melhorar': '#f43f5e',
+  'Excellent': '#22c55e'
 }
 
 export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedReportsProps) {
@@ -56,7 +61,8 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/reports/advanced')
+    const lang = isBRL ? 'pt-BR' : 'en'
+    fetch(`/api/reports/advanced?language=${lang}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
@@ -67,7 +73,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
       })
       .catch(() => { /* silent fail */ })
       .finally(() => setLoading(false))
-  }, [])
+  }, [isBRL])
 
   const weeklyChartData = weekly.map((w) => ({
     week: w.week,
@@ -297,7 +303,14 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v: string) => v.slice(5)}
+                      tickFormatter={(v: string) => {
+                        const sliced = v.slice(5)
+                        if (isBRL && sliced.includes('-')) {
+                          const [m, d] = sliced.split('-')
+                          return `${d}/${m}`
+                        }
+                        return sliced
+                      }}
                     />
                     <YAxis
                       tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
@@ -306,6 +319,15 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}
                     />
                     <RechartsTooltip
+                      labelFormatter={(label: any) => {
+                        if (typeof label !== 'string') return String(label)
+                        const sliced = label.slice(5)
+                        if (isBRL && sliced.includes('-')) {
+                          const [m, d] = sliced.split('-')
+                          return `${d}/${m}`
+                        }
+                        return sliced
+                      }}
                       formatter={(value, name) => [formatCurrency(Number(value)), name === 'income' ? (isBRL ? 'Receita' : 'Income') : (isBRL ? 'Despesa' : 'Expense')]}
                       contentStyle={{
                         backgroundColor: isBRL ? '#16171d' : '#fff',
