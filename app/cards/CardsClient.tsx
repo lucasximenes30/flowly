@@ -49,9 +49,12 @@ export default function CardsClient({ session, initialCards, transactions = [] }
   const { locale, t } = useApp()
   const isBRL = locale === 'pt-BR'
   const [cards, setCards] = useState<Card[]>(initialCards)
-  const [showForm, setShowForm] = useState(false)
+  const [showModal, setShowModal] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; cardId?: string }>({ isOpen: false, mode: 'create' })
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // Confirmation Delete Modal
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   // Form state
   const [name, setName] = useState('')
@@ -60,6 +63,30 @@ export default function CardsClient({ session, initialCards, transactions = [] }
   const [closingDay, setClosingDay] = useState('')
   const [limitAmount, setLimitAmount] = useState('')
   const [color, setColor] = useState('blue')
+
+  const resetForm = () => {
+    setName('')
+    setLastFourDigits('')
+    setDueDay('')
+    setClosingDay('')
+    setLimitAmount('')
+    setColor('blue')
+  }
+
+  const openCreateModal = () => {
+    resetForm()
+    setShowModal({ isOpen: true, mode: 'create' })
+  }
+
+  const openEditModal = (card: Card) => {
+    setName(card.name)
+    setLastFourDigits(card.lastFourDigits)
+    setDueDay(card.dueDay.toString())
+    setClosingDay(card.closingDay.toString())
+    setLimitAmount(card.limitAmount)
+    setColor(card.color)
+    setShowModal({ isOpen: true, mode: 'edit', cardId: card.id })
+  }
 
   // Update Document Title Dynamically
   useEffect(() => {
@@ -77,8 +104,11 @@ export default function CardsClient({ session, initialCards, transactions = [] }
     setSubmitting(true)
 
     try {
-      const res = await fetch('/api/cards', {
-        method: 'POST',
+      const url = showModal.mode === 'create' ? '/api/cards' : `/api/cards/${showModal.cardId}`
+      const method = showModal.mode === 'create' ? 'POST' : 'PATCH'
+      
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: name.trim(),
@@ -92,37 +122,41 @@ export default function CardsClient({ session, initialCards, transactions = [] }
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error ?? 'Falha ao adicionar cartão')
+        setError(data.error ?? 'Falha ao processar cartão')
         return
       }
 
       const { card } = await res.json()
-      setCards([...cards, card])
       
-      // Reset form
-      setName('')
-      setLastFourDigits('')
-      setDueDay('')
-      setClosingDay('')
-      setLimitAmount('')
-      setColor('blue')
-      setShowForm(false)
+      if (showModal.mode === 'create') {
+        setCards([...cards, card])
+      } else {
+        setCards(cards.map(c => c.id === card.id ? card : c))
+      }
+      
+      resetForm()
+      setShowModal({ isOpen: false, mode: 'create' })
       router.refresh()
     } catch {
-      setError('Erro de conexão ao adicionar cartão')
+      setError('Erro de conexão')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja remover este cartão? O histórico de transações será mantido.')) return
+  const handleDeleteClick = (id: string) => {
+    setConfirmDeleteId(id)
+  }
 
+  const handleDelete = async () => {
+    if (!confirmDeleteId) return
+    
     try {
-      const res = await fetch(`/api/cards/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/cards/${confirmDeleteId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error('Falha ao remover cartão')
       
-      setCards(cards.filter(c => c.id !== id))
+      setCards(cards.filter(c => c.id !== confirmDeleteId))
+      setConfirmDeleteId(null)
       router.refresh()
     } catch (err: any) {
       alert(err.message)
@@ -223,17 +257,34 @@ export default function CardsClient({ session, initialCards, transactions = [] }
           </div>
         )}
 
-        {/* Add Card Form */}
-        {showForm && (
-          <div className="card space-y-6 animate-dashboard-fade">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Adicionar Cartão de Crédito</h2>
-                <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">Preencha os dados básicos do seu cartão para vinculá-lo às suas despesas.</p>
+        {/* Add/Edit Card Modal */}
+        {showModal.isOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-0 sm:p-4 transition-all duration-300 backdrop-blur-sm"
+            onClick={() => setShowModal({ isOpen: false, mode: 'create' })}
+          >
+            <div
+              className="bg-white dark:bg-surface-900 w-full sm:max-w-xl rounded-t-3xl sm:rounded-2xl shadow-xl flex flex-col max-h-[90vh] transition-transform animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex-shrink-0 flex items-center justify-between border-b border-surface-100 p-4 sm:p-6 dark:border-surface-800/50">
+                <div>
+                  <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                    {showModal.mode === 'create' ? 'Adicionar Cartão de Crédito' : 'Editar Cartão'}
+                  </h2>
+                  <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">Preencha os dados básicos do seu cartão.</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowModal({ isOpen: false, mode: 'create' })}
+                  className="rounded-full p-2 -mr-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-colors"
+                >
+                  <Lucide.X className="h-5 w-5" />
+                </button>
               </div>
-            </div>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-surface-700 dark:text-surface-300">Apelido do Cartão</label>
@@ -322,69 +373,127 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                   ))}
                 </div>
               </div>
+                </div>
+                
+                <div className="flex-shrink-0 border-t border-surface-100 p-4 sm:p-6 dark:border-surface-800/50 bg-surface-50 dark:bg-surface-900/50 rounded-b-3xl sm:rounded-b-2xl">
+                  <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowModal({ isOpen: false, mode: 'create' })}
+                      className="px-4 py-2.5 text-sm font-medium text-surface-700 bg-white border border-surface-300 rounded-xl hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:border-surface-600 dark:hover:bg-surface-700 transition-colors shadow-sm w-full sm:w-auto"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submitting || !name || lastFourDigits.length !== 4 || !dueDay || !closingDay || !limitAmount}
+                      className="btn-primary py-2.5 px-6 rounded-xl shadow-sm hover:shadow-md transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto text-center justify-center flex"
+                    >
+                      {submitting ? (
+                        <Lucide.Loader2 className="h-5 w-5 animate-spin mx-auto" />
+                      ) : showModal.mode === 'create' ? (
+                        'Adicionar Cartão'
+                      ) : (
+                        'Salvar Alterações'
+                      )}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
-              <div className="pt-4 flex justify-end gap-3">
+        {/* Delete Confirmation Modal */}
+        {confirmDeleteId && (
+          <div
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 p-4 transition-all duration-300 backdrop-blur-sm"
+            onClick={() => setConfirmDeleteId(null)}
+          >
+            <div
+              className="bg-white dark:bg-surface-900 w-full sm:max-w-md rounded-3xl sm:rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-8 sm:slide-in-from-bottom-0 sm:zoom-in-95"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6 space-y-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center mb-4">
+                  <Lucide.AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                </div>
+                <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100">
+                  Excluir Cartão
+                </h2>
+                <p className="text-surface-600 dark:text-surface-400">
+                  Tem certeza que deseja remover este cartão? O histórico de transações será mantido, mas você não poderá mais adicionar novas transações a ele.
+                </p>
+              </div>
+              <div className="bg-surface-50 dark:bg-surface-900/50 px-6 py-4 border-t border-surface-100 dark:border-surface-800/50 flex flex-col-reverse sm:flex-row justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-4 py-2 text-sm font-medium rounded-xl text-surface-600 hover:bg-surface-100 dark:text-surface-300 dark:hover:bg-surface-800 transition-colors"
+                  onClick={() => setConfirmDeleteId(null)}
+                  className="px-4 py-2.5 text-sm font-medium text-surface-700 bg-white border border-surface-300 rounded-xl hover:bg-surface-50 dark:bg-surface-800 dark:text-surface-300 dark:border-surface-600 dark:hover:bg-surface-700 transition-colors w-full sm:w-auto"
                 >
                   Cancelar
                 </button>
                 <button
-                  type="submit"
-                  disabled={submitting || !name || lastFourDigits.length !== 4 || !dueDay || !closingDay || !limitAmount}
-                  className="btn-primary"
+                  type="button"
+                  onClick={handleDelete}
+                  className="px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-xl hover:bg-red-700 shadow-sm transition-colors w-full sm:w-auto text-center"
                 >
-                  {submitting ? 'Salvando...' : 'Salvar Cartão'}
+                  Confirmar Exclusão
                 </button>
               </div>
-            </form>
+            </div>
           </div>
         )}
 
         {/* Analytics Section */}
         {cards.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-dashboard-fade">
-            <div className="lg:col-span-2 card p-6 flex flex-col gap-4">
+            <div className="lg:col-span-2 card p-6 flex flex-col gap-5">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">{isBRL ? 'Fatura Atual por Cartão' : 'Current Invoice per Card'}</h3>
-                  <p className="text-xs text-surface-500 mt-0.5">{isBRL ? 'Visão geral do fechamento atual' : 'Overview of current billing cycle'}</p>
+                  <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">{isBRL ? 'Visão geral do fechamento atual' : 'Overview of current billing cycle'}</p>
                 </div>
-                <Lucide.BarChart3 className="h-4 w-4 text-surface-400" />
+                <div className="p-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-500">
+                  <Lucide.BarChart3 className="h-5 w-5" />
+                </div>
               </div>
-              <div className="h-48 w-full mt-2">
+              <div className="h-56 w-full mt-2 -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888820" />
+                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#88888815" />
                     <XAxis 
                       dataKey="name" 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 10, fill: '#888888' }}
+                      tick={{ fontSize: 11, fill: '#9ca3af' }}
                       dy={10}
                     />
                     <YAxis 
                       axisLine={false} 
                       tickLine={false} 
-                      tick={{ fontSize: 10, fill: '#888888' }}
+                      tick={{ fontSize: 11, fill: '#9ca3af' }}
                       tickFormatter={(val) => `${isBRL ? 'R$' : '$'}${val}`}
+                      dx={-5}
                     />
                     <Tooltip 
                       cursor={{ fill: '#88888810' }}
                       contentStyle={{ 
-                        backgroundColor: '#171717', 
-                        border: '1px solid #ffffff10', 
+                        backgroundColor: 'var(--tooltip-bg, #1f2937)', 
+                        border: '1px solid var(--tooltip-border, rgba(255,255,255,0.1))', 
                         borderRadius: '12px',
-                        fontSize: '12px',
-                        color: '#fff' 
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        color: '#f3f4f6',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                       }}
+                      itemStyle={{ color: '#e5e7eb', fontWeight: 'bold' }}
+                      labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
                       formatter={(val: any) => [`${isBRL ? 'R$' : '$'}${parseFloat(val).toLocaleString(isBRL?'pt-BR':'en-US')}`, isBRL ? 'Fatura' : 'Invoice']}
                     />
-                    <Bar dataKey="fatura" radius={[4, 4, 0, 0]} barSize={32}>
+                    <Bar dataKey="fatura" radius={[6, 6, 0, 0]} maxBarSize={48} barSize={36}>
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
+                        <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.9} className="hover:fill-opacity-100 transition-all duration-300" />
                       ))}
                     </Bar>
                   </BarChart>
@@ -392,31 +501,36 @@ export default function CardsClient({ session, initialCards, transactions = [] }
               </div>
             </div>
             
-            <div className="card p-6 flex flex-col justify-between">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-500">
-                  <Lucide.ShieldCheck className="h-4 w-4" />
+            <div className="card p-6 flex flex-col justify-between bg-gradient-to-br from-surface-50 to-white dark:from-surface-900 dark:to-surface-800/80">
+              <div>
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-sm">
+                    <Lucide.ShieldCheck className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">{isBRL ? 'Limite Total' : 'Total Limit'}</h3>
                 </div>
-                <h3 className="text-sm font-semibold">{isBRL ? 'Limite Total' : 'Total Limit'}</h3>
+                <div className="space-y-1">
+                  <p className="text-3xl font-bold tracking-tight text-surface-900 dark:text-white">
+                    {isBRL ? 'R$' : '$'}{cardCalculations.reduce((acc, c) => acc + c.totalLimit, 0).toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-sm font-medium text-surface-500 dark:text-surface-400">{isBRL ? 'Somando todos os cartões' : 'Sum of all cards'}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold">
-                  {isBRL ? 'R$' : '$'}{cardCalculations.reduce((acc, c) => acc + c.totalLimit, 0).toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
-                </p>
-                <p className="text-xs text-surface-500">{isBRL ? 'Somando todos os cartões' : 'Sum of all cards'}</p>
-              </div>
-              <div className="mt-6 pt-6 border-t border-surface-100 dark:border-surface-800">
-                 <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-surface-500">{isBRL ? 'Utilizado' : 'Used'}</span>
-                    <span className="font-medium">
+              
+              <div className="mt-8 pt-6 border-t border-surface-200 dark:border-surface-700/50">
+                 <div className="flex justify-between text-sm mb-2.5">
+                    <span className="font-medium text-surface-500 dark:text-surface-400">{isBRL ? 'Utilizado' : 'Used'}</span>
+                    <span className="font-bold text-surface-900 dark:text-surface-100">
                       {isBRL ? 'R$' : '$'}{cardCalculations.reduce((acc, c) => acc + c.usedLimit, 0).toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
                     </span>
                  </div>
-                 <div className="h-1.5 w-full bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                 <div className="h-2.5 w-full bg-surface-200 dark:bg-surface-700/80 rounded-full overflow-hidden shadow-inner">
                     <div 
-                      className="h-full bg-brand-500 transition-all duration-500" 
-                      style={{ width: `${Math.min((cardCalculations.reduce((acc, c) => acc + c.usedLimit, 0) / cardCalculations.reduce((acc, c) => acc + c.totalLimit, 0) || 1) * 100, 100)}%` }}
-                    />
+                      className="h-full bg-emerald-500 transition-all duration-700 ease-out relative" 
+                      style={{ width: `${Math.min((cardCalculations.reduce((acc, c) => acc + c.usedLimit, 0) / (cardCalculations.reduce((acc, c) => acc + c.totalLimit, 0) || 1)) * 100, 100)}%` }}
+                    >
+                      <div className="absolute inset-0 bg-white/20" />
+                    </div>
                  </div>
               </div>
             </div>
@@ -424,7 +538,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
         )}
 
         {/* Cards List */}
-        {cards.length === 0 && !showForm ? (
+        {cards.length === 0 && !showModal.isOpen ? (
           <div className="card flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-4 rounded-full bg-brand-50 p-4 dark:bg-brand-900/20">
               <Lucide.CreditCard className="h-8 w-8 text-brand-500" />
@@ -434,21 +548,26 @@ export default function CardsClient({ session, initialCards, transactions = [] }
               Adicione seus cartões de crédito para registrar transações vinculadas e receber notificações de fatura.
             </p>
             <button
-              onClick={() => setShowForm(true)}
-              className="mt-6 btn-primary"
+              onClick={openCreateModal}
+              className="mt-6 btn-primary flex items-center gap-2"
             >
+              <Lucide.Plus className="h-4 w-4" />
               Adicionar Primeiro Cartão
             </button>
           </div>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">Seus Cartões Atuais</h2>
-              {!showForm && (
+            <div className="flex items-center justify-between pb-2 border-b border-surface-200/50 dark:border-surface-800/50">
+              <h2 className="text-xl font-bold text-surface-900 dark:text-surface-100 flex items-center gap-2">
+                <Lucide.CreditCard className="h-5 w-5 text-surface-500" />
+                Seus Cartões Atuais
+              </h2>
+              {!showModal.isOpen && (
                 <button
-                  onClick={() => setShowForm(true)}
-                  className="btn-primary"
+                  onClick={openCreateModal}
+                  className="btn-primary py-2 px-4 shadow-sm hover:shadow-md transition-all flex items-center gap-2"
                 >
+                  <Lucide.Plus className="w-4 h-4" />
                   Novo Cartão
                 </button>
               )}
@@ -458,43 +577,52 @@ export default function CardsClient({ session, initialCards, transactions = [] }
               {cardCalculations.map(card => {
                 const preset = PRESET_COLORS.find(c => c.id === card.color) || PRESET_COLORS[0]
                 return (
-                  <div key={card.id} className="space-y-4 animate-dashboard-fade">
-                    <div className={`relative rounded-2xl bg-gradient-to-br ${preset.gradient} p-6 text-white shadow-lg ring-1 ring-white/10 overflow-hidden group min-h-[180px]`}>
+                  <div key={card.id} className="card p-2 flex flex-col animate-dashboard-fade group hover:shadow-lg dark:hover:shadow-black/40 transition-all duration-300">
+                    <div className={`relative rounded-xl bg-gradient-to-br ${preset.gradient} p-5 text-white shadow-md ring-1 ring-white/10 overflow-hidden flex-shrink-0 min-h-[160px]`}>
                       {/* Subtle premium glows */}
                       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.03] via-transparent to-transparent pointer-events-none" />
                       <div className={`absolute -top-10 -right-10 w-24 h-24 bg-white/[0.07] rounded-full blur-2xl pointer-events-none`} />
-                      <div className={`absolute -bottom-8 -left-8 w-24 h-24 bg-black/[0.08] rounded-full blur-xl pointer-events-none`} />
+                      <div className={`absolute -bottom-8 -left-8 w-24 h-24 bg-black/[0.12] rounded-full blur-xl pointer-events-none`} />
                       
                       <div className="relative z-10 flex flex-col h-full">
-                        <div className="flex justify-between items-start mb-6">
-                          <div className="flex items-center gap-2">
-                             <Lucide.CreditCard className="h-5 w-5 text-white/80" />
-                             <span className="font-medium text-white/90">{card.name}</span>
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex items-center gap-2 font-medium text-white/95">
+                             <Lucide.CreditCard className="h-5 w-5 opacity-90" />
+                             <span className="truncate max-w-[120px]">{card.name}</span>
                           </div>
                           
-                          <button 
-                            onClick={() => handleDelete(card.id)}
-                            className="text-white/40 hover:text-white/90 transition-colors bg-white/5 hover:bg-white/10 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
-                            title="Excluir cartão"
-                          >
-                            <Lucide.Trash2 className="h-4 w-4" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button 
+                              onClick={() => openEditModal(card)}
+                              className="text-white/60 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none backdrop-blur-sm"
+                              title="Editar cartão"
+                            >
+                              <Lucide.Pen className="h-3.5 w-3.5" />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteClick(card.id)}
+                              className="text-white/60 hover:text-white transition-colors bg-white/10 hover:bg-white/20 rounded-lg p-1.5 opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none backdrop-blur-sm"
+                              title="Excluir cartão"
+                            >
+                              <Lucide.Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
                         </div>
                         
-                        <div className="mb-6 flex gap-3">
-                          <span className="text-lg tracking-widest text-white/60">••••</span>
-                          <span className="text-lg tracking-widest text-white/60">••••</span>
-                          <span className="text-lg tracking-widest text-white/60">••••</span>
-                          <span className="text-lg tracking-widest font-mono text-white/90">{card.lastFourDigits}</span>
+                        <div className="mb-4 flex gap-3 mt-auto">
+                          <span className="text-lg tracking-widest text-white/50">••••</span>
+                          <span className="text-lg tracking-widest text-white/50">••••</span>
+                          <span className="text-lg tracking-widest text-white/50">••••</span>
+                          <span className="text-lg tracking-widest font-mono text-white/95">{card.lastFourDigits}</span>
                         </div>
                         
-                        <div className="mt-auto flex justify-between text-[10px] font-medium text-white/70 pt-4 border-t border-white/10 italic">
+                        <div className="flex justify-between text-[11px] font-medium text-white/75 pt-3 border-t border-white/15">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-white/50">{isBRL ? 'Fechamento' : 'Closing'}</span>
+                            <span className="text-white/60 uppercase tracking-widest text-[9px]">{isBRL ? 'Fechamento' : 'Closing'}</span>
                             <span>{isBRL ? 'Dia' : 'Day'} {card.closingDay}</span>
                           </div>
                           <div className="flex flex-col gap-0.5 text-right">
-                            <span className="text-white/50">{isBRL ? 'Vencimento' : 'Due'}</span>
+                            <span className="text-white/60 uppercase tracking-widest text-[9px]">{isBRL ? 'Vencimento' : 'Due'}</span>
                             <span>{isBRL ? 'Dia' : 'Day'} {card.dueDay}</span>
                           </div>
                         </div>
@@ -502,30 +630,30 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                     </div>
 
                     {/* Card Stats Below */}
-                    <div className="card p-4 space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm text-surface-500 dark:text-surface-400 font-semibold uppercase tracking-wider">{isBRL ? 'Fatura Atual' : 'Current Invoice'}</span>
-                        <span className="text-base font-bold text-surface-900 dark:text-surface-100">
+                    <div className="p-5 flex-1 flex flex-col justify-end space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-surface-100 dark:border-surface-800/60">
+                        <span className="text-xs text-surface-500 dark:text-surface-400 font-bold uppercase tracking-wider">{isBRL ? 'Fatura Atual' : 'Current Invoice'}</span>
+                        <span className="text-lg font-bold text-surface-900 dark:text-white">
                           {isBRL ? 'R$' : '$'}{card.currentInvoiceAmount.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-surface-500 dark:text-surface-400/70">{isBRL ? 'Limite Utilizado' : 'Used Limit'}</span>
-                          <span className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400">{isBRL ? 'Limite Utilizado' : 'Used Limit'}</span>
+                          <span className="text-xs font-bold text-surface-800 dark:text-surface-200">
                             {isBRL ? 'R$' : '$'}{card.usedLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
-                        <div className="h-1.5 w-full bg-surface-100 dark:bg-surface-800 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-surface-100 dark:bg-surface-800/80 rounded-full overflow-hidden shadow-inner flex">
                           <div 
-                            className={`h-full transition-all duration-500 ${card.usagePercent > 90 ? 'bg-red-500' : card.usagePercent > 70 ? 'bg-amber-500' : 'bg-brand-500'}`} 
+                            className={`h-full transition-all duration-700 ease-out ${card.usagePercent > 90 ? 'bg-red-500' : card.usagePercent > 70 ? 'bg-amber-500' : 'bg-brand-500'}`} 
                             style={{ width: `${Math.min(card.usagePercent, 100)}%` }}
                           />
                         </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-surface-400 dark:text-surface-500">{isBRL ? 'Disponível' : 'Available'}: <span className="font-medium text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.availableLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</span></span>
-                          <span className="text-xs text-surface-400 dark:text-surface-500">{isBRL ? 'Total' : 'Total'}: <span className="font-medium text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.totalLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</span></span>
+                        <div className="flex justify-between items-center text-[11px]">
+                          <span className="text-surface-400 dark:text-surface-500">{isBRL ? 'Disponível' : 'Available'}: <strong className="font-semibold text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.availableLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</strong></span>
+                          <span className="text-surface-400 dark:text-surface-500">{isBRL ? 'Total' : 'Total'}: <strong className="font-semibold text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.totalLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</strong></span>
                         </div>
                       </div>
                     </div>
