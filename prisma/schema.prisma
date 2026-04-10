@@ -21,6 +21,7 @@ model User {
   notifications        Notification[]
   cards                Card[]
   habits               Habit[]
+  workoutPlans         WorkoutPlan[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -163,4 +164,17 @@ model HabitCheckin {
   @@unique([habitId, date])
   @@index([habitId])
   @@map("habit_checkins")
+}
+
+model WorkoutPlan {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, isActive])
+  @@map("workout_plans")
 }

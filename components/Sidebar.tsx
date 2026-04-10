@@ -17,6 +17,12 @@ export const NAV_ITEMS = [
     href: '/habits',
     match: (p: string) => p.startsWith('/habits'),
   },
+  {
+    Icon: Lucide.Dumbbell,
+    label: 'Treino',
+    href: '/workout',
+    match: (p: string) => p.startsWith('/workout'),
+  },
 ]
 
 export default function Sidebar() {
