@@ -461,7 +461,7 @@ export default function ReportsClient({
                         return (
                           <div key={i} className="flex flex-row items-center justify-between gap-3 text-sm p-2 rounded-lg bg-surface-50 dark:bg-surface-800/40 border border-surface-100 dark:border-surface-800">
                             <div className="flex items-center gap-2.5 overflow-hidden">
-                              <div className="h-3 w-3 rounded-full ring-2 ring-transparent ring-offset-1 dark:ring-offset-surface-900 flex-shrink-0" style={{ backgroundColor: pieColors[item.category] || pieColors['Other'], ringColor: pieColors[item.category] || pieColors['Other'] }} />
+                              <div className="h-3 w-3 rounded-full ring-2 ring-transparent ring-offset-1 dark:ring-offset-surface-900 flex-shrink-0" style={{ backgroundColor: pieColors[item.category] || pieColors['Other'], '--tw-ring-color': pieColors[item.category] || pieColors['Other'] } as React.CSSProperties} />
                               <span className="text-surface-700 dark:text-surface-300 font-medium truncate" title={t(`category.${item.category}`) ?? item.category}>
                                 {t(`category.${item.category}`) ?? item.category}
                               </span>
