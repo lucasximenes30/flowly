@@ -10,9 +10,10 @@ import SettingsPanel from '@/components/SettingsPanel'
 import NotificationDropdown from '@/components/NotificationDropdown'
 import * as Lucide from 'lucide-react'
 import { getInstallmentInfo, formatShortDate, isInstallmentActiveInMonth, getInstallmentForMonth } from '@/lib/installments'
+import { getLocalToday } from '@/lib/dateUtils'
 
 interface Session { userId: string; email: string; name: string }
-interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string; cardId?: string }
+interface Transaction { id: string; title: string; amount: string; installmentAmount?: number; type: 'INCOME' | 'EXPENSE'; category: string; date: string; isInstallment?: boolean; totalInstallments?: number; purchaseDate?: string; dueDay?: number; _activeInstallment?: number; isRecurring?: boolean; recurringDay?: number; _recurringStatus?: { isRecurring: boolean; day: number | null; status: 'DUE' | 'PAID' | 'UPCOMING'; daysUntil: number | null }; isActive?: boolean; endDate?: string; cardId?: string; paymentMethod?: string }
 interface Balance { income: number; expense: number; balance: number }
 interface Monthly { income: number; expense: number; balance: number; transactionCount: number }
 interface Card { id: string; name: string; lastFourDigits: string; dueDay: number; closingDay: number }
@@ -135,18 +136,18 @@ export default function DashboardClient({
   const [amount, setAmount] = useState('')
   const [type, setType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
   const [category, setCategory] = useState('')
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(getLocalToday())
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
   // Installment fields
   const [isInstallment, setIsInstallment] = useState(false)
   const [totalInstallments, setTotalInstallments] = useState('')
-  const [purchaseDate, setPurchaseDate] = useState(new Date().toISOString().split('T')[0])
+  const [purchaseDate, setPurchaseDate] = useState(getLocalToday())
   const [dueDay, setDueDay] = useState('')
 
   // Card fields
-  const [paymentMethod, setPaymentMethod] = useState<'none' | 'credit_card'>('none')
+  const [paymentMethod, setPaymentMethod] = useState<string>('none')
   const [selectedCardId, setSelectedCardId] = useState<string>('')
 
   // Update logic: if user chooses card, auto-fill dueDay if we're in installment
@@ -196,6 +197,7 @@ export default function DashboardClient({
           isRecurring,
           recurringDay: isRecurring ? parseInt(recurringDay) : null,
           cardId: paymentMethod === 'credit_card' && selectedCardId ? selectedCardId : null,
+          paymentMethod: paymentMethod === 'none' ? null : paymentMethod,
         }),
       })
 
@@ -206,8 +208,8 @@ export default function DashboardClient({
       }
 
       setTitle(''); setAmount(''); setCategory('')
-      setDate(new Date().toISOString().split('T')[0])
-      setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay('')
+      setDate(getLocalToday())
+      setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(getLocalToday()); setDueDay('')
       setIsRecurring(false); setRecurringDay('')
       setPaymentMethod('none'); setSelectedCardId('')
       setShowForm(false)
@@ -647,7 +649,7 @@ export default function DashboardClient({
                       <select
                         value={paymentMethod}
                         onChange={(e) => {
-                          const val = e.target.value as 'none' | 'credit_card'
+                          const val = e.target.value as any
                           setPaymentMethod(val)
                           if (val === 'credit_card' && cards.length > 0) {
                             setSelectedCardId(cards[0].id)
@@ -659,6 +661,9 @@ export default function DashboardClient({
                       >
                         <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
                         <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
+                        <option value="debit_card">{isBRL ? 'Débito' : 'Debit'}</option>
+                        <option value="contactless">{isBRL ? 'Aproximação' : 'Contactless'}</option>
+                        <option value="pix">Pix</option>
                       </select>
                     </div>
 
@@ -720,7 +725,7 @@ export default function DashboardClient({
               <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(new Date().toISOString().split('T')[0]); setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(new Date().toISOString().split('T')[0]); setDueDay(''); }}
+                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(getLocalToday()); setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(getLocalToday()); setDueDay(''); }}
                   className="btn-secondary w-full sm:w-auto h-12 sm:h-auto text-base sm:text-sm font-semibold"
                   disabled={submitting}
                 >

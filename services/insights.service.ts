@@ -17,6 +17,7 @@ export interface InsightsInput {
   previousExpense: number
   previousBalance: number
   trend: { month: string; income: number; expense: number }[]
+  language: string
 }
 
 // Cache em memória para server-side (Map com TTL)
@@ -28,6 +29,7 @@ function cacheKey(input: InsightsInput): string {
     i: input.monthlyIncome,
     e: input.monthlyExpense,
     t: input.topCategories.map((c) => `${c.category}:${Math.round(c.amount / 10) * 10}`),
+    l: input.language,
   })
 }
 
@@ -64,42 +66,37 @@ export async function generateAIInsights(input: InsightsInput): Promise<AIInsigh
   const topCategoryPct = totalExpenses > 0 ? (topCategory ? (topCategory.amount / totalExpenses) * 100 : 0) : 0
   const savingsRate = input.monthlyIncome > 0 ? ((input.monthlyBalance / input.monthlyIncome) * 100).toFixed(1) : '0'
 
-  const prompt = `Você é um consultor financeiro pessoal brasileiro chamado "Flowly AI". Analise os dados financeiros do usuário e gere 5 insights objetivos, práticos e personalizados.
+  const prompt = `Atue como um consultor financeiro pessoal inteligente chamado "Flowly AI". O idioma de saída OBRIGATÓRIO é ${input.language === 'pt-BR' ? 'Português do Brasil' : 'Inglês'}.
+Sua missão é dar 5 insights analíticos, não-triviais, acionáveis e humanizados baseados nos dados financeiros reais abaixo.
 
-Regras rigorosas:
-1. Cite valores EXATOS e categorias ESPECÍFICAS dos dados fornecidos
-2. Seja direto e natural - NUNCA use "parabéns", "ótima notícia", "fique tranquilo", "atenção" ou expressões similares
-3. Se alguma categoria consome mais de 25% dos gastos, diga claramente e sugira uma meta de redução (ex: "Você gastou R$ X com Alimentação (Y% do total). Tente limitar a R$ Z no próximo mês")
-4. Compare com o mês anterior com valores reais de diferença (ex: "Suas despesas subiram R$ X em relação ao mês passado")
-5. Se o saldo é positivo, mencione a taxa de poupança e sugira onde investir
-6. Se o saldo é negativo, priorize alertas sobre onde cortar
-7. Misture: 1-2 positivos, 1-2 negativos/alertas, 1-2 dicas práticas
-8. Use linguagem conversacional brasileira natural
-9. Retorne APENAS JSON válido, sem texto adicional antes ou depois
-10. Formato exato: [{"text":"string","type":"positive"|"negative"|"tip"}]
+Diretrizes de Qualidade e Tom de Voz:
+1. Tom: Confidente, direto e humanizado (como um bom conselheiro). Nunca soe robótico ou panfletário. Evite clichês vazios como "Ótima notícia!", "Parabéns!" ou "Atenção!".
+2. Precisão: Embasamento nos números e categorias exatas. Nunca invente dados.
+3. Equilíbrio: Dê feedbacks negativos construtivos (redução de excessos), positivos (crescimento ou economia) e sugestões operacionais ou estratégicas.
+4. Clareza e Profundidade: Em vez de "Sua despesa em Alimentação foi de X", prefira "Alimentação consumiu X (Y% da sua renda). Tente substituir pequenos gastos diários nessa categoria para liberar limite para investimentos."
+5. Se o saldo for negativo: Foco total em ação de corte e alerta crítico, mas construtivo num tom empático. Sugira com gentileza um limite realista.
+6. Compare: Faça pequenas análises cruzadas (ex.: como um gasto X impactou o mês de modo geral vs. mês passado).
 
-DADOS FINANCEIROS:
+Formato Extrito:
+- NUNCA retorne outro texto, cumprimentos ou marcações fora do bloco JSON.
+- ARRAY JSON EXATO com 5 objetos: [{"text":"string","type":"positive"|"negative"|"tip"}]
 
-Resumo do mês:
-- Receita: R$ ${input.monthlyIncome.toFixed(2)}
-- Despesas: R$ ${input.monthlyExpense.toFixed(2)}
-- Saldo: R$ ${input.monthlyBalance.toFixed(2)}
-- Taxa de poupança: ${savingsRate}%
+DADOS FINANCEIROS - Análise:
+Receita Mensal: R$ ${input.monthlyIncome.toFixed(2)} (${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(1)}% vs. último mês)
+Despesas Mensais: R$ ${input.monthlyExpense.toFixed(2)} (${expenseChange >= 0 ? '+' : ''}${expenseChange.toFixed(1)}% vs. último mês)
+Saldo Mensal (Líquido): R$ ${input.monthlyBalance.toFixed(2)} (Diferença para o mês anterior: ${balanceChange >= 0 ? '+' : ''}R$ ${Math.abs(balanceChange).toFixed(2)})
+Taxa de Retenção/Poupança: ${savingsRate}% da renda retida (dinheiro sobrando)
 
-Gastos por categoria (do maior para o menor):
+Maiores Gastos do Mês:
 ${categoryDetails}
 
-A maior categoria é ${topCategory?.category ?? 'N/A'} com ${topCategoryPct.toFixed(0)}% do total.
-
-Comparação com mês anterior:
-- Receita: ${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(1)}% (diferença: R$ ${(input.monthlyIncome - input.previousIncome).toFixed(2)})
-- Despesas: ${expenseChange >= 0 ? '+' : ''}${expenseChange.toFixed(1)}% (diferença: R$ ${(input.monthlyExpense - input.previousExpense).toFixed(2)})
-- Saldo: ${balanceChange >= 0 ? '+' : ''}R$ ${Math.abs(balanceChange).toFixed(2)}
-
-Tendência dos últimos 6 meses:
+Tendência Recente de Gastos e Receitas (Últimos 6 meses):
 ${trendText}
 
-IMPORTANTE: Se identificar um gasto que pode ser reduzido, SEMPRE sugira uma meta numérica para o próximo mês. Exemplo: "Tente limitar Alimentação a R$ X no próximo mês, uma redução de Y%."`
+Ações Importantes a Refletir:
+- Encontre oportunidades de corte ou otimização.
+- Ofereça conselhos realistas sobre investimento, segurança financeira ou contenção.
+- Não soe alarmista, mas sim orientador firme.`
 
   const result = await model.generateContent(prompt)
   const response = result.response
@@ -146,45 +143,92 @@ IMPORTANTE: Se identificar um gasto que pode ser reduzido, SEMPRE sugira uma met
 function getStaticInsights(input: InsightsInput): AIInsight[] {
   const insights: AIInsight[] = []
   const totalExpenses = input.topCategories.reduce((s, c) => s + c.amount, 0)
+  const isEn = input.language === 'en'
 
   if (input.topCategories.length > 0) {
     const top = input.topCategories[0]
     const pct = totalExpenses > 0 ? ((top.amount / totalExpenses) * 100).toFixed(0) : '0'
-    insights.push({ text: `${top.category} é sua maior categoria: R$ ${top.amount.toFixed(2)} (${pct}% dos gastos)`, type: topCategoryIsHigh(totalExpenses, top.amount) ? 'negative' : 'tip' })
+    const high = topCategoryIsHigh(totalExpenses, top.amount)
+    insights.push({
+      text: isEn 
+        ? `${top.category} is your highest expense: R$ ${top.amount.toFixed(2)} (${pct}% of total spending). ${high ? 'Consider reviewing this to free up your budget.' : 'Keep an eye on it to maintain control.'}` 
+        : `${top.category} é o seu maior gasto: R$ ${top.amount.toFixed(2)} (${pct}% do total). ${high ? 'Considere avaliar essa categoria para liberar mais orçamento.' : 'Acompanhe esse valor para continuar no controle.'}`,
+      type: high ? 'negative' : 'tip'
+    })
   }
 
   const balChange = input.monthlyBalance - input.previousBalance
   if (balChange >= 0) {
-    insights.push({ text: `Seu saldo aumentou R$ ${Math.abs(balChange).toFixed(2)} em relação ao mês anterior`, type: 'positive' })
+    insights.push({ 
+      text: isEn 
+        ? `Your balance improved by R$ ${Math.abs(balChange).toFixed(2)} compared to last month. Great job keeping your finances healthy!` 
+        : `Seu saldo melhorou R$ ${Math.abs(balChange).toFixed(2)} em relação ao mês anterior. Ótimo trabalho em manter suas finanças saudáveis!`, 
+      type: 'positive' 
+    })
   } else {
-    insights.push({ text: `Seu saldo diminuiu R$ ${Math.abs(balChange).toFixed(2)} em relação ao mês anterior`, type: 'negative' })
+    insights.push({ 
+      text: isEn 
+        ? `Your balance dropped by R$ ${Math.abs(balChange).toFixed(2)} compared to last month. Try to identify any unusual expenses that might have caused this.` 
+        : `Seu saldo caiu R$ ${Math.abs(balChange).toFixed(2)} em relação ao último mês. Tente identificar gastos atípicos que geraram essa queda.`, 
+      type: 'negative' 
+    })
   }
 
   const expChange = input.monthlyExpense - input.previousExpense
   if (expChange > 0) {
-    insights.push({ text: `Suas despesas aumentaram R$ ${expChange.toFixed(2)} em relação ao mês anterior`, type: 'negative' })
+    insights.push({ 
+      text: isEn 
+        ? `Your expenses increased by R$ ${expChange.toFixed(2)} compared to last month. Planning ahead can help you avoid surprises.` 
+        : `Suas despesas subiram R$ ${expChange.toFixed(2)} em comparação ao mês passado. Um bom planejamento pode evitar surpresas futuras.`, 
+      type: 'negative' 
+    })
   } else if (expChange < 0) {
-    insights.push({ text: `Você reduziu R$ ${Math.abs(expChange).toFixed(2)} nas despesas em relação ao mês anterior`, type: 'positive' })
+    insights.push({ 
+      text: isEn 
+        ? `You reduced your expenses by R$ ${Math.abs(expChange).toFixed(2)} compared to last month. This shows excellent cost control!` 
+        : `Você reduziu suas despesas em R$ ${Math.abs(expChange).toFixed(2)} comparado ao mês passado. Mostra um excelente controle de custos!`, 
+      type: 'positive' 
+    })
   }
 
   const incChange = input.monthlyIncome - input.previousIncome
   if (incChange > 0) {
-    insights.push({ text: `Sua receita aumentou R$ ${incChange.toFixed(2)} em relação ao mês anterior`, type: 'positive' })
+    insights.push({ 
+      text: isEn 
+        ? `Your income grew by R$ ${incChange.toFixed(2)} compared to last month. This is a great opportunity to increase your savings.` 
+        : `Sua receita cresceu R$ ${incChange.toFixed(2)} em relação ao mês anterior. Esta é uma ótima oportunidade para poupar ou investir mais.`, 
+      type: 'positive' 
+    })
   }
 
   if (input.monthlyIncome > 0) {
     const savingsRate = ((input.monthlyBalance / input.monthlyIncome) * 100).toFixed(0)
     if (parseInt(savingsRate) >= 20) {
-      insights.push({ text: `Você está poupando ${savingsRate}% da receita - considere investir o excedente`, type: 'positive' })
+      insights.push({ 
+        text: isEn 
+          ? `You are saving ${savingsRate}% of your income. Consider investing this surplus to build your wealth.` 
+          : `Você está poupando ${savingsRate}% do que ganha. Considere investir esse excedente para construir seu patrimônio.`, 
+        type: 'positive' 
+      })
     } else if (parseInt(savingsRate) < 0) {
-      insights.push({ text: `Suas despesas ultrapassaram a receita. Reveja gastos não essenciais para equilibrar`, type: 'negative' })
+      insights.push({ 
+        text: isEn 
+          ? `Your expenses have exceeded your income. Look for non-essential spending that you can easily cut back on.` 
+          : `Suas despesas ultrapassaram sua receita. Revise os gastos não essenciais que podem ser cortados no curto prazo.`, 
+        type: 'negative' 
+      })
     }
   }
 
   if (input.topCategories.length >= 2) {
     const top2 = input.topCategories.slice(0, 2).reduce((s, c) => s + c.amount, 0)
     const pct = totalExpenses > 0 ? ((top2 / totalExpenses) * 100).toFixed(0) : '0'
-    insights.push({ text: `${input.topCategories[0].category} e ${input.topCategories[1].category} juntos representam ${pct}% dos gastos`, type: 'tip' })
+    insights.push({ 
+      text: isEn 
+        ? `Combined, ${input.topCategories[0].category} and ${input.topCategories[1].category} make up ${pct}% of your expenses. Managing these two effectively will have a huge impact.` 
+        : `Juntos, ${input.topCategories[0].category} e ${input.topCategories[1].category} representam ${pct}% das despesas. Focar em otimizar esses dois pontos trará um impacto enorme.`, 
+      type: 'tip' 
+    })
   }
 
   return insights.slice(0, 5)
@@ -292,7 +336,8 @@ export interface FinancialScore {
   recommendations: string[]
 }
 
-export async function calculateFinancialScore(userId: string): Promise<FinancialScore> {
+export async function calculateFinancialScore(userId: string, locale: string = 'pt-BR'): Promise<FinancialScore> {
+  const isEn = locale !== 'pt-BR'
   const now = new Date()
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
 
@@ -306,6 +351,7 @@ export async function calculateFinancialScore(userId: string): Promise<Financial
     },
   })
 
+  // ... (keeping internal logic the same, just changing text generation below)
   const income = transactions
     .filter((t) => t.type === 'INCOME')
     .reduce((sum, t) => sum + Number(t.amount), 0)
@@ -328,7 +374,11 @@ export async function calculateFinancialScore(userId: string): Promise<Financial
     else savingsScore = 5
 
     if (savingsRate < 0.2) {
-      recommendations.push(`Sua taxa de poupança está em ${(savingsRate * 100).toFixed(0)}%. A meta ideal é pelo menos 20%.`)
+      recommendations.push(
+        isEn 
+          ? `Your savings rate is at ${(savingsRate * 100).toFixed(0)}%. Aim for at least 20% to build a stronger financial cushion.`
+          : `Sua taxa de poupança está em ${(savingsRate * 100).toFixed(0)}%. A meta ideal é de pelo menos 20% para maior segurança financeira.`
+      )
     }
   }
 
@@ -347,7 +397,11 @@ export async function calculateFinancialScore(userId: string): Promise<Financial
       const topPct = categories[0][1] / expenses
       if (topPct > 0.5) {
         diversificationScore = 15
-        recommendations.push(`A categoria ${categories[0][0]} concentra ${Math.round(topPct * 100)}% dos gastos. Considere diversificar.`)
+        recommendations.push(
+          isEn 
+            ? `The category "${categories[0][0]}" makes up ${Math.round(topPct * 100)}% of your expenses. Try to balance your spending across different needs.`
+            : `A categoria "${categories[0][0]}" concentra ${Math.round(topPct * 100)}% dos seus gastos. Tente equilibrar melhor suas despesas.`
+        )
       } else if (topPct > 0.35) {
         diversificationScore = 20
       }
@@ -355,7 +409,11 @@ export async function calculateFinancialScore(userId: string): Promise<Financial
 
     if (categories.length < 3 && transactions.filter((t) => t.type === 'EXPENSE').length > 0) {
       diversificationScore = 15
-      recommendations.push('Pouca diversidade nas categorias. Registre todos os gastos para ter uma visão completa.')
+      recommendations.push(
+        isEn 
+          ? `Low category diversity. Track all your expenses to get a fully clear picture of your habits.`
+          : `Pouca diversidade nas categorias registradas. Tente organizar todos os seus gastos para uma visão mais completa.`
+      )
     }
   }
 
@@ -367,17 +425,29 @@ export async function calculateFinancialScore(userId: string): Promise<Financial
 
   if (uniqueDays < expectedDays * 0.5) {
     consistencyScore = 15
-    recommendations.push('Registre seus gastos com mais frequência para ter análises mais precisas.')
+    recommendations.push(
+      isEn 
+        ? `Log your expenses more frequently for highly accurate insights and better control over your cash flow.`
+        : `Registre seus gastos com maior frequência para receber análises mais precisas e melhorar seu controle.`
+    )
   }
 
   // Score 4: Controle de gastos (0-20 pts)
   let controlScore = 20
   if (expenses > income && income > 0) {
     controlScore = 5
-    recommendations.push('Você está gastando mais do que ganha. Priorize cortar gastos não essenciais.')
+    recommendations.push(
+      isEn 
+        ? `You are spending more than your income this month. Prioritize cutting non-essential expenses to recover.`
+        : `Você está gastando acima do que ganha neste mês. Priorize o corte de gastos não essenciais para se recuperar.`
+    )
   } else if (income > 0 && expenses / income > 0.9) {
     controlScore = 12
-    recommendations.push('Seus gastos estão muito próximos da receita. Busque uma margem maior.')
+    recommendations.push(
+      isEn 
+        ? `Your expenses are very close to your total income. Try to keep a larger safety margin.`
+        : `Seus gastos estão muito próximos do total da sua receita. Busque manter uma margem de segurança maior.`
+    )
   }
 
   // Verificar se há transações de tendência de aumento
@@ -400,27 +470,31 @@ export async function calculateFinancialScore(userId: string): Promise<Financial
 
     if (prev2WeekSpending > 0 && last2WeekSpending > prev2WeekSpending * 1.2) {
       const increase = ((last2WeekSpending - prev2WeekSpending) / prev2WeekSpending * 100).toFixed(0)
-      recommendations.push(`Seus gastos semanais aumentaram ${increase}% nas últimas 2 semanas. Fique atento.`)
+      recommendations.push(
+        isEn 
+          ? `Your weekly expenses grew by ${increase}% in the last two weeks. Keep a close eye on your recent spending.`
+          : `Seus gastos semanais subiram cerca de ${increase}% nas últimas duas semanas. Fique atento a essas variações.`
+      )
     }
   }
 
   const totalScore = savingsScore + diversificationScore + consistencyScore + controlScore
 
   let label = ''
-  if (totalScore >= 90) label = 'Excelente'
-  else if (totalScore >= 75) label = 'Muito Bom'
-  else if (totalScore >= 60) label = 'Bom'
-  else if (totalScore >= 40) label = 'Regular'
-  else label = 'Precisa melhorar'
+  if (totalScore >= 90) label = isEn ? 'Excellent' : 'Excelente'
+  else if (totalScore >= 75) label = isEn ? 'Very Good' : 'Muito Bom'
+  else if (totalScore >= 60) label = isEn ? 'Good' : 'Bom'
+  else if (totalScore >= 40) label = isEn ? 'Fair' : 'Regular'
+  else label = isEn ? 'Needs Improvement' : 'Precisa melhorar'
 
   return {
     score: totalScore,
     label,
     breakdown: [
-      { category: 'Poupança', score: savingsScore, max: 30 },
-      { category: 'Diversificação', score: diversificationScore, max: 25 },
-      { category: 'Consistência', score: consistencyScore, max: 25 },
-      { category: 'Controle', score: controlScore, max: 20 },
+      { category: isEn ? 'Savings' : 'Poupança', score: savingsScore, max: 30 },
+      { category: isEn ? 'Diversification' : 'Diversificação', score: diversificationScore, max: 25 },
+      { category: isEn ? 'Consistency' : 'Consistência', score: consistencyScore, max: 25 },
+      { category: isEn ? 'Control' : 'Controle', score: controlScore, max: 20 },
     ],
     recommendations,
   }
@@ -512,7 +586,7 @@ export async function generateAdvancedInsights(
   weekly: WeeklyAnalysis[]
 }> {
   const [score, anomalies, weekly] = await Promise.all([
-    calculateFinancialScore(userId),
+    calculateFinancialScore(userId, locale),
     detectSpendingAnomalies(userId),
     getWeeklyAnalysis(userId),
   ])

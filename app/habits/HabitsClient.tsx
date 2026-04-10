@@ -370,7 +370,7 @@ export default function HabitsClient({
                   {' – '}
                   {new Date(weekDates[6] + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
                 </p>
-                <div className="flex items-center gap-3 mt-3">
+                <div className="flex flex-wrap items-center gap-2 mt-3">
                   {(() => {
                     // Daily progress & Gamification
                     const totalHabits = habits.length
@@ -399,34 +399,35 @@ export default function HabitsClient({
 
                     return (
                       <>
-                        <div className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 rounded-md shadow-sm border border-surface-200 dark:border-surface-700">
-                          <Lucide.Target className="h-3 w-3 text-brand-500" />
+                        <div className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 rounded-md shadow-sm border border-surface-200 dark:border-surface-700">
+                          <Lucide.Target className="h-3.5 w-3.5 text-brand-500" />
                           <span>Hoje: {completedToday}/{totalHabits} ({todayPct}%)</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs font-medium px-2 py-1 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 rounded-md shadow-sm border border-surface-200 dark:border-surface-700">
-                          <Lucide.CalendarDays className="h-3 w-3 text-surface-400" />
+                        <div className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 rounded-md shadow-sm border border-surface-200 dark:border-surface-700">
+                          <Lucide.CalendarDays className="h-3.5 w-3.5 text-surface-400" />
                           <span>Semana: {completedWeek}/{possibleWeekCheckins}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md shadow-sm border border-purple-200/50 dark:border-purple-800/50 ml-auto sm:ml-0">
-                          <span>✨ Score: {totalScore}</span>
+                        <div className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md shadow-sm border border-purple-200/50 dark:border-purple-800/50 w-full sm:w-auto mt-1 sm:mt-0">
+                          <span className="flex-1 sm:flex-none text-center">✨ Score: {totalScore}</span>
                         </div>
                       </>
                     )
                   })()}
                 </div>
               </div>
-              <div className="self-end sm:self-center">
+              <div className="w-full sm:w-auto self-end sm:self-center mt-2 sm:mt-0">
                 <button 
                   onClick={openCreateModal} 
-                  className="btn-primary text-sm px-4 py-2"
+                  className="btn-primary text-sm w-full sm:w-auto px-4 py-3 sm:py-2"
                 >
+                  <Lucide.Plus className="w-4 h-4 mr-2 sm:hidden inline-block" />
                   Novo Hábito
                 </button>
               </div>
             </div>
 
             {/* Day column headers FIXED TO GRID */}
-            <div className="grid grid-cols-[minmax(160px,1fr)_repeat(7,40px)_68px] items-end gap-2 mb-2 min-w-[570px] px-1 pl-6">
+            <div className="hidden sm:grid grid-cols-[minmax(160px,1fr)_repeat(7,40px)_68px] items-end gap-2 mb-2 px-1 pl-6">
               {/* Spacer for habit name column */}
               <div />
               {weekDates.map((date, i) => {
@@ -450,10 +451,10 @@ export default function HabitsClient({
             </div>
 
             {/* Divider */}
-            <div className="border-t border-surface-100 dark:border-surface-800 mb-1 min-w-[570px]" />
+            <div className="hidden sm:block border-t border-surface-100 dark:border-surface-800 mb-1" />
 
             {/* Habit rows */}
-            <div className="min-w-[570px] pb-2">
+            <div className="pb-2 space-y-3 sm:space-y-0">
               {habits.map((habit) => {
                 const colorHex = getColorHex(habit.color)
                 const isDragging = draggedHabitId === habit.id
@@ -464,83 +465,104 @@ export default function HabitsClient({
                     onDragStart={(e) => handleDragStart(e, habit.id)}
                     onDragOver={(e) => handleDragOver(e, habit.id)}
                     onDragEnd={handleDragEnd}
-                    className={`grid grid-cols-[minmax(160px,1fr)_repeat(7,40px)_68px] gap-2 items-center py-3 px-1 group transition-transform duration-200 ${
+                    className={`flex flex-col sm:grid sm:grid-cols-[minmax(160px,1fr)_repeat(7,40px)_68px] gap-3 sm:gap-2 items-start sm:items-center py-4 sm:py-3 px-3 sm:px-1 group transition-transform duration-200 ${
                       isDragging ? 'opacity-40 scale-95 origin-center' : 'opacity-100'
-                    } hover:bg-surface-50/50 dark:hover:bg-surface-800/30 rounded-xl relative pl-6`}
+                    } hover:bg-surface-50/50 dark:hover:bg-surface-800/30 rounded-xl relative sm:pl-6 border border-surface-200 dark:border-surface-700/60 sm:border-transparent sm:dark:border-transparent shadow-sm sm:shadow-none bg-white sm:bg-transparent dark:bg-surface-900 sm:dark:bg-transparent`}
                   >
                     {/* Drag Handle */}
-                    <div className="absolute left-1 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center p-1 rounded hover:bg-surface-200/50 dark:hover:bg-surface-700/50 cursor-grab active:cursor-grabbing text-surface-400">
+                    <div className="hidden sm:flex absolute left-1 opacity-0 group-hover:opacity-100 transition-opacity items-center justify-center p-1 rounded hover:bg-surface-200/50 dark:hover:bg-surface-700/50 cursor-grab active:cursor-grabbing text-surface-400">
                       <Lucide.GripVertical className="h-4 w-4" />
                     </div>
 
                     {/* Habit info */}
-                    <div className="flex items-center gap-2.5 overflow-hidden pr-2">
-                      <div
-                        className="h-8 w-8 rounded-lg shrink-0 flex items-center justify-center"
-                        style={{ backgroundColor: `${colorHex}1a`, color: colorHex }}
-                      >
-                        <HabitIcon name={habit.icon} className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-surface-800 dark:text-surface-200 truncate leading-tight">
-                          {habit.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className={`text-[10px] font-medium flex items-center gap-1 px-1.5 py-0.5 rounded ${habit.currentStreak > 0 ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200/50 dark:border-orange-800/50' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400 border border-surface-200 dark:border-surface-700/50'}`}>
-                            {habit.currentStreak > 0 ? '🔥' : <span className="opacity-50">🔥</span>} 
-                            <span>Atual: {habit.currentStreak}</span>
-                          </p>
-                          {habit.bestStreak > 0 && (
-                            <p className="text-[10px] font-medium text-surface-500 dark:text-surface-400 flex items-center gap-1">
-                              🏆 Melhor: {habit.bestStreak}
-                            </p>
-                          )}
+                    <div className="flex flex-row items-center justify-between w-full sm:w-auto pr-0 sm:pr-2">
+                      <div className="flex items-center gap-2.5 overflow-hidden">
+                        {/* Drag handle for mobile */}
+                        <div className="sm:hidden flex items-center justify-center p-1 -ml-1 text-surface-400 active:text-brand-500 cursor-grab">
+                           <Lucide.GripVertical className="h-5 w-5" />
                         </div>
+                        <div
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-xl sm:rounded-lg shrink-0 flex items-center justify-center"
+                          style={{ backgroundColor: `${colorHex}1a`, color: colorHex }}
+                        >
+                          <HabitIcon name={habit.icon} className="h-5 w-5 sm:h-4 sm:w-4" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-base sm:text-sm font-semibold sm:font-medium text-surface-800 dark:text-surface-200 truncate leading-tight">
+                            {habit.title}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className={`text-[11px] sm:text-[10px] font-medium flex items-center gap-1 px-1.5 py-0.5 rounded ${habit.currentStreak > 0 ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400 border border-orange-200/50 dark:border-orange-800/50' : 'bg-surface-100 text-surface-500 dark:bg-surface-800 dark:text-surface-400 border border-surface-200 dark:border-surface-700/50'}`}>
+                              {habit.currentStreak > 0 ? '🔥' : <span className="opacity-50">🔥</span>} 
+                              <span>Atual: {habit.currentStreak}</span>
+                            </p>
+                            {habit.bestStreak > 0 && (
+                              <p className="text-[11px] sm:text-[10px] font-medium text-surface-500 dark:text-surface-400 flex items-center gap-1">
+                                🏆 Melhor: {habit.bestStreak}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Mobile Actions */}
+                      <div className="flex sm:hidden items-center gap-1 shrink-0">
+                        <button onClick={() => openEditModal(habit)} className="p-2 text-surface-400 hover:text-brand-600 rounded-lg active:bg-surface-100 dark:active:bg-surface-800"><Lucide.Pencil className="w-4 h-4"/></button>
+                        <button onClick={() => handleDeleteTrigger(habit.id)} className="p-2 text-surface-400 hover:text-red-600 rounded-lg active:bg-surface-100 dark:active:bg-surface-800"><Lucide.Trash2 className="w-4 h-4"/></button>
                       </div>
                     </div>
 
                     {/* Day cells */}
-                    {weekDates.map((date) => {
-                      const checked = isChecked(habit.id, date)
-                      const isFuture = date > today
-                      const isToday = date === today
-                      const key = `${habit.id}-${date}`
-                      const isToggling = togglingKey === key
+                    <div className="flex sm:contents justify-between w-full mt-2 sm:mt-0">
+                      {weekDates.map((date, i) => {
+                        const checked = isChecked(habit.id, date)
+                        const isFuture = date > today
+                        const isToday = date === today
+                        const key = `${habit.id}-${date}`
+                        const isToggling = togglingKey === key
 
-                      return (
-                        <button
-                          key={date}
-                          onClick={() => !isFuture && handleToggle(habit.id, date)}
-                          disabled={isFuture || isToggling}
-                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 justify-self-center ${
-                            isFuture
-                              ? 'opacity-25 cursor-not-allowed bg-surface-100 dark:bg-surface-800/40 border border-dashed border-surface-300 dark:border-surface-700'
-                              : checked
-                              ? 'shadow-sm hover:opacity-80 active:scale-95 cursor-pointer'
-                              : [
-                                  'bg-surface-100 dark:bg-surface-800 border border-surface-200/80 dark:border-surface-700/50',
-                                  'hover:bg-surface-200/60 dark:hover:bg-surface-700/60 hover:border-surface-300 dark:hover:border-surface-600',
-                                  'active:scale-95 cursor-pointer',
-                                  isToday ? 'ring-2 ring-brand-400/40 dark:ring-brand-500/30' : '',
-                                ].join(' ')
-                          }`}
-                          style={checked ? { backgroundColor: colorHex } : undefined}
-                          title={checked ? 'Clique para desmarcar' : isFuture ? 'Dia futuro' : 'Clique para marcar'}
-                        >
-                          {isToggling ? (
-                            <svg className="h-3 w-3 animate-spin text-white dark:text-surface-300" fill="none" viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
-                              <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
-                            </svg>
-                          ) : checked ? (
-                            <Lucide.Check className="h-4 w-4 text-white" strokeWidth={2.5} />
-                          ) : null}
-                        </button>
-                      )
-                    })}
+                        return (
+                          <div key={date} className="flex flex-col items-center gap-1.5 sm:contents">
+                            {/* Mobile Day Label */}
+                            <span className={`sm:hidden text-[10px] font-semibold uppercase ${isToday ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'}`}>
+                              {DAY_LABELS[i]}
+                            </span>
+                            <button
+                              onClick={() => !isFuture && handleToggle(habit.id, date)}
+                              disabled={isFuture || isToggling}
+                              className={`w-[42px] h-[42px] sm:w-10 sm:h-10 rounded-xl flex items-center justify-center transition-all duration-200 justify-self-center shrink-0 ${
+                                isFuture
+                                  ? 'opacity-25 cursor-not-allowed bg-surface-100 dark:bg-surface-800/40 border border-dashed border-surface-300 dark:border-surface-700'
+                                  : checked
+                                  ? 'shadow-sm hover:opacity-80 active:scale-95 cursor-pointer'
+                                  : [
+                                      'bg-surface-100 dark:bg-surface-800 border border-surface-200/80 dark:border-surface-700/50',
+                                      'hover:bg-surface-200/60 dark:hover:bg-surface-700/60 hover:border-surface-300 dark:hover:border-surface-600',
+                                      'active:scale-95 cursor-pointer',
+                                      isToday ? 'ring-2 ring-brand-400/40 dark:ring-brand-500/30' : '',
+                                    ].join(' ')
+                              }`}
+                              style={checked ? { backgroundColor: colorHex } : undefined}
+                              title={checked ? 'Clique para desmarcar' : isFuture ? 'Dia futuro' : 'Clique para marcar'}
+                            >
+                              {isToggling ? (
+                                <svg className="h-4 w-4 sm:h-3 sm:w-3 animate-spin text-white dark:text-surface-300" fill="none" viewBox="0 0 24 24">
+                                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
+                                  <path d="M12 2a10 10 0 019.95 9" fill="currentColor" />
+                                </svg>
+                              ) : checked ? (
+                                <Lucide.Check className="h-5 w-5 sm:h-4 sm:w-4 text-white" strokeWidth={2.5} />
+                              ) : null}
+                            </button>
+                            {/* Mobile Today marker */}
+                            {isToday && <div className="sm:hidden h-1 w-1 rounded-full bg-brand-500 mb-0.5" />}
+                          </div>
+                        )
+                      })}
+                    </div>
 
-                    {/* Actions: Edit & Delete */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-self-end">
+                    {/* Desktop Actions: Edit & Delete */}
+                    <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity justify-self-end">
                       <button
                         onClick={() => openEditModal(habit)}
                         className="w-8 h-8 shrink-0 flex items-center justify-center rounded-lg text-surface-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:bg-brand-900/20 transition-all duration-200"
@@ -609,18 +631,30 @@ export default function HabitsClient({
 
           return (
             <div className="card overflow-hidden animate-dashboard-fade">
-              <div className="flex flex-col sm:flex-row items-center gap-6 p-4">
-                <div className="sm:w-1/3 w-full space-y-2 text-center sm:text-left">
-                  <h2 className="text-sm font-semibold text-surface-900 dark:text-surface-100 flex items-center justify-center sm:justify-start gap-2">
-                    <Lucide.Activity className="w-4 h-4 text-brand-500" />
-                    Desempenho da Semana
-                  </h2>
-                  <p className="text-xs text-surface-500 dark:text-surface-400 max-w-[250px] mx-auto sm:mx-0">
-                    Sua análise combinando consistência, energia disparada e regularidade para evoluir suas rotinas.
-                  </p>
+              <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6 p-4">
+                <div className="sm:w-1/3 w-full space-y-4 text-center sm:text-left flex flex-col justify-center">
+                  <div>
+                    <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 flex items-center justify-center sm:justify-start gap-2 mb-2">
+                      <Lucide.Activity className="w-5 h-5 text-brand-500" />
+                      Desempenho da Semana
+                    </h2>
+                    <p className="text-sm text-surface-500 dark:text-surface-400 max-w-[280px] mx-auto sm:mx-0">
+                      Sua análise combinando consistência, energia e regularidade para evoluir suas rotinas.
+                    </p>
+                  </div>
+                  
+                  {/* Mobile/Accessible Legend */}
+                  <div className="grid grid-cols-2 gap-2 mt-2 w-full max-w-[300px] mx-auto sm:mx-0">
+                    {radarData.map((item, i) => (
+                      <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-surface-50 dark:bg-surface-800/50 border border-surface-100 dark:border-surface-700/50">
+                        <span className="text-xs font-medium text-surface-600 dark:text-surface-300">{item.subject}</span>
+                        <span className="text-xs font-bold text-brand-600 dark:text-brand-400">{item.A}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
                 
-                <div className="w-full sm:w-2/3 h-64 -ml-4 sm:ml-0 relative">
+                <div className="w-full sm:w-2/3 h-64 sm:h-72 -ml-2 sm:ml-0 relative">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
                       <PolarGrid stroke="#e5e7eb" className="dark:stroke-surface-700/50" />

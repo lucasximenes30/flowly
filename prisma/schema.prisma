@@ -47,6 +47,7 @@ model Transaction {
   endDate           DateTime? // set when recurring is cancelled
   cardId            String?  // optional link to a Card (null when card is deleted)
   card              Card?    @relation(fields: [cardId], references: [id], onDelete: SetNull)
+  paymentMethod     String?  // e.g. "credit_card", "debit", "contactless", "pix", "none"
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

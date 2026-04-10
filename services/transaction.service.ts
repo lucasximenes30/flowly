@@ -18,6 +18,7 @@ export interface CreateTransactionInput {
   isRecurring?: boolean
   recurringDay?: number
   cardId?: string | null
+  paymentMethod?: string | null
 }
 
 export interface UpdateTransactionInput {
@@ -33,6 +34,7 @@ export interface UpdateTransactionInput {
   isRecurring?: boolean
   recurringDay?: number
   cardId?: string | null
+  paymentMethod?: string | null
 }
 
 export async function createTransaction(input: CreateTransactionInput) {
@@ -57,6 +59,7 @@ export async function createTransaction(input: CreateTransactionInput) {
       ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
       ...(input.recurringDay !== undefined && { recurringDay: input.recurringDay }),
       ...(input.cardId !== undefined && { cardId: input.cardId ?? null }),
+      ...(input.paymentMethod !== undefined && { paymentMethod: input.paymentMethod ?? null }),
     },
   })
 }
@@ -90,6 +93,7 @@ export async function updateTransaction(id: string, userId: string, input: Updat
       ...(input.isRecurring !== undefined && { isRecurring: input.isRecurring }),
       ...(recurringDay !== undefined && { recurringDay: recurringDay ?? null }),
       ...(input.cardId !== undefined && { cardId: input.cardId ?? null }),
+      ...(input.paymentMethod !== undefined && { paymentMethod: input.paymentMethod ?? null }),
     },
   })
 }
@@ -132,7 +136,7 @@ export async function cancelRecurring(
     // Current month already counted — end at last day of this month
     endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
     message =
-      'Cancelamento concluído, mas o pagamento deste mês já foi considerado.'
+      'O pagamento deste mês já ocorreu. A assinatura foi cancelada e não será cobrada nos próximos meses.'
     await prisma.transaction.update({
       where: { id },
       data: { isActive: false, endDate },
@@ -140,9 +144,9 @@ export async function cancelRecurring(
     return { isActive: false, endDate, message, monthExcluded: false }
   } else {
     // Current month should NOT be counted
-    endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59)
+    endDate = new Date(today.getFullYear(), today.getMonth(), 0, 23, 59, 59) // End of last month
     message =
-      'Recorrência cancelada. Nenhum pagamento será considerado este mês.'
+      'Cancelado com sucesso. Como a data de pagamento ainda não chegou, nenhuma cobrança será feita este mês.'
     await prisma.transaction.update({
       where: { id },
       data: { isActive: false, endDate },
@@ -161,22 +165,167 @@ export async function getTransactionsByUser(userId: string) {
 export async function getUserBalance(userId: string) {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
-    select: { amount: true, type: true, isInstallment: true, installmentAmount: true, isRecurring: true },
+    select: { 
+      amount: true, 
+      type: true, 
+      isInstallment: true, 
+      installmentAmount: true, 
+      totalInstallments: true,
+      purchaseDate: true,
+      dueDay: true,
+      isRecurring: true, 
+      recurringDay: true,
+      date: true,
+      isActive: true,
+      endDate: true,
+      cardId: true,
+      card: {
+        select: {
+          dueDay: true,
+          closingDay: true
+        }
+      }
+    },
   })
 
-  const income = transactions
-    .filter((t) => t.type === 'INCOME')
-    .reduce((sum, t) => {
-      const value = t.isInstallment && t.installmentAmount ? Number(t.installmentAmount) : Number(t.amount)
-      return sum + value
-    }, 0)
+  let income = 0
+  let expense = 0
 
-  const expense = transactions
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((sum, t) => {
-      const value = t.isInstallment && t.installmentAmount ? Number(t.installmentAmount) : Number(t.amount)
-      return sum + value
-    }, 0)
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+
+  for (const t of transactions) {
+    let effectiveAmount = 0
+
+    if (t.isInstallment && t.totalInstallments && t.purchaseDate) {
+      const pDate = new Date(t.purchaseDate)
+      pDate.setHours(0, 0, 0, 0)
+      const dueDay = t.dueDay || pDate.getDate()
+
+      let startMonth = pDate.getMonth()
+      let startYear = pDate.getFullYear()
+
+      if (t.card && t.cardId) {
+        if (pDate.getDate() > t.card.closingDay) {
+          startMonth++
+          if (startMonth > 11) {
+            startMonth = 0
+            startYear++
+          }
+        }
+        if (t.card.dueDay < t.card.closingDay) {
+          startMonth++
+          if (startMonth > 11) {
+            startMonth = 0
+            startYear++
+          }
+        }
+      } else {
+        if (pDate.getDate() > dueDay) {
+           startMonth++
+           if (startMonth > 11) {
+             startMonth = 0
+             startYear++
+           }
+        }
+      }
+
+      let paidCount = 0
+      for (let i = 0; i < t.totalInstallments; i++) {
+        const instDate = new Date(startYear, startMonth + i, dueDay)
+        if (instDate <= today) {
+          paidCount++
+        }
+      }
+      effectiveAmount = Number(t.installmentAmount) * paidCount
+
+    } else if (t.isRecurring) {
+      const startDate = new Date(t.date)
+      startDate.setHours(0, 0, 0, 0)
+      const rDay = t.recurringDay || startDate.getDate()
+      
+      let baseMonth = startDate.getMonth()
+      let baseYear = startDate.getFullYear()
+
+      if (t.card && t.cardId) {
+        if (startDate.getDate() > t.card.closingDay) {
+          baseMonth++
+          if (baseMonth > 11) {
+            baseMonth = 0
+            baseYear++
+          }
+        }
+        if (t.card.dueDay < t.card.closingDay) {
+          baseMonth++
+          if (baseMonth > 11) {
+            baseMonth = 0
+            baseYear++
+          }
+        }
+      } else {
+        if (startDate.getDate() > rDay) {
+           baseMonth++
+           if (baseMonth > 11) {
+             baseMonth = 0
+             baseYear++
+           }
+        }
+      }
+
+      const endLimit = t.endDate ? new Date(t.endDate) : today
+      const upperLimit = endLimit < today ? endLimit : today
+
+      let current = new Date(baseYear, baseMonth, rDay)
+      
+      let cycleCount = 0
+      while (current <= upperLimit) {
+        cycleCount++
+        current = new Date(current.getFullYear(), current.getMonth() + 1, rDay)
+      }
+      effectiveAmount = Number(t.amount) * cycleCount
+
+    } else {
+      const tDate = new Date(t.date)
+      tDate.setHours(0, 0, 0, 0)
+      
+      let effectiveDate = tDate
+
+      if (t.card && t.cardId) {
+        let billMonth = tDate.getMonth()
+        let billYear = tDate.getFullYear()
+
+        if (tDate.getDate() > t.card.closingDay) {
+          billMonth++
+          if (billMonth > 11) {
+            billMonth = 0
+            billYear++
+          }
+        }
+        
+        let dueMonth = billMonth
+        let dueYear = billYear
+        
+        if (t.card.dueDay < t.card.closingDay) {
+          dueMonth++
+          if (dueMonth > 11) {
+            dueMonth = 0
+            dueYear++
+          }
+        }
+        effectiveDate = new Date(dueYear, dueMonth, t.card.dueDay)
+      }
+
+      if (effectiveDate <= today) {
+        effectiveAmount = Number(t.amount)
+      }
+    }
+
+    if (t.type === 'INCOME') {
+      income += effectiveAmount
+    } else {
+      expense += effectiveAmount
+    }
+  }
 
   return { income, expense, balance: income - expense }
 }
@@ -230,11 +379,13 @@ export async function getTransactionsByMonth(userId: string, year: number, month
   })
 
   const activeRecurring = recurring.filter((t) => {
-    if (!t.isActive) return false
+    const tDate = new Date(t.date)
+    if (tDate > endOfMonth) return false
+    
     if (t.endDate) {
-      return t.endDate >= startOfMonth
+      return new Date(t.endDate) >= startOfMonth
     }
-    return true
+    return t.isActive
   })
 
   // Merge and mark with current installment info
@@ -289,11 +440,13 @@ export async function getMonthSummary(userId: string, year: number, month: numbe
   })
 
   const activeRecurring = recurring.filter((t) => {
-    if (!t.isActive) return false
+    const tDate = new Date(t.date)
+    if (tDate > endOfMonth) return false
+
     if (t.endDate) {
-      return t.endDate >= startOfMonth
+      return new Date(t.endDate) >= startOfMonth
     }
-    return true
+    return t.isActive
   })
 
   return computeMonthSummary(installments, nonInstallments, year, month, activeRecurring)

@@ -19,6 +19,7 @@ interface Transaction {
   isRecurring?: boolean
   recurringDay?: number
   cardId?: string
+  paymentMethod?: string
 }
 
 interface Card { id: string; name: string; lastFourDigits: string; dueDay: number; closingDay: number }
@@ -56,7 +57,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
   const [recurringDay, setRecurringDay] = useState(transaction.recurringDay?.toString() ?? '')
 
   // Card fields
-  const [paymentMethod, setPaymentMethod] = useState<'none' | 'credit_card'>(transaction.cardId ? 'credit_card' : 'none')
+  const [paymentMethod, setPaymentMethod] = useState<string>(transaction.cardId ? 'credit_card' : transaction.paymentMethod || 'none')
   const [selectedCardId, setSelectedCardId] = useState<string>(transaction.cardId ?? '')
 
   // Update logic: if user chooses card, auto-fill dueDay if we're in installment
@@ -111,6 +112,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
           isRecurring,
           recurringDay: isRecurring ? parseInt(recurringDay) : null,
           cardId: paymentMethod === 'credit_card' && selectedCardId ? selectedCardId : null,
+          paymentMethod: paymentMethod === 'none' ? null : paymentMethod,
         }),
 
       })
@@ -142,24 +144,26 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
       onClick={handleBackdropClick}
     >
       <div
-        className={`w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-t-2xl sm:rounded-2xl bg-white p-6 shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+        className={`w-full max-w-lg max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
           visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 sm:translate-y-8 opacity-0 scale-95'
         }`}
       >
-        <div className="mb-5 flex items-center justify-between">
+        <div className="flex-shrink-0 flex items-center justify-between border-b border-surface-100 p-4 sm:p-6 dark:border-surface-800/50">
           <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
             {t('dashboard.editTransaction')}
           </h2>
           <button
+            type="button"
             onClick={handleClose}
-            className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
+            className="rounded-full p-2 -mr-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-colors"
           >
             <Lucide.X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid gap-5 sm:gap-6 sm:grid-cols-2">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden min-h-0">
+          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+            <div className="grid gap-5 sm:gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
                 {t('transaction.title')}
@@ -351,11 +355,11 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                   <select
                     value={paymentMethod}
                     onChange={(e) => {
-                      const val = e.target.value as 'none' | 'credit_card'
+                      const val = e.target.value as any
                       setPaymentMethod(val)
                       if (val === 'credit_card' && cards.length > 0 && !selectedCardId) {
                         setSelectedCardId(cards[0].id)
-                      } else if (val === 'none') {
+                      } else if (val !== 'credit_card') {
                         setSelectedCardId('')
                       }
                     }}
@@ -363,6 +367,9 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                   >
                     <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
                     <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
+                    <option value="debit_card">{isBRL ? 'Débito' : 'Debit'}</option>
+                    <option value="contactless">{isBRL ? 'Aproximação' : 'Contactless'}</option>
+                    <option value="pix">Pix</option>
                   </select>
                 </div>
 
@@ -395,14 +402,14 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             )}
           </div>
 
-
           {error && (
-            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 mt-2">
+            <p className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400 mt-2 mb-4">
               {error}
             </p>
           )}
+          </div>
 
-          <div className="flex flex-col-reverse sm:flex-row gap-3 pt-6 mt-4 border-t border-surface-100 dark:border-surface-800/50">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row gap-3 border-t border-surface-100 p-4 sm:p-6 bg-surface-50/50 dark:bg-surface-900/50 dark:border-surface-800/50 rounded-b-2xl">
             <button
               type="button"
               onClick={handleClose}
