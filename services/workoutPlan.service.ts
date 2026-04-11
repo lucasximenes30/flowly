@@ -13,12 +13,15 @@ interface WorkoutPlanRecord {
 
 interface WorkoutPlanDelegate {
   findFirst(args: {
-    where: { userId: string; isActive: boolean }
-    orderBy: { createdAt: 'asc' | 'desc' }
+    where: { id?: string; userId?: string; isActive?: boolean }
+    orderBy?: { createdAt: 'asc' | 'desc' }
   }): Promise<WorkoutPlanRecord | null>
   updateMany(args: {
     where: { userId: string; isActive: boolean }
     data: { isActive: boolean }
+  }): Promise<{ count: number }>
+  deleteMany(args: {
+    where: { id: string; userId: string }
   }): Promise<{ count: number }>
   create(args: {
     data: { userId: string; name: string; isActive: boolean }
@@ -81,4 +84,20 @@ export async function createWorkoutPlan(userId: string, name: string): Promise<W
   })
 
   return toWorkoutPlanDTO(plan)
+}
+
+export async function deleteWorkoutPlan(id: string, userId: string): Promise<void> {
+  const delegate = workoutPlanDelegate(prisma)
+
+  const existing = await delegate.findFirst({
+    where: { id, userId },
+  })
+
+  if (!existing) {
+    throw new Error('Plano não encontrado')
+  }
+
+  await delegate.deleteMany({
+    where: { id, userId },
+  })
 }

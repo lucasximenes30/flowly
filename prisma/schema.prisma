@@ -22,6 +22,7 @@ model User {
   cards                Card[]
   habits               Habit[]
   workoutPlans         WorkoutPlan[]
+  exercises            Exercise[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -134,6 +135,20 @@ enum TransactionType {
   EXPENSE
 }
 
+enum ExerciseMuscleGroup {
+  CHEST
+  BACK
+  LEGS
+  SHOULDERS
+  BICEPS
+  TRICEPS
+  ABS
+  GLUTES
+  CARDIO
+  FULL_BODY
+  OTHER
+}
+
 model Habit {
   id          String         @id @default(uuid())
   userId      String
@@ -172,9 +187,63 @@ model WorkoutPlan {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   name      String
   isActive  Boolean  @default(true)
+  days      WorkoutDay[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([userId, isActive])
   @@map("workout_plans")
+}
+
+model WorkoutDay {
+  id        String      @id @default(uuid())
+  planId    String
+  plan      WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  name      String
+  order     Int
+  weekDay   Int?
+  exercises WorkoutDayExercise[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([planId, order])
+  @@map("workout_days")
+}
+
+model Exercise {
+  id                  String              @id @default(uuid())
+  namePt              String
+  nameEn              String
+  muscleGroup         ExerciseMuscleGroup
+  equipment           String?
+  imageUrl            String?
+  isSystem            Boolean             @default(true)
+  userId              String?
+  user                User?               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workoutDayExercises WorkoutDayExercise[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([isSystem, muscleGroup])
+  @@index([userId, createdAt])
+  @@map("exercises")
+}
+
+model WorkoutDayExercise {
+  id           String    @id @default(uuid())
+  workoutDayId String
+  workoutDay   WorkoutDay @relation(fields: [workoutDayId], references: [id], onDelete: Cascade)
+  exerciseId   String
+  exercise     Exercise  @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  order        Int
+  sets         Int
+  reps         String
+  targetWeight Decimal?  @db.Decimal(8, 2)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([workoutDayId, order])
+  @@index([exerciseId])
+  @@map("workout_day_exercises")
 }
