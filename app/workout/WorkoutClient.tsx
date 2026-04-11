@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import { useApp } from '@/lib/i18n'
@@ -63,6 +63,15 @@ interface WorkoutDayExerciseDTO {
   exercise: ExerciseDTO
 }
 
+interface WorkoutDayAssignmentDTO {
+  id: string
+  userId: string
+  planId: string
+  workoutDayId: string
+  date: string
+  createdAt: string
+}
+
 interface WorkoutExecutionExerciseState {
   workoutDayExerciseId: string
   exerciseId: string
@@ -77,11 +86,54 @@ interface WorkoutExecutionExerciseState {
   completed: boolean
 }
 
+interface WorkoutExerciseLogDTO {
+  id: string
+  workoutLogId: string
+  exerciseId: string
+  done: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+interface WorkoutLogDTO {
+  id: string
+  userId: string
+  workoutId: string
+  date: string
+  completed: boolean
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+  exerciseLogs: WorkoutExerciseLogDTO[]
+}
+
+interface UserStatsDTO {
+  id: string
+  userId: string
+  currentStreak: number
+  longestStreak: number
+  score: number
+  lastWorkoutDate: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+interface WorkoutRankingEntryDTO {
+  position: number
+  userId: string
+  name: string
+  score: number
+  currentStreak: number
+  longestStreak: number
+  isCurrentUser: boolean
+}
+
 interface Props {
   session: { userId: string; name: string }
   initialPlan: WorkoutPlanDTO | null
   initialDays: WorkoutDayDTO[]
   initialDayExercises: WorkoutDayExerciseDTO[]
+  initialTodayAssignment: WorkoutDayAssignmentDTO | null
 }
 
 const WEEK_DAY_OPTIONS = [
@@ -215,6 +267,44 @@ function getTodayWeekDayIndex(date = new Date()): number {
   return (date.getDay() + 6) % 7
 }
 
+function getDateKey(date = new Date()): string {
+  return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+}
+
+function isFormFieldElement(
+  element: EventTarget | null
+): element is HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement {
+  if (!(element instanceof HTMLElement)) return false
+
+  return element.tagName === 'INPUT' || element.tagName === 'TEXTAREA' || element.tagName === 'SELECT'
+}
+
+function revealFormFieldOnMobile(target: EventTarget | null, scrollContainer: HTMLElement | null): void {
+  if (typeof window === 'undefined') return
+  if (window.matchMedia('(min-width: 640px)').matches) return
+  if (!isFormFieldElement(target)) return
+
+  const ensureVisible = () => {
+    target.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' })
+
+    if (!scrollContainer) return
+
+    const fieldRect = target.getBoundingClientRect()
+    const containerRect = scrollContainer.getBoundingClientRect()
+    const safeTop = containerRect.top + 16
+    const safeBottom = containerRect.bottom - 16
+
+    if (fieldRect.top < safeTop) {
+      scrollContainer.scrollTop -= safeTop - fieldRect.top
+    } else if (fieldRect.bottom > safeBottom) {
+      scrollContainer.scrollTop += fieldRect.bottom - safeBottom
+    }
+  }
+
+  ensureVisible()
+  window.setTimeout(ensureVisible, 180)
+}
+
 function formatDateLabel(date: Date, locale: 'pt-BR' | 'en'): string {
   const formatter = new Intl.DateTimeFormat(locale === 'pt-BR' ? 'pt-BR' : 'en-US', {
     day: '2-digit',
@@ -225,7 +315,50 @@ function formatDateLabel(date: Date, locale: 'pt-BR' | 'en'): string {
   return formatter.format(date)
 }
 
-export default function WorkoutClient({ session, initialPlan, initialDays, initialDayExercises }: Props) {
+function buildWorkoutMotivationMessage(input: {
+  locale: 'pt-BR' | 'en'
+  nextStats: UserStatsDTO | null
+  previousStats: UserStatsDTO | null
+  previousRankingPosition: number | null
+  nextRankingPosition: number | null
+}): string {
+  const { locale, nextStats, previousStats, previousRankingPosition, nextRankingPosition } = input
+
+  if (previousRankingPosition && nextRankingPosition && nextRankingPosition < previousRankingPosition) {
+    return locale === 'pt-BR' ? '🏆 Voce subiu no ranking!' : '🏆 You climbed up the ranking!'
+  }
+
+  const nextStreak = nextStats?.currentStreak ?? 0
+  const previousStreak = previousStats?.currentStreak ?? 0
+
+  if (nextStreak >= 7 && nextStreak > previousStreak) {
+    return locale === 'pt-BR'
+      ? '💀 Nao ta sobrando nada pros outros'
+      : "💀 You are leaving nothing for the others"
+  }
+
+  if (nextStreak >= 4 && nextStreak > previousStreak) {
+    return locale === 'pt-BR' ? '😈 Disciplina ta batendo forte' : '😈 Discipline is hitting hard'
+  }
+
+  if (nextStreak >= 2) {
+    return locale === 'pt-BR'
+      ? `🔥 Voce esta ha ${nextStreak} dias sem falhar`
+      : `🔥 You are on a ${nextStreak}-day streak`
+  }
+
+  return locale === 'pt-BR'
+    ? '🔥 Treino concluido. Bora manter o ritmo!'
+    : '🔥 Workout completed. Keep the momentum!'
+}
+
+export default function WorkoutClient({
+  session,
+  initialPlan,
+  initialDays,
+  initialDayExercises,
+  initialTodayAssignment,
+}: Props) {
   const router = useRouter()
   const { locale } = useApp()
 
@@ -234,6 +367,16 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
   const [dayExercisesByDay, setDayExercisesByDay] = useState<Record<string, WorkoutDayExerciseDTO[]>>(
     groupExercisesByWorkoutDay(initialDayExercises)
   )
+  const [todayAssignment, setTodayAssignment] = useState<WorkoutDayAssignmentDTO | null>(
+    initialTodayAssignment
+  )
+
+  const [showChooseTodayWorkoutModal, setShowChooseTodayWorkoutModal] = useState(false)
+  const [chooseTodayWorkoutModalVisible, setChooseTodayWorkoutModalVisible] = useState(false)
+  const [selectedTodayWorkoutDayId, setSelectedTodayWorkoutDayId] = useState('')
+  const [savingTodayWorkoutChoice, setSavingTodayWorkoutChoice] = useState(false)
+  const [todayWorkoutChoiceError, setTodayWorkoutChoiceError] = useState('')
+  const [todayWorkoutChoiceSuccess, setTodayWorkoutChoiceSuccess] = useState('')
 
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [createPlanModalVisible, setCreatePlanModalVisible] = useState(false)
@@ -253,6 +396,9 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
   const [daySubmitting, setDaySubmitting] = useState(false)
   const [dayFormError, setDayFormError] = useState('')
   const [dayActionError, setDayActionError] = useState('')
+  const createPlanModalBodyRef = useRef<HTMLDivElement | null>(null)
+  const dayModalBodyRef = useRef<HTMLDivElement | null>(null)
+  const [mobileKeyboardInset, setMobileKeyboardInset] = useState(0)
 
   const [deletingDayId, setDeletingDayId] = useState<string | null>(null)
   const [deletingDay, setDeletingDay] = useState(false)
@@ -303,6 +449,18 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
   const [workoutExecutionError, setWorkoutExecutionError] = useState('')
   const [workoutSessionSuccess, setWorkoutSessionSuccess] = useState('')
 
+  const [todayWorkoutLog, setTodayWorkoutLog] = useState<WorkoutLogDTO | null>(null)
+  const [todayExerciseDoneById, setTodayExerciseDoneById] = useState<Record<string, boolean>>({})
+  const [loadingTodayWorkoutLog, setLoadingTodayWorkoutLog] = useState(false)
+  const [savingTodayWorkoutLog, setSavingTodayWorkoutLog] = useState(false)
+  const [todayWorkoutLogError, setTodayWorkoutLogError] = useState('')
+  const [workoutToastMessage, setWorkoutToastMessage] = useState('')
+  const [userStats, setUserStats] = useState<UserStatsDTO | null>(null)
+  const [workoutRanking, setWorkoutRanking] = useState<WorkoutRankingEntryDTO[]>([])
+  const [currentUserRankingPosition, setCurrentUserRankingPosition] = useState<number | null>(null)
+  const [loadingWorkoutPerformance, setLoadingWorkoutPerformance] = useState(true)
+  const [workoutPerformanceError, setWorkoutPerformanceError] = useState('')
+
   const [deletingDayExercise, setDeletingDayExercise] = useState<{
     id: string
     workoutDayId: string
@@ -315,6 +473,45 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
   useEffect(() => {
     document.title = locale === 'pt-BR' ? 'Treino | Flowly' : 'Workout | Flowly'
   }, [locale])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const viewport = window.visualViewport
+    if (!viewport) return
+
+    const updateInset = () => {
+      if (window.matchMedia('(min-width: 640px)').matches) {
+        setMobileKeyboardInset(0)
+        return
+      }
+
+      const inset = Math.max(0, window.innerHeight - viewport.height - viewport.offsetTop)
+      setMobileKeyboardInset(Math.round(inset))
+    }
+
+    updateInset()
+    viewport.addEventListener('resize', updateInset)
+    viewport.addEventListener('scroll', updateInset)
+    window.addEventListener('orientationchange', updateInset)
+
+    return () => {
+      viewport.removeEventListener('resize', updateInset)
+      viewport.removeEventListener('scroll', updateInset)
+      window.removeEventListener('orientationchange', updateInset)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!showChooseTodayWorkoutModal) return
+
+    if (
+      !selectedTodayWorkoutDayId ||
+      !days.some((item) => item.id === selectedTodayWorkoutDayId)
+    ) {
+      setSelectedTodayWorkoutDayId(days[0]?.id ?? '')
+    }
+  }, [days, selectedTodayWorkoutDayId, showChooseTodayWorkoutModal])
 
   const selectedExercise = useMemo(
     () => availableExercises.find((exercise) => exercise.id === selectedExerciseId) ?? null,
@@ -338,12 +535,52 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
     })
   }, [availableExercises, exerciseQuery, exerciseGroupFilter])
 
+  const todayDateKey = useMemo(() => getDateKey(), [])
   const todayWeekDayIndex = getTodayWeekDayIndex()
 
-  const todayWorkout = useMemo(
+  useEffect(() => {
+    if (!todayAssignment) return
+
+    if (
+      !plan ||
+      todayAssignment.planId !== plan.id ||
+      todayAssignment.date !== todayDateKey ||
+      !days.some((item) => item.id === todayAssignment.workoutDayId)
+    ) {
+      setTodayAssignment(null)
+    }
+  }, [days, plan, todayAssignment, todayDateKey])
+
+  const fixedTodayWorkout = useMemo(
     () => days.find((item) => item.weekDay === todayWeekDayIndex) ?? null,
     [days, todayWeekDayIndex]
   )
+
+  const manualTodayWorkout = useMemo(() => {
+    if (!todayAssignment || todayAssignment.date !== todayDateKey) return null
+    return days.find((item) => item.id === todayAssignment.workoutDayId) ?? null
+  }, [days, todayAssignment, todayDateKey])
+
+  const todayWorkoutSelection = useMemo(() => {
+    if (manualTodayWorkout) {
+      return {
+        day: manualTodayWorkout,
+        source: 'manual' as const,
+      }
+    }
+
+    if (fixedTodayWorkout) {
+      return {
+        day: fixedTodayWorkout,
+        source: 'weekday' as const,
+      }
+    }
+
+    return null
+  }, [fixedTodayWorkout, manualTodayWorkout])
+
+  const todayWorkout = todayWorkoutSelection?.day ?? null
+  const todayWorkoutSource = todayWorkoutSelection?.source ?? null
 
   const todayWorkoutExercises = useMemo(() => {
     if (!todayWorkout) return []
@@ -369,9 +606,389 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
     return formatDateLabel(parsed, locale)
   }, [locale, workoutExecutionDateISO])
 
+  const todayWorkoutCompleted = Boolean(todayWorkoutLog?.completed)
+  const todayWorkoutExerciseIdsKey = useMemo(
+    () => todayWorkoutExercises.map((item) => `${item.id}:${item.exerciseId}`).join('|'),
+    [todayWorkoutExercises]
+  )
+  const todayDoneExercisesCount = useMemo(
+    () =>
+      todayWorkoutExercises.reduce((count, item) => {
+        return count + (todayExerciseDoneById[item.exerciseId] ? 1 : 0)
+      }, 0),
+    [todayExerciseDoneById, todayWorkoutExercises]
+  )
+
+  const scoreNumberFormatter = useMemo(
+    () => new Intl.NumberFormat(locale === 'pt-BR' ? 'pt-BR' : 'en-US'),
+    [locale]
+  )
+
+  const isCurrentUserInTopRanking = useMemo(
+    () => workoutRanking.some((entry) => entry.userId === session.userId),
+    [session.userId, workoutRanking]
+  )
+
+  const loadWorkoutPerformance = useCallback(
+    async (options?: { silent?: boolean }) => {
+      const silent = Boolean(options?.silent)
+
+      if (!silent) {
+        setLoadingWorkoutPerformance(true)
+      }
+
+      setWorkoutPerformanceError('')
+
+      try {
+        const [statsResponse, rankingResponse] = await Promise.all([
+          fetch('/api/stats/me', { cache: 'no-store' }),
+          fetch('/api/stats/ranking?limit=5', { cache: 'no-store' }),
+        ])
+
+        const statsPayload: { error?: string; stats?: UserStatsDTO } = await statsResponse
+          .json()
+          .catch(() => ({}))
+        const rankingPayload: {
+          error?: string
+          ranking?: WorkoutRankingEntryDTO[]
+          currentUserPosition?: number | null
+        } = await rankingResponse.json().catch(() => ({}))
+
+        if (!statsResponse.ok || !rankingResponse.ok) {
+          const errorMessage =
+            statsPayload.error ??
+            rankingPayload.error ??
+            (locale === 'pt-BR'
+              ? 'Nao foi possivel carregar seus dados de desempenho'
+              : 'Could not load workout performance data')
+
+          setWorkoutPerformanceError(errorMessage)
+          return null
+        }
+
+        const nextStats = statsPayload.stats ?? null
+        const nextRanking = rankingPayload.ranking ?? []
+        const nextPosition =
+          typeof rankingPayload.currentUserPosition === 'number'
+            ? rankingPayload.currentUserPosition
+            : null
+
+        setUserStats(nextStats)
+        setWorkoutRanking(nextRanking)
+        setCurrentUserRankingPosition(nextPosition)
+
+        return {
+          stats: nextStats,
+          ranking: nextRanking,
+          currentUserPosition: nextPosition,
+        }
+      } catch {
+        const errorMessage =
+          locale === 'pt-BR'
+            ? 'Erro de conexao ao carregar desempenho do treino'
+            : 'Connection error while loading workout performance'
+
+        setWorkoutPerformanceError(errorMessage)
+        return null
+      } finally {
+        if (!silent) {
+          setLoadingWorkoutPerformance(false)
+        }
+      }
+    },
+    [locale]
+  )
+
+  const buildTodayExerciseDoneMap = (log: WorkoutLogDTO | null): Record<string, boolean> => {
+    const doneMap: Record<string, boolean> = {}
+
+    for (const item of todayWorkoutExercises) {
+      doneMap[item.exerciseId] = false
+    }
+
+    if (!log) return doneMap
+
+    for (const item of log.exerciseLogs) {
+      if (item.exerciseId in doneMap) {
+        doneMap[item.exerciseId] = item.done
+      }
+    }
+
+    return doneMap
+  }
+
+  useEffect(() => {
+    if (!todayWorkout) {
+      setTodayWorkoutLog(null)
+      setTodayExerciseDoneById({})
+      setTodayWorkoutLogError('')
+      return
+    }
+
+    let ignore = false
+
+    const loadTodayWorkoutLog = async () => {
+      setLoadingTodayWorkoutLog(true)
+      setTodayWorkoutLogError('')
+
+      try {
+        const response = await fetch(
+          `/api/workout/log/today?workoutId=${encodeURIComponent(todayWorkout.id)}`
+        )
+
+        const payload: { error?: string; workoutLog?: WorkoutLogDTO | null } = await response
+          .json()
+          .catch(() => ({}))
+
+        if (ignore) return
+
+        if (!response.ok) {
+          setTodayWorkoutLogError(payload.error ?? 'Nao foi possivel carregar o progresso de hoje')
+          setTodayWorkoutLog(null)
+          setTodayExerciseDoneById(buildTodayExerciseDoneMap(null))
+          return
+        }
+
+        const loadedLog = payload.workoutLog ?? null
+        setTodayWorkoutLog(loadedLog)
+        setTodayExerciseDoneById(buildTodayExerciseDoneMap(loadedLog))
+      } catch {
+        if (ignore) return
+        setTodayWorkoutLogError('Erro de conexao ao carregar o progresso do treino')
+        setTodayWorkoutLog(null)
+        setTodayExerciseDoneById(buildTodayExerciseDoneMap(null))
+      } finally {
+        if (!ignore) {
+          setLoadingTodayWorkoutLog(false)
+        }
+      }
+    }
+
+    void loadTodayWorkoutLog()
+
+    return () => {
+      ignore = true
+    }
+  }, [todayWorkout, todayWorkoutExerciseIdsKey])
+
+  useEffect(() => {
+    void loadWorkoutPerformance()
+  }, [loadWorkoutPerformance])
+
+  useEffect(() => {
+    if (!workoutToastMessage) return
+
+    const timeoutId = window.setTimeout(() => {
+      setWorkoutToastMessage('')
+    }, 2400)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [workoutToastMessage])
+
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
     router.push('/login')
+  }
+
+  const handleCreatePlanModalFocus = (event: React.FocusEvent<HTMLElement>) => {
+    revealFormFieldOnMobile(event.target, createPlanModalBodyRef.current)
+  }
+
+  const handleDayModalFocus = (event: React.FocusEvent<HTMLElement>) => {
+    revealFormFieldOnMobile(event.target, dayModalBodyRef.current)
+  }
+
+  const persistTodayWorkoutLog = async (
+    doneByExerciseId: Record<string, boolean>,
+    options?: { completed?: boolean }
+  ): Promise<boolean> => {
+    if (!todayWorkout || savingTodayWorkoutLog) return false
+
+    const uniqueExerciseStates = new Map<string, boolean>()
+    for (const item of todayWorkoutExercises) {
+      uniqueExerciseStates.set(item.exerciseId, Boolean(doneByExerciseId[item.exerciseId]))
+    }
+
+    const exercisesPayload = Array.from(uniqueExerciseStates.entries()).map(
+      ([exerciseId, done]) => ({ exerciseId, done })
+    )
+
+    setSavingTodayWorkoutLog(true)
+    setTodayWorkoutLogError('')
+
+    try {
+      const endpoint = todayWorkoutLog ? `/api/workout/log/${todayWorkoutLog.id}` : '/api/workout/log'
+      const method = todayWorkoutLog ? 'PATCH' : 'POST'
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(todayWorkoutLog ? {} : { workoutId: todayWorkout.id }),
+          completed: options?.completed,
+          exercises: exercisesPayload,
+        }),
+      })
+
+      const payload: { error?: string; workoutLog?: WorkoutLogDTO } = await response
+        .json()
+        .catch(() => ({}))
+
+      if (!response.ok) {
+        setTodayWorkoutLogError(payload.error ?? 'Nao foi possivel salvar o treino de hoje')
+        return false
+      }
+
+      if (!payload.workoutLog) {
+        setTodayWorkoutLogError('Resposta invalida ao salvar o treino')
+        return false
+      }
+
+      setTodayWorkoutLog(payload.workoutLog)
+      setTodayExerciseDoneById(buildTodayExerciseDoneMap(payload.workoutLog))
+
+      return true
+    } catch {
+      setTodayWorkoutLogError('Erro de conexao ao salvar o treino')
+      return false
+    } finally {
+      setSavingTodayWorkoutLog(false)
+    }
+  }
+
+  const handleToggleTodayExercise = async (exerciseId: string) => {
+    if (!todayWorkout) return
+
+    const previous = todayExerciseDoneById
+    const next = {
+      ...previous,
+      [exerciseId]: !Boolean(previous[exerciseId]),
+    }
+
+    setTodayExerciseDoneById(next)
+
+    const success = await persistTodayWorkoutLog(next, {
+      completed: todayWorkoutCompleted,
+    })
+
+    if (!success) {
+      setTodayExerciseDoneById(previous)
+    }
+  }
+
+  const handleCompleteTodayWorkout = async () => {
+    if (!todayWorkout || todayWorkoutExercises.length === 0 || savingTodayWorkoutLog || todayWorkoutCompleted) {
+      return
+    }
+
+    const previous = todayExerciseDoneById
+    const previousStats = userStats
+    const previousRankingPosition = currentUserRankingPosition
+    const allDone = { ...previous }
+
+    for (const item of todayWorkoutExercises) {
+      allDone[item.exerciseId] = true
+    }
+
+    setTodayExerciseDoneById(allDone)
+
+    const success = await persistTodayWorkoutLog(allDone, {
+      completed: true,
+    })
+
+    if (!success) {
+      setTodayExerciseDoneById(previous)
+      return
+    }
+
+    const refreshedPerformance = await loadWorkoutPerformance({ silent: true })
+
+    const motivationalMessage = buildWorkoutMotivationMessage({
+      locale,
+      nextStats: refreshedPerformance?.stats ?? previousStats,
+      previousStats,
+      previousRankingPosition,
+      nextRankingPosition: refreshedPerformance?.currentUserPosition ?? currentUserRankingPosition,
+    })
+
+    setWorkoutToastMessage(motivationalMessage)
+  }
+
+  const openChooseTodayWorkoutModal = () => {
+    if (!plan || days.length === 0) return
+
+    setTodayWorkoutChoiceError('')
+    setTodayWorkoutChoiceSuccess('')
+    setSelectedTodayWorkoutDayId(days[0]?.id ?? '')
+    setShowChooseTodayWorkoutModal(true)
+    requestAnimationFrame(() => setChooseTodayWorkoutModalVisible(true))
+  }
+
+  const closeChooseTodayWorkoutModal = () => {
+    if (savingTodayWorkoutChoice) return
+
+    setChooseTodayWorkoutModalVisible(false)
+    window.setTimeout(() => {
+      setShowChooseTodayWorkoutModal(false)
+      setSelectedTodayWorkoutDayId('')
+      setTodayWorkoutChoiceError('')
+    }, 200)
+  }
+
+  const handleChooseTodayWorkout = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+
+    if (!plan || savingTodayWorkoutChoice) return
+
+    if (!selectedTodayWorkoutDayId) {
+      setTodayWorkoutChoiceError('Selecione um treino')
+      return
+    }
+
+    setSavingTodayWorkoutChoice(true)
+    setTodayWorkoutChoiceError('')
+
+    try {
+      const response = await fetch('/api/workout/day-assignments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          workoutDayId: selectedTodayWorkoutDayId,
+          date: todayDateKey,
+        }),
+      })
+
+      const payload: { error?: string; assignment?: WorkoutDayAssignmentDTO } = await response
+        .json()
+        .catch(() => ({}))
+
+      if (!response.ok) {
+        setTodayWorkoutChoiceError(payload.error ?? 'Nao foi possivel escolher o treino de hoje')
+        return
+      }
+
+      if (!payload.assignment) {
+        setTodayWorkoutChoiceError('Resposta invalida do servidor')
+        return
+      }
+
+      setTodayAssignment(payload.assignment)
+      setWorkoutExecutionError('')
+      setWorkoutSessionSuccess('')
+      setTodayWorkoutChoiceSuccess(
+        locale === 'pt-BR'
+          ? 'Treino de hoje definido com sucesso.'
+          : 'Today\'s workout was set successfully.'
+      )
+      closeChooseTodayWorkoutModal()
+    } catch {
+      setTodayWorkoutChoiceError('Erro de conexao. Tente novamente.')
+    } finally {
+      setSavingTodayWorkoutChoice(false)
+    }
   }
 
   const openCreateModal = () => {
@@ -420,6 +1037,8 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
 
       setDays([])
       setDayExercisesByDay({})
+      setTodayAssignment(null)
+      setTodayWorkoutChoiceSuccess('')
       closeCreateModal()
       router.refresh()
     } catch {
@@ -460,6 +1079,8 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
       setPlan(null)
       setDays([])
       setDayExercisesByDay({})
+      setTodayAssignment(null)
+      setTodayWorkoutChoiceSuccess('')
       setShowDeletePlanModal(false)
       router.refresh()
     } catch {
@@ -1106,6 +1727,9 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
     setSavingWorkoutSession(true)
     setWorkoutExecutionError('')
 
+    const previousStats = userStats
+    const previousRankingPosition = currentUserRankingPosition
+
     try {
       const exercisesPayload = workoutExecutionExercises.map((item) => {
         const setsDone = parseOptionalSetsDoneInput(item.setsDone)
@@ -1156,6 +1780,18 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
           ? 'Treino concluido e salvo com sucesso.'
           : 'Workout completed and saved successfully.'
       )
+
+      const refreshedPerformance = await loadWorkoutPerformance({ silent: true })
+
+      const motivationalMessage = buildWorkoutMotivationMessage({
+        locale,
+        nextStats: refreshedPerformance?.stats ?? previousStats,
+        previousStats,
+        previousRankingPosition,
+        nextRankingPosition: refreshedPerformance?.currentUserPosition ?? currentUserRankingPosition,
+      })
+
+      setWorkoutToastMessage(motivationalMessage)
       closeWorkoutExecutionModal(true)
     } catch (error: unknown) {
       setWorkoutExecutionError(
@@ -1263,11 +1899,11 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
 
               <div className="relative space-y-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300">
                       {locale === 'pt-BR' ? 'Treino de hoje' : "Today's workout"}
                     </p>
-                    <h3 className="mt-1 text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-100 sm:text-2xl">
+                    <h3 className="mt-1 break-words text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-100 sm:text-2xl">
                       {todayWorkout
                         ? todayWorkout.name
                         : locale === 'pt-BR'
@@ -1277,7 +1913,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                     <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">{todayDateLabel}</p>
                   </div>
 
-                  {todayWorkout && (
+                  {todayWorkout ? (
                     <button
                       type="button"
                       onClick={() => openWorkoutExecutionModal(todayWorkout)}
@@ -1287,18 +1923,31 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                       <Lucide.Play className="mr-1.5 h-4 w-4" />
                       {locale === 'pt-BR' ? 'Iniciar treino' : 'Start workout'}
                     </button>
-                  )}
+                  ) : days.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={openChooseTodayWorkoutModal}
+                      className="btn-secondary w-full sm:w-auto"
+                    >
+                      <Lucide.CalendarCheck2 className="mr-1.5 h-4 w-4" />
+                      {locale === 'pt-BR' ? 'Escolher treino de hoje' : 'Choose today\'s workout'}
+                    </button>
+                  ) : null}
                 </div>
 
                 {todayWorkout ? (
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl border border-surface-200/80 bg-white/80 p-4 dark:border-surface-700/70 dark:bg-surface-900/70">
                       <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-surface-500 dark:text-surface-400">
-                        {locale === 'pt-BR' ? 'Dia da semana' : 'Week day'}
+                        {locale === 'pt-BR' ? 'Programacao' : 'Schedule'}
                       </p>
                       <p className="mt-1 text-sm font-medium text-surface-900 dark:text-surface-100">
-                        {getWeekDayLabel(todayWorkout.weekDay) ??
-                          (locale === 'pt-BR' ? 'Sem dia fixo' : 'No fixed day')}
+                        {todayWorkoutSource === 'manual'
+                          ? locale === 'pt-BR'
+                            ? 'Escolhido para hoje'
+                            : 'Chosen for today'
+                          : getWeekDayLabel(todayWorkout.weekDay) ??
+                            (locale === 'pt-BR' ? 'Sem dia fixo' : 'No fixed day')}
                       </p>
                     </div>
 
@@ -1313,10 +1962,125 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-surface-300/90 bg-white/70 p-5 text-sm text-surface-500 dark:border-surface-700 dark:bg-surface-900/60 dark:text-surface-400">
-                    {locale === 'pt-BR'
-                      ? 'Nenhum treino programado para hoje'
-                      : 'No workout scheduled for today'}
+                  <div className="space-y-3 rounded-2xl border border-dashed border-surface-300/90 bg-white/70 p-5 text-sm text-surface-500 dark:border-surface-700 dark:bg-surface-900/60 dark:text-surface-400">
+                    <p>
+                      {locale === 'pt-BR'
+                        ? 'Nenhum treino programado para hoje'
+                        : 'No workout scheduled for today'}
+                    </p>
+                    {days.length > 0 ? (
+                      <button
+                        type="button"
+                        onClick={openChooseTodayWorkoutModal}
+                        className="btn-secondary w-full sm:w-auto"
+                      >
+                        <Lucide.CalendarCheck2 className="mr-1.5 h-4 w-4" />
+                        {locale === 'pt-BR' ? 'Escolher treino de hoje' : 'Choose today\'s workout'}
+                      </button>
+                    ) : (
+                      <p className="text-xs text-surface-400 dark:text-surface-500">
+                        {locale === 'pt-BR'
+                          ? 'Adicione ao menos um treino para fazer a selecao manual.'
+                          : 'Add at least one workout to choose manually.'}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {todayWorkout && todayWorkoutExercises.length > 0 && (
+                  <div className="rounded-2xl border border-surface-200/80 bg-white/80 p-4 dark:border-surface-700/70 dark:bg-surface-900/70 sm:p-5">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.13em] text-surface-500 dark:text-surface-400">
+                      {locale === 'pt-BR' ? 'Progresso dos exercicios' : 'Exercise progress'}
+                    </p>
+
+                    <div className="mt-3 space-y-2">
+                      {todayWorkoutExercises.map((item) => {
+                        const done = Boolean(todayExerciseDoneById[item.exerciseId])
+
+                        return (
+                          <div
+                            key={item.id}
+                            className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-all duration-200 ${
+                              done
+                                ? 'border-emerald-300/70 bg-emerald-50/70 dark:border-emerald-800/60 dark:bg-emerald-900/20'
+                                : 'border-surface-200 bg-surface-50/70 dark:border-surface-700/70 dark:bg-surface-900/40'
+                            }`}
+                          >
+                            <button
+                              type="button"
+                              onClick={() => handleToggleTodayExercise(item.exerciseId)}
+                              disabled={savingTodayWorkoutLog || loadingTodayWorkoutLog}
+                              className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-all duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+                                done
+                                  ? 'border-emerald-500/70 bg-emerald-500 text-white shadow-sm'
+                                  : 'border-surface-300 bg-white text-transparent hover:border-brand-400 hover:bg-brand-50 dark:border-surface-600 dark:bg-surface-900 dark:hover:border-brand-500 dark:hover:bg-brand-900/20'
+                              }`}
+                              aria-label={
+                                locale === 'pt-BR'
+                                  ? `Marcar ${getExerciseDisplayName(item.exercise, locale)} como feito`
+                                  : `Mark ${getExerciseDisplayName(item.exercise, locale)} as done`
+                              }
+                            >
+                              <Lucide.Check className={`h-5 w-5 transition-transform duration-200 ${done ? 'scale-100' : 'scale-75'}`} />
+                            </button>
+
+                            <div className={`min-w-0 transition-all duration-200 ${done ? 'opacity-60' : ''}`}>
+                              <p
+                                className={`truncate text-sm font-medium text-surface-900 dark:text-surface-100 ${
+                                  done ? 'line-through decoration-2 decoration-emerald-500/60' : ''
+                                }`}
+                              >
+                                {getExerciseDisplayName(item.exercise, locale)}
+                              </p>
+                              <p
+                                className={`mt-0.5 text-xs text-surface-500 dark:text-surface-400 ${
+                                  done ? 'line-through decoration-2 decoration-emerald-500/50' : ''
+                                }`}
+                              >
+                                {item.sets} x {item.reps}
+                                {item.targetWeight ? ` • ${item.targetWeight} kg` : ''}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <p className="text-xs text-surface-500 dark:text-surface-400">
+                        {todayDoneExercisesCount}/{todayWorkoutExercises.length}{' '}
+                        {locale === 'pt-BR' ? 'exercicios concluidos' : 'exercises completed'}
+                      </p>
+
+                      <button
+                        type="button"
+                        onClick={handleCompleteTodayWorkout}
+                        disabled={
+                          todayWorkoutCompleted ||
+                          savingTodayWorkoutLog ||
+                          loadingTodayWorkoutLog ||
+                          todayWorkoutExercises.length === 0
+                        }
+                        className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all sm:w-auto ${
+                          todayWorkoutCompleted
+                            ? 'cursor-not-allowed bg-emerald-600 text-white shadow-sm'
+                            : 'bg-brand-600 text-white shadow-sm hover:bg-brand-700'
+                        } disabled:opacity-90`}
+                      >
+                        <Lucide.CheckCircle2 className="mr-1.5 h-4 w-4" />
+                        {todayWorkoutCompleted
+                          ? locale === 'pt-BR'
+                            ? 'Treino concluido hoje'
+                            : 'Workout completed today'
+                          : savingTodayWorkoutLog
+                            ? locale === 'pt-BR'
+                              ? 'Salvando...'
+                              : 'Saving...'
+                            : locale === 'pt-BR'
+                              ? 'Concluir treino'
+                              : 'Complete workout'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -1334,6 +2098,30 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                   </p>
                 )}
 
+                {todayWorkoutChoiceSuccess && (
+                  <p className="rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                    {todayWorkoutChoiceSuccess}
+                  </p>
+                )}
+
+                {todayWorkoutCompleted && (
+                  <p className="rounded-xl border border-emerald-200/80 bg-emerald-50/80 px-3 py-2 text-xs text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                    {locale === 'pt-BR' ? 'Treino concluido hoje' : 'Workout completed today'}
+                  </p>
+                )}
+
+                {!showChooseTodayWorkoutModal && todayWorkoutChoiceError && (
+                  <p className="rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                    {todayWorkoutChoiceError}
+                  </p>
+                )}
+
+                {todayWorkoutLogError && (
+                  <p className="rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                    {todayWorkoutLogError}
+                  </p>
+                )}
+
                 {!showWorkoutExecutionModal && workoutExecutionError && (
                   <p className="rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
                     {workoutExecutionError}
@@ -1341,6 +2129,127 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                 )}
               </div>
             </section>
+
+            <section className="animate-dashboard-fade grid gap-4 lg:grid-cols-2">
+              <article className="card relative overflow-hidden">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-brand-500/10 to-transparent" />
+
+                <div className="relative">
+                  <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                    {locale === 'pt-BR' ? 'Seu desempenho' : 'Your performance'}
+                  </h3>
+
+                  <div className="mt-4 space-y-2.5">
+                    <div className="flex items-center justify-between rounded-xl border border-surface-200/80 bg-surface-50/70 px-3 py-2.5 dark:border-surface-700/70 dark:bg-surface-900/60">
+                      <p className="text-sm text-surface-600 dark:text-surface-300">
+                        🔥 {locale === 'pt-BR' ? 'Streak atual' : 'Current streak'}
+                      </p>
+                      <p className="text-base font-semibold text-surface-900 dark:text-surface-100">
+                        {loadingWorkoutPerformance ? '...' : userStats?.currentStreak ?? 0}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl border border-surface-200/80 bg-surface-50/70 px-3 py-2.5 dark:border-surface-700/70 dark:bg-surface-900/60">
+                      <p className="text-sm text-surface-600 dark:text-surface-300">
+                        🏆 {locale === 'pt-BR' ? 'Melhor sequencia' : 'Best streak'}
+                      </p>
+                      <p className="text-base font-semibold text-surface-900 dark:text-surface-100">
+                        {loadingWorkoutPerformance ? '...' : userStats?.longestStreak ?? 0}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center justify-between rounded-xl border border-surface-200/80 bg-surface-50/70 px-3 py-2.5 dark:border-surface-700/70 dark:bg-surface-900/60">
+                      <p className="text-sm text-surface-600 dark:text-surface-300">
+                        ⚡ {locale === 'pt-BR' ? 'Score total' : 'Total score'}
+                      </p>
+                      <p className="text-base font-semibold text-surface-900 dark:text-surface-100">
+                        {loadingWorkoutPerformance
+                          ? '...'
+                          : scoreNumberFormatter.format(userStats?.score ?? 0)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article className="card relative overflow-hidden">
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-brand-500/10 to-transparent" />
+
+                <div className="relative">
+                  <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                    {locale === 'pt-BR' ? 'Ranking semanal' : 'Weekly ranking'}
+                  </h3>
+
+                  {loadingWorkoutPerformance ? (
+                    <p className="mt-4 text-sm text-surface-500 dark:text-surface-400">
+                      {locale === 'pt-BR' ? 'Carregando ranking...' : 'Loading ranking...'}
+                    </p>
+                  ) : workoutRanking.length === 0 ? (
+                    <p className="mt-4 rounded-xl border border-dashed border-surface-300/80 bg-surface-50/70 px-3 py-3 text-sm text-surface-500 dark:border-surface-700/70 dark:bg-surface-900/50 dark:text-surface-400">
+                      {locale === 'pt-BR'
+                        ? 'Ainda nao ha pontuacao suficiente para montar o ranking.'
+                        : 'There is not enough score yet to build the ranking.'}
+                    </p>
+                  ) : (
+                    <div className="mt-4 max-h-72 overflow-y-auto pr-1">
+                      <ol className="space-y-2">
+                        {workoutRanking.map((entry) => {
+                          const isCurrentUser = entry.userId === session.userId || entry.isCurrentUser
+
+                          return (
+                            <li
+                              key={entry.userId}
+                              className={`flex items-center justify-between gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
+                                isCurrentUser
+                                  ? 'border-brand-400/70 bg-brand-50/80 dark:border-brand-500/50 dark:bg-brand-900/25'
+                                  : 'border-surface-200/80 bg-surface-50/70 dark:border-surface-700/70 dark:bg-surface-900/60'
+                              }`}
+                            >
+                              <div className="flex min-w-0 items-center gap-3">
+                                <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-surface-300/80 bg-white text-xs font-semibold text-surface-700 dark:border-surface-600 dark:bg-surface-900 dark:text-surface-200">
+                                  {entry.position}
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-medium text-surface-900 dark:text-surface-100">
+                                    {entry.name}
+                                    {isCurrentUser
+                                      ? locale === 'pt-BR'
+                                        ? ' (voce)'
+                                        : ' (you)'
+                                      : ''}
+                                  </p>
+                                  <p className="mt-0.5 text-[11px] text-surface-500 dark:text-surface-400">
+                                    🔥 {entry.currentStreak}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <p className="shrink-0 text-sm font-semibold text-surface-900 dark:text-surface-100">
+                                ⚡ {scoreNumberFormatter.format(entry.score)}
+                              </p>
+                            </li>
+                          )
+                        })}
+                      </ol>
+                    </div>
+                  )}
+
+                  {!loadingWorkoutPerformance && !isCurrentUserInTopRanking && currentUserRankingPosition && (
+                    <p className="mt-3 text-xs text-surface-500 dark:text-surface-400">
+                      {locale === 'pt-BR'
+                        ? `Sua posicao atual: #${currentUserRankingPosition}`
+                        : `Your current position: #${currentUserRankingPosition}`}
+                    </p>
+                  )}
+                </div>
+              </article>
+            </section>
+
+            {workoutPerformanceError && (
+              <p className="rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-900/40 dark:bg-red-900/20 dark:text-red-300">
+                {workoutPerformanceError}
+              </p>
+            )}
 
             <section className="card animate-dashboard-fade">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -1388,15 +2297,17 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                         key={day.id}
                         className="rounded-2xl border border-surface-200/90 bg-white p-4 shadow-sm transition-colors dark:border-surface-700/60 dark:bg-surface-900/70 sm:p-5"
                       >
-                        <div className="flex items-start justify-between gap-4">
-                          <div>
-                            <h4 className="text-base font-semibold text-surface-900 dark:text-surface-100">{day.name}</h4>
+                        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <h4 className="break-words text-base font-semibold text-surface-900 dark:text-surface-100">
+                              {day.name}
+                            </h4>
                             {weekDayLabel && (
                               <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">{weekDayLabel}</p>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex shrink-0 flex-wrap items-center gap-1">
                             <button
                               type="button"
                               onClick={() => handleMoveDay(day.id, 'up')}
@@ -1462,7 +2373,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                                     key={item.id}
                                     className="rounded-xl border border-surface-200 bg-surface-50/70 p-3 dark:border-surface-700/60 dark:bg-surface-900/70"
                                   >
-                                    <div className="flex items-start justify-between gap-3">
+                                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                       <div className="min-w-0">
                                         <p className="truncate text-sm font-semibold text-surface-900 dark:text-surface-100">
                                           {getExerciseDisplayName(item.exercise, locale)}
@@ -1478,7 +2389,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                                         )}
                                       </div>
 
-                                      <div className="flex shrink-0 items-center gap-1">
+                                      <div className="flex shrink-0 flex-wrap items-center gap-1">
                                         <button
                                           type="button"
                                           onClick={() => handleMoveDayExercise(day.id, item.id, 'up')}
@@ -1531,6 +2442,134 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
         )}
       </main>
 
+      {workoutToastMessage && (
+        <div className="pointer-events-none fixed inset-x-4 bottom-4 z-[80] flex justify-center sm:inset-x-auto sm:right-6 sm:bottom-6">
+          <div className="rounded-xl border border-emerald-300/80 bg-emerald-600 px-4 py-2 text-sm font-medium text-white shadow-lg shadow-emerald-900/30 animate-fade-in">
+            {workoutToastMessage}
+          </div>
+        </div>
+      )}
+
+      {showChooseTodayWorkoutModal && (
+        <div
+          className={`fixed inset-0 z-[57] flex items-end justify-center bg-black/60 p-0 transition-opacity duration-200 sm:items-center sm:p-4 ${
+            chooseTodayWorkoutModalVisible ? 'opacity-100' : 'opacity-0'
+          }`}
+          onClick={(e) => e.target === e.currentTarget && closeChooseTodayWorkoutModal()}
+        >
+          <div
+            className={`w-full rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-xl sm:rounded-2xl ${
+              chooseTodayWorkoutModalVisible
+                ? 'translate-y-0 opacity-100 sm:scale-100'
+                : 'translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95'
+            }`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-surface-200/80 p-5 dark:border-surface-800">
+              <div>
+                <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+                  {locale === 'pt-BR' ? 'Escolher treino de hoje' : "Choose today's workout"}
+                </h3>
+                <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">{todayDateLabel}</p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeChooseTodayWorkoutModal}
+                disabled={savingTodayWorkoutChoice}
+                className="rounded-full p-2 text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-surface-800 dark:hover:text-surface-300"
+              >
+                <Lucide.X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleChooseTodayWorkout} className="flex max-h-[88dvh] flex-col">
+              <div className="space-y-4 overflow-y-auto p-5">
+                <p className="text-sm text-surface-500 dark:text-surface-400">
+                  {locale === 'pt-BR'
+                    ? 'Selecione um treino do seu plano para usar apenas hoje.'
+                    : 'Pick one workout from your plan to use today only.'}
+                </p>
+
+                <div className="space-y-2">
+                  {days.map((day) => {
+                    const selected = selectedTodayWorkoutDayId === day.id
+                    const weekDayLabel = getWeekDayLabel(day.weekDay)
+                    const exerciseCount = (dayExercisesByDay[day.id] ?? []).length
+
+                    return (
+                      <label
+                        key={day.id}
+                        className={`block cursor-pointer rounded-xl border p-3 transition-all ${
+                          selected
+                            ? 'border-brand-400 bg-brand-50/80 dark:border-brand-500/50 dark:bg-brand-900/20'
+                            : 'border-surface-200 bg-surface-50 hover:bg-surface-100 dark:border-surface-700 dark:bg-surface-800/60 dark:hover:bg-surface-800'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="today-workout-day"
+                          className="sr-only"
+                          value={day.id}
+                          checked={selected}
+                          onChange={(e) => setSelectedTodayWorkoutDayId(e.target.value)}
+                        />
+
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="break-words text-sm font-semibold text-surface-900 dark:text-surface-100">
+                              {day.name}
+                            </p>
+                            <p className="mt-1 text-xs text-surface-500 dark:text-surface-400">
+                              {weekDayLabel ??
+                                (locale === 'pt-BR' ? 'Sem dia fixo' : 'No fixed day')}
+                              {` • ${exerciseCount} ${locale === 'pt-BR' ? 'exercicios' : 'exercises'}`}
+                            </p>
+                          </div>
+                          {selected && <Lucide.CheckCircle2 className="h-5 w-5 shrink-0 text-brand-500" />}
+                        </div>
+                      </label>
+                    )
+                  })}
+                </div>
+
+                {todayWorkoutChoiceError && (
+                  <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {todayWorkoutChoiceError}
+                  </p>
+                )}
+              </div>
+
+              <div className="border-t border-surface-200/80 p-4 dark:border-surface-700/70 sm:p-5">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeChooseTodayWorkoutModal}
+                    disabled={savingTodayWorkoutChoice}
+                    className="btn-secondary w-full sm:w-auto"
+                  >
+                    {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingTodayWorkoutChoice || !selectedTodayWorkoutDayId}
+                    className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                  >
+                    {savingTodayWorkoutChoice
+                      ? locale === 'pt-BR'
+                        ? 'Salvando...'
+                        : 'Saving...'
+                      : locale === 'pt-BR'
+                        ? 'Salvar treino de hoje'
+                        : "Save today's workout"}
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {showCreateModal && (
         <div
           className={`fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 transition-opacity duration-200 sm:items-center sm:p-4 ${
@@ -1539,7 +2578,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
           onClick={(e) => e.target === e.currentTarget && !submitting && closeCreateModal()}
         >
           <div
-            className={`w-full rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-lg sm:rounded-2xl ${
+            className={`flex max-h-[94dvh] w-full flex-col rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-h-[calc(100vh-2rem)] sm:max-w-lg sm:rounded-2xl ${
               createPlanModalVisible
                 ? 'translate-y-0 opacity-100 sm:scale-100'
                 : 'translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95'
@@ -1568,46 +2607,63 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
               </button>
             </div>
 
-            <form onSubmit={handleCreatePlan} className="space-y-5 p-5">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                  {locale === 'pt-BR' ? 'Nome do plano' : 'Plan name'}
-                </label>
-                <input
-                  type="text"
-                  maxLength={80}
-                  className="input-field"
-                  placeholder={locale === 'pt-BR' ? 'Ex: Hipertrofia - Abril' : 'Ex: Hypertrophy - April'}
-                  value={planName}
-                  onChange={(e) => setPlanName(e.target.value)}
-                  autoFocus
-                />
+            <form
+              onSubmit={handleCreatePlan}
+              onFocusCapture={handleCreatePlanModalFocus}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div ref={createPlanModalBodyRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                    {locale === 'pt-BR' ? 'Nome do plano' : 'Plan name'}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={80}
+                    className="input-field"
+                    placeholder={locale === 'pt-BR' ? 'Ex: Hipertrofia - Abril' : 'Ex: Hypertrophy - April'}
+                    value={planName}
+                    onChange={(e) => setPlanName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                {createPlanError && (
+                  <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {createPlanError}
+                  </p>
+                )}
               </div>
 
-              {createPlanError && (
-                <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                  {createPlanError}
-                </p>
-              )}
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeCreateModal}
-                  disabled={submitting}
-                  className="btn-secondary w-full sm:w-auto"
-                >
-                  {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button type="submit" disabled={submitting} className="btn-primary w-full sm:w-auto">
-                  {submitting
-                    ? locale === 'pt-BR'
-                      ? 'Criando...'
-                      : 'Creating...'
-                    : locale === 'pt-BR'
-                      ? 'Criar plano'
-                      : 'Create plan'}
-                </button>
+              <div
+                className="border-t border-surface-200/80 p-4 dark:border-surface-800 sm:p-5"
+                style={
+                  mobileKeyboardInset > 0
+                    ? {
+                        paddingBottom: `${mobileKeyboardInset + 16}px`,
+                      }
+                    : undefined
+                }
+              >
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeCreateModal}
+                    disabled={submitting}
+                    className="btn-secondary w-full sm:w-auto"
+                  >
+                    {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button type="submit" disabled={submitting} className="btn-primary w-full sm:w-auto">
+                    {submitting
+                      ? locale === 'pt-BR'
+                        ? 'Criando...'
+                        : 'Creating...'
+                      : locale === 'pt-BR'
+                        ? 'Criar plano'
+                        : 'Create plan'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1622,7 +2678,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
           onClick={(e) => e.target === e.currentTarget && !daySubmitting && closeDayModal()}
         >
           <div
-            className={`w-full rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-lg sm:rounded-2xl ${
+            className={`flex max-h-[94dvh] w-full flex-col rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-h-[calc(100vh-2rem)] sm:max-w-lg sm:rounded-2xl ${
               dayModalVisible
                 ? 'translate-y-0 opacity-100 sm:scale-100'
                 : 'translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95'
@@ -1657,64 +2713,81 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
               </button>
             </div>
 
-            <form onSubmit={handleSaveDay} className="space-y-5 p-5">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                  {locale === 'pt-BR' ? 'Nome do treino' : 'Workout name'}
-                </label>
-                <input
-                  type="text"
-                  maxLength={80}
-                  className="input-field"
-                  placeholder={locale === 'pt-BR' ? 'Ex: A, Peito e triceps' : 'Ex: A, Chest and triceps'}
-                  value={dayName}
-                  onChange={(e) => setDayName(e.target.value)}
-                  autoFocus
-                />
+            <form
+              onSubmit={handleSaveDay}
+              onFocusCapture={handleDayModalFocus}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div ref={dayModalBodyRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                    {locale === 'pt-BR' ? 'Nome do treino' : 'Workout name'}
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={80}
+                    className="input-field"
+                    placeholder={locale === 'pt-BR' ? 'Ex: A, Peito e triceps' : 'Ex: A, Chest and triceps'}
+                    value={dayName}
+                    onChange={(e) => setDayName(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
+                    {locale === 'pt-BR' ? 'Dia da semana (opcional)' : 'Week day (optional)'}
+                  </label>
+                  <select className="input-field" value={dayWeekDay} onChange={(e) => setDayWeekDay(e.target.value)}>
+                    <option value="">{locale === 'pt-BR' ? 'Sem dia fixo' : 'No fixed day'}</option>
+                    {WEEK_DAY_OPTIONS.map((item) => (
+                      <option key={item.value} value={String(item.value)}>
+                        {item.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {dayFormError && (
+                  <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {dayFormError}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-1.5">
-                <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                  {locale === 'pt-BR' ? 'Dia da semana (opcional)' : 'Week day (optional)'}
-                </label>
-                <select className="input-field" value={dayWeekDay} onChange={(e) => setDayWeekDay(e.target.value)}>
-                  <option value="">{locale === 'pt-BR' ? 'Sem dia fixo' : 'No fixed day'}</option>
-                  {WEEK_DAY_OPTIONS.map((item) => (
-                    <option key={item.value} value={String(item.value)}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {dayFormError && (
-                <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                  {dayFormError}
-                </p>
-              )}
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeDayModal}
-                  disabled={daySubmitting}
-                  className="btn-secondary w-full sm:w-auto"
-                >
-                  {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button type="submit" disabled={daySubmitting} className="btn-primary w-full sm:w-auto">
-                  {daySubmitting
-                    ? locale === 'pt-BR'
-                      ? 'Salvando...'
-                      : 'Saving...'
-                    : editingDay
+              <div
+                className="border-t border-surface-200/80 p-4 dark:border-surface-800 sm:p-5"
+                style={
+                  mobileKeyboardInset > 0
+                    ? {
+                        paddingBottom: `${mobileKeyboardInset + 16}px`,
+                      }
+                    : undefined
+                }
+              >
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeDayModal}
+                    disabled={daySubmitting}
+                    className="btn-secondary w-full sm:w-auto"
+                  >
+                    {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button type="submit" disabled={daySubmitting} className="btn-primary w-full sm:w-auto">
+                    {daySubmitting
                       ? locale === 'pt-BR'
-                        ? 'Salvar treino'
-                        : 'Save workout'
-                      : locale === 'pt-BR'
-                        ? 'Adicionar treino'
-                        : 'Add workout'}
-                </button>
+                        ? 'Salvando...'
+                        : 'Saving...'
+                      : editingDay
+                        ? locale === 'pt-BR'
+                          ? 'Salvar treino'
+                          : 'Save workout'
+                        : locale === 'pt-BR'
+                          ? 'Adicionar treino'
+                          : 'Add workout'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1729,7 +2802,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
           onClick={(e) => e.target === e.currentTarget && closeAddExerciseModal()}
         >
           <div
-            className={`w-full rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-2xl sm:rounded-2xl ${
+            className={`flex max-h-[92dvh] w-full flex-col rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-2xl sm:rounded-2xl ${
               addExerciseModalVisible
                 ? 'translate-y-0 opacity-100 sm:scale-100'
                 : 'translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95'
@@ -1760,7 +2833,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
               </button>
             </div>
 
-            <div className="space-y-4 p-5">
+            <div className="space-y-4 overflow-y-auto p-5">
               <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
                 <input
                   type="text"
@@ -1789,7 +2862,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                 </button>
               </div>
 
-              <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+              <div className="scrollbar-thin max-h-56 space-y-2 overflow-y-auto pr-1 sm:max-h-64">
                 {loadingAvailableExercises ? (
                   <div className="rounded-xl border border-surface-200 bg-surface-50 p-4 text-center text-sm text-surface-500 dark:border-surface-700 dark:bg-surface-800/50 dark:text-surface-400">
                     {locale === 'pt-BR' ? 'Carregando exercicios...' : 'Loading exercises...'}
@@ -1954,11 +3027,11 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
 
       {showCreateCustomExerciseModal && (
         <div
-          className="fixed inset-0 z-[62] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[62] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           onClick={closeCreateCustomExerciseModal}
         >
           <div
-            className="w-full max-w-md rounded-2xl border border-surface-200/80 bg-white shadow-elevated dark:border-surface-700/60 dark:bg-surface-900"
+            className="w-full max-w-md rounded-t-3xl border border-surface-200/80 bg-white shadow-elevated dark:border-surface-700/60 dark:bg-surface-900 sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-surface-200/80 p-5 dark:border-surface-800">
@@ -2065,7 +3138,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
           onClick={(e) => e.target === e.currentTarget && closeEditDayExerciseModal()}
         >
           <div
-            className={`w-full rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-2xl sm:rounded-2xl ${
+            className={`flex max-h-[94dvh] w-full flex-col rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-w-2xl sm:rounded-2xl ${
               editDayExerciseModalVisible
                 ? 'translate-y-0 opacity-100 sm:scale-100'
                 : 'translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95'
@@ -2097,94 +3170,98 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
               </button>
             </div>
 
-            <form onSubmit={handleUpdateDayExercise} className="space-y-5 p-5 sm:p-6">
-              <div className="rounded-2xl border border-surface-200/80 bg-surface-50/80 p-4 dark:border-surface-700/80 dark:bg-surface-900/80">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                  {locale === 'pt-BR' ? 'Parametros principais' : 'Main parameters'}
-                </p>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                      {locale === 'pt-BR' ? 'Series' : 'Sets'}
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={50}
-                      className="input-field"
-                      value={editExerciseSets}
-                      onChange={(e) => setEditExerciseSets(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                      {locale === 'pt-BR' ? 'Repeticoes' : 'Reps'}
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={editExerciseReps}
-                      onChange={(e) => setEditExerciseReps(e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-surface-200/80 bg-surface-50/80 p-4 dark:border-surface-700/80 dark:bg-surface-900/80">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                  {locale === 'pt-BR' ? 'Carga e observacoes' : 'Weight and notes'}
-                </p>
-
-                <div className="mt-3 space-y-3">
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                      {locale === 'pt-BR' ? 'Carga alvo (opcional)' : 'Target weight (optional)'}
-                    </label>
-                    <input
-                      type="text"
-                      className="input-field"
-                      value={editExerciseTargetWeight}
-                      onChange={(e) => setEditExerciseTargetWeight(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                      {locale === 'pt-BR' ? 'Observacao (opcional)' : 'Notes (optional)'}
-                    </label>
-                    <textarea
-                      className="input-field min-h-[96px] resize-y"
-                      value={editExerciseNotes}
-                      onChange={(e) => setEditExerciseNotes(e.target.value)}
-                    />
+            <form onSubmit={handleUpdateDayExercise} className="flex min-h-0 flex-1 flex-col">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+                <div className="rounded-2xl border border-surface-200/80 bg-surface-50/80 p-4 dark:border-surface-700/80 dark:bg-surface-900/80">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    {locale === 'pt-BR' ? 'Parametros principais' : 'Main parameters'}
+                  </p>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                        {locale === 'pt-BR' ? 'Series' : 'Sets'}
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={50}
+                        className="input-field"
+                        value={editExerciseSets}
+                        onChange={(e) => setEditExerciseSets(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                        {locale === 'pt-BR' ? 'Repeticoes' : 'Reps'}
+                      </label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        value={editExerciseReps}
+                        onChange={(e) => setEditExerciseReps(e.target.value)}
+                      />
+                    </div>
                   </div>
                 </div>
+
+                <div className="rounded-2xl border border-surface-200/80 bg-surface-50/80 p-4 dark:border-surface-700/80 dark:bg-surface-900/80">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                    {locale === 'pt-BR' ? 'Carga e observacoes' : 'Weight and notes'}
+                  </p>
+
+                  <div className="mt-3 space-y-3">
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                        {locale === 'pt-BR' ? 'Carga alvo (opcional)' : 'Target weight (optional)'}
+                      </label>
+                      <input
+                        type="text"
+                        className="input-field"
+                        value={editExerciseTargetWeight}
+                        onChange={(e) => setEditExerciseTargetWeight(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
+                        {locale === 'pt-BR' ? 'Observacao (opcional)' : 'Notes (optional)'}
+                      </label>
+                      <textarea
+                        className="input-field min-h-[110px] resize-y"
+                        value={editExerciseNotes}
+                        onChange={(e) => setEditExerciseNotes(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {editDayExerciseError && (
+                  <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {editDayExerciseError}
+                  </p>
+                )}
               </div>
 
-              {editDayExerciseError && (
-                <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                  {editDayExerciseError}
-                </p>
-              )}
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeEditDayExerciseModal}
-                  disabled={savingEditDayExercise}
-                  className="btn-secondary w-full sm:w-auto"
-                >
-                  {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button type="submit" disabled={savingEditDayExercise} className="btn-primary w-full sm:w-auto">
-                  {savingEditDayExercise
-                    ? locale === 'pt-BR'
-                      ? 'Salvando...'
-                      : 'Saving...'
-                    : locale === 'pt-BR'
-                      ? 'Salvar'
-                      : 'Save'}
-                </button>
+              <div className="border-t border-surface-200/80 p-4 dark:border-surface-700/70 sm:p-5">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeEditDayExerciseModal}
+                    disabled={savingEditDayExercise}
+                    className="btn-secondary w-full sm:w-auto"
+                  >
+                    {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button type="submit" disabled={savingEditDayExercise} className="btn-primary w-full sm:w-auto">
+                    {savingEditDayExercise
+                      ? locale === 'pt-BR'
+                        ? 'Salvando...'
+                        : 'Saving...'
+                      : locale === 'pt-BR'
+                        ? 'Salvar'
+                        : 'Save'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -2212,7 +3289,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                   <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300">
                     {locale === 'pt-BR' ? 'Execucao do treino' : 'Workout execution'}
                   </p>
-                  <h3 className="mt-1 truncate text-2xl font-semibold tracking-tight text-surface-900 dark:text-surface-100">
+                  <h3 className="mt-1 break-words text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-100 sm:text-2xl">
                     {workoutExecutionDay.name}
                   </h3>
                   <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
@@ -2259,7 +3336,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                       className="rounded-2xl border border-surface-200/90 bg-white p-4 shadow-sm dark:border-surface-700/70 dark:bg-surface-900/80 sm:p-5"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 sm:text-base">
                             {index + 1}. {getExerciseDisplayName(item.exercise, locale)}
                           </p>
@@ -2276,7 +3353,7 @@ export default function WorkoutClient({ session, initialPlan, initialDays, initi
                               completed: !item.completed,
                             })
                           }
-                          className={`inline-flex min-h-11 items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold transition-all ${
+                          className={`inline-flex min-h-11 w-full items-center justify-center rounded-lg border px-3 py-2 text-sm font-semibold transition-all sm:w-auto ${
                             item.completed
                               ? 'border-emerald-500/60 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
                               : 'border-surface-300 bg-surface-100 text-surface-600 hover:bg-surface-200 dark:border-surface-700 dark:bg-surface-800 dark:text-surface-300 dark:hover:bg-surface-700'

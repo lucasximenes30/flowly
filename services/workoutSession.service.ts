@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { registerWorkoutCompletion } from '@/services/userStats.service'
 
 interface WorkoutDayRecord {
   id: string
@@ -264,6 +265,27 @@ function normalizeOptionalExerciseNotes(value?: string): string | null {
   return normalized
 }
 
+function didCompleteAllPlannedExercises(
+  plannedExercises: WorkoutDayExerciseRecord[],
+  normalizedExercises: Array<{ exerciseId: string; completed: boolean }>
+): boolean {
+  if (plannedExercises.length === 0) return false
+
+  const completedByExerciseId = new Map<string, boolean>()
+
+  for (const item of normalizedExercises) {
+    completedByExerciseId.set(item.exerciseId, item.completed)
+  }
+
+  for (const planned of plannedExercises) {
+    if (!completedByExerciseId.get(planned.exerciseId)) {
+      return false
+    }
+  }
+
+  return true
+}
+
 export async function completeWorkoutSession(
   userId: string,
   input: CompleteWorkoutSessionInput
@@ -303,6 +325,7 @@ export async function completeWorkoutSession(
 
   const date = normalizeSessionDate(input.date)
   const dayNotes = normalizeDayNotes(input.dayNotes)
+  const completedAllExercises = didCompleteAllPlannedExercises(plannedExercises, normalizedExercises)
 
   const session = await prisma.$transaction(async (tx) => {
     const createdSession = await workoutSessionDelegate(tx).create({
@@ -327,6 +350,15 @@ export async function completeWorkoutSession(
         notes: item.notes,
       })),
     })
+
+    await registerWorkoutCompletion(
+      userId,
+      {
+        workoutDate: date,
+        completedAllExercises,
+      },
+      tx
+    )
 
     return createdSession
   })
