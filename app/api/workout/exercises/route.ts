@@ -18,6 +18,7 @@ export async function GET(request: NextRequest) {
     const muscleGroup = request.nextUrl.searchParams.get('muscleGroup') ?? undefined
 
     const exercises = await listAvailableExercises(session.userId, { query, muscleGroup })
+
     return NextResponse.json({ exercises })
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Something went wrong'

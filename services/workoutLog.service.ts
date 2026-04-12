@@ -410,7 +410,7 @@ export async function upsertTodayWorkoutLog(
     if (finalCompleted) {
       const effectiveExercises =
         normalizedExercises ??
-        existing.exerciseLogs.map((item) => ({
+        (existing.exerciseLogs ?? []).map((item) => ({
           exerciseId: item.exerciseId,
           done: item.done,
         }))
@@ -481,7 +481,7 @@ export async function updateWorkoutLog(
     if (finalCompleted) {
       const effectiveExercises =
         normalizedExercises ??
-        existing.exerciseLogs.map((item) => ({
+        (existing.exerciseLogs ?? []).map((item) => ({
           exerciseId: item.exerciseId,
           done: item.done,
         }))

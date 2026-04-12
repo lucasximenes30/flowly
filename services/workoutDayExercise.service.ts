@@ -39,6 +39,8 @@ interface WorkoutDayExerciseRecord {
   updatedAt: Date
   exercise: {
     id: string
+    externalId: string | null
+    source: string
     namePt: string
     nameEn: string
     muscleGroup: string
@@ -126,6 +128,8 @@ function toWorkoutDayExerciseDTO(item: WorkoutDayExerciseRecord): WorkoutDayExer
     updatedAt: item.updatedAt.toISOString(),
     exercise: {
       id: item.exercise.id,
+      externalId: item.exercise.externalId,
+      source: item.exercise.source,
       namePt: item.exercise.namePt,
       nameEn: item.exercise.nameEn,
       muscleGroup: item.exercise.muscleGroup as ExerciseDTO['muscleGroup'],

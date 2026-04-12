@@ -6,6 +6,7 @@ import { addExerciseToWorkoutDay, getWorkoutDayExercises } from '@/services/work
 const addWorkoutDayExerciseSchema = z.object({
   workoutDayId: z.string().min(1, 'Treino invalido'),
   exerciseId: z.string().min(1, 'Exercicio invalido'),
+
   sets: z.number().int().min(1).max(50),
   reps: z.string().trim().min(1, 'Repeticoes sao obrigatorias').max(30),
   targetWeight: z.number().min(0).nullable().optional(),

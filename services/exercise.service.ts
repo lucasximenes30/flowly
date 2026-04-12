@@ -6,9 +6,12 @@ import {
   SYSTEM_EXERCISES,
   type ExerciseMuscleGroupValue,
 } from '@/lib/exerciseCatalog'
+import { normalizeName as utilsNormalizeName, standardizeEquipment } from '@/lib/exerciseUtils'
 
 interface ExerciseRecord {
   id: string
+  externalId: string | null
+  source: string
   namePt: string
   nameEn: string
   muscleGroup: ExerciseMuscleGroupValue
@@ -24,6 +27,7 @@ interface ExerciseDelegate {
   findMany(args: {
     where?: Record<string, unknown>
     orderBy?: Record<string, unknown> | Array<Record<string, unknown>>
+    take?: number
   }): Promise<ExerciseRecord[]>
   findFirst(args: {
     where: Record<string, unknown>
@@ -34,6 +38,10 @@ interface ExerciseDelegate {
   createMany(args: {
     data: Array<Record<string, unknown>>
   }): Promise<{ count: number }>
+  update(args: {
+    where: Record<string, unknown>
+    data: Record<string, unknown>
+  }): Promise<ExerciseRecord>
 }
 
 function exerciseDelegate(client: unknown): ExerciseDelegate {
@@ -42,6 +50,8 @@ function exerciseDelegate(client: unknown): ExerciseDelegate {
 
 export interface ExerciseDTO {
   id: string
+  externalId: string | null
+  source: string
   namePt: string
   nameEn: string
   muscleGroup: ExerciseMuscleGroupValue
@@ -56,6 +66,8 @@ export interface ExerciseDTO {
 function toExerciseDTO(exercise: ExerciseRecord): ExerciseDTO {
   return {
     id: exercise.id,
+    externalId: exercise.externalId,
+    source: exercise.source,
     namePt: exercise.namePt,
     nameEn: exercise.nameEn,
     muscleGroup: exercise.muscleGroup,
@@ -89,7 +101,7 @@ function normalizeName(input: string): string {
     throw new Error('Nome do exercicio muito longo')
   }
 
-  return normalized
+  return utilsNormalizeName(normalized)
 }
 
 function normalizeOptionalEquipment(input?: string): string | null {
@@ -103,7 +115,7 @@ function normalizeOptionalEquipment(input?: string): string | null {
     throw new Error('Equipamento muito longo')
   }
 
-  return normalized
+  return standardizeEquipment(normalized)
 }
 
 let hasSeededSystemExercises = false
@@ -128,6 +140,8 @@ export async function ensureSystemExercisesSeeded(): Promise<void> {
   if (missing.length > 0) {
     await delegate.createMany({
       data: missing.map((seed) => ({
+        externalId: null,
+        source: 'SYSTEM',
         namePt: seed.namePt,
         nameEn: seed.nameEn,
         muscleGroup: seed.muscleGroup,
@@ -186,8 +200,38 @@ export async function createCustomExercise(
   const muscleGroup = normalizeMuscleGroup(input.muscleGroup)
   const equipment = normalizeOptionalEquipment(input.equipment)
 
+  // Before creating, check if there's already a system exercise with the same normalized name
+  const existingSystem = await exerciseDelegate(prisma).findFirst({
+    where: {
+      isSystem: true,
+      OR: [
+        { namePt: name },
+        { nameEn: name }
+      ]
+    },
+  })
+
+  // Check if the user already has a custom one matches
+  const existingCustom = await exerciseDelegate(prisma).findFirst({
+    where: {
+      userId,
+      isSystem: false,
+      namePt: name,
+    }
+  })
+
+  if (existingSystem) {
+    return toExerciseDTO(existingSystem)
+  }
+  
+  if (existingCustom) {
+    return toExerciseDTO(existingCustom)
+  }
+
   const exercise = await exerciseDelegate(prisma).create({
     data: {
+      externalId: null,
+      source: 'CUSTOM',
       namePt: name,
       nameEn: name,
       muscleGroup,
