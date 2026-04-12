@@ -15,6 +15,7 @@ model User {
   plan                  UserPlan               @default(FREE)
   subscriptionStatus    UserSubscriptionStatus @default(INACTIVE)
   subscriptionId        String?
+  sex                   UserSex?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   cards                 Card[]
@@ -342,6 +343,12 @@ model WorkoutExerciseLog {
 enum UserPlan {
   FREE
   PRO
+}
+
+enum UserSex {
+  MALE
+  FEMALE
+  PREFER_NOT_SAY
 }
 
 enum UserSubscriptionStatus {

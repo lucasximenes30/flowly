@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateAIText } from '@/services/ai.service'
 
 export interface AIInsight {
   text: string
@@ -38,17 +38,6 @@ export async function generateAIInsights(input: InsightsInput): Promise<AIInsigh
   const key = cacheKey(input)
   const cached = cache.get(key)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
-
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) throw new Error('GEMINI_API_KEY not configured')
-
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.7,
-    },
-  })
 
   const totalExpenses = input.topCategories.reduce((s, c) => s + c.amount, 0)
   const categoryDetails = input.topCategories.map((c) => {
@@ -98,46 +87,51 @@ Ações Importantes a Refletir:
 - Ofereça conselhos realistas sobre investimento, segurança financeira ou contenção.
 - Não soe alarmista, mas sim orientador firme.`
 
-  const result = await model.generateContent(prompt)
-  const response = result.response
-  let text = response.text().trim()
-
-  // Extrair JSON se tiver markdown wrapping
-  const jsonMatch = text.match(/\[[\s\S]*\]/)
-  if (jsonMatch) {
-    text = jsonMatch[0]
-  }
-
-  // Parse response
-  let insights: AIInsight[]
   try {
-    insights = JSON.parse(text)
-  } catch {
-    return getStaticInsights(input)
-  }
+    const aiResult = await generateAIText({
+      purpose: 'reports',
+      prompt,
+      temperature: 0.7,
+    })
 
-  if (!Array.isArray(insights) || insights.length === 0) {
-    return getStaticInsights(input)
-  }
+    let text = aiResult.text.trim()
 
-  // Normalize types
-  insights = insights.map((i) => ({
-    text: i.text ?? '',
-    type: ['positive', 'negative', 'tip'].includes(i.type) ? i.type : 'tip',
-  }))
-
-  // Save to cache
-  cache.set(key, { data: insights, timestamp: Date.now() })
-
-  // Limpar entradas velhas do cache (>100 entries)
-  if (cache.size > 100) {
-    const keys = Array.from(cache.keys())
-    for (let i = 0; i < keys.length - 80; i++) {
-      cache.delete(keys[i])
+    // Extrair JSON se tiver markdown wrapping
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      text = jsonMatch[0]
     }
-  }
 
-  return insights
+    let insights: AIInsight[] = JSON.parse(text)
+
+    if (!Array.isArray(insights) || insights.length === 0) {
+      return getStaticInsights(input)
+    }
+
+    // Normalize types
+    insights = insights.map((i) => ({
+      text: i.text ?? '',
+      type: ['positive', 'negative', 'tip'].includes(i.type) ? i.type : 'tip',
+    }))
+
+    // Save to cache
+    cache.set(key, { data: insights, timestamp: Date.now() })
+
+    // Limpar entradas velhas do cache (>100 entries)
+    if (cache.size > 100) {
+      const keys = Array.from(cache.keys())
+      for (let i = 0; i < keys.length - 80; i++) {
+        cache.delete(keys[i])
+      }
+    }
+
+    return insights
+  } catch (error) {
+    console.error('[Insights AI] Falling back to static insights', {
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return getStaticInsights(input)
+  }
 }
 
 function getStaticInsights(input: InsightsInput): AIInsight[] {

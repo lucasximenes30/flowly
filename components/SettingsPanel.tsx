@@ -51,6 +51,61 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
   /* ---------- categories ---------- */
   const [showManageCategories, setShowManageCategories] = useState(false)
 
+  /* ---------- sex ---------- */
+  const [userSex, setUserSex] = useState<string | null>(null)
+  const [isUpdatingSex, setIsUpdatingSex] = useState(false)
+  const [sexMessage, setSexMessage] = useState('')
+  const [sexLoaded, setSexLoaded] = useState(false)
+
+  useEffect(() => {
+    // Load user sex from session or API
+    const loadUserSex = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setUserSex(data.user?.sex || null)
+        }
+      } catch {
+        // Silently fail
+      } finally {
+        setSexLoaded(true)
+      }
+    }
+    
+    if (!sexLoaded) {
+      loadUserSex()
+    }
+  }, [sexLoaded])
+
+  const handleUpdateSex = async (newSex: string | null) => {
+    setIsUpdatingSex(true)
+    setSexMessage('')
+    
+    try {
+      const res = await fetch('/api/auth/update-sex', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sex: newSex }),
+      })
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        setSexMessage(data.error ?? (isBRL ? 'Erro ao atualizar' : 'Error updating'))
+        return
+      }
+      
+      setUserSex(newSex)
+      setSexMessage(isBRL ? 'Atualizado com sucesso!' : 'Updated successfully!')
+      window.setTimeout(() => setSexMessage(''), 3000)
+    } catch {
+      setSexMessage(isBRL ? 'Erro de rede' : 'Network error')
+    } finally {
+      setIsUpdatingSex(false)
+    }
+  }
+
   const handleUpdateName = async () => {
     setShowNameConfirm(false)
     if (newName.trim() === session.name) {
@@ -226,6 +281,30 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
                 >
                   {isBRL ? 'Atualizar Nome' : 'Update Name'}
                 </button>
+
+                <div>
+                  <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
+                    {isBRL ? 'Sexo (Opcional)' : 'Sex (Optional)'}
+                  </label>
+                  <select
+                    value={userSex || ''}
+                    onChange={(e) => handleUpdateSex(e.target.value || null)}
+                    disabled={isUpdatingSex}
+                    className="input-field h-12 rounded-xl bg-white dark:bg-surface-900 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <option value="">{isBRL ? 'Não informado' : 'Not specified'}</option>
+                    <option value="MALE">{isBRL ? 'Masculino' : 'Male'}</option>
+                    <option value="FEMALE">{isBRL ? 'Feminino' : 'Female'}</option>
+                    <option value="PREFER_NOT_SAY">{isBRL ? 'Prefiro não informar' : 'Prefer not to say'}</option>
+                  </select>
+                  <p className="mt-2 text-xs text-surface-400 dark:text-surface-500">
+                    {isBRL ? 'Será usado como contexto ao gerar planos de treino.' : 'Will be used as context when generating workout plans.'}
+                  </p>
+                </div>
+
+                {sexMessage && (
+                  <MessageBanner message={sexMessage} />
+                )}
               </div>
             </SettingsSection>
 
