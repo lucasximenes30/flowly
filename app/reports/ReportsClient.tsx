@@ -66,10 +66,39 @@ const CATEGORY_COLORS_LIGHT: Record<string, string> = {
 type AIInsight = { text: string; type: 'positive' | 'negative' | 'tip' }
 type StaticInsight = { text: string; type: 'positive' | 'negative' | 'tip' }
 
+const MAX_INSIGHTS = 4
+const MAX_INSIGHT_CHARS = 180
+
+function shortenInsightText(text: string): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return ''
+  if (cleaned.length <= MAX_INSIGHT_CHARS) return cleaned
+
+  const truncated = cleaned.slice(0, MAX_INSIGHT_CHARS)
+  const lastSpace = truncated.lastIndexOf(' ')
+  if (lastSpace >= 70) return `${truncated.slice(0, lastSpace).trim()}...`
+  return `${truncated.trim()}...`
+}
+
+function normalizeInsightsForDisplay(insights: AIInsight[]): AIInsight[] {
+  return insights
+    .map((insight) => ({
+      text: shortenInsightText(insight.text),
+      type:
+        insight.type === 'positive' || insight.type === 'negative' || insight.type === 'tip'
+          ? insight.type
+          : 'tip',
+    }))
+    .filter((insight) => insight.text.length > 0)
+    .slice(0, MAX_INSIGHTS)
+}
+
 function generateStaticFallbackInsights(
   categories: { category: string; amount: number }[],
   comparison: Comparison,
   formatCurrency: (value: number) => string,
+  isBRL: boolean,
+  localizeCategoryLabel: (category: string) => string
 ): StaticInsight[] {
   const insights: StaticInsight[] = []
 
@@ -77,27 +106,58 @@ function generateStaticFallbackInsights(
     const total = categories.reduce((s, c) => s + c.amount, 0)
     const top = categories[0]
     const pct = total > 0 ? ((top.amount / total) * 100).toFixed(0) : '0'
-    insights.push({ text: `${top.category} representa ${pct}% dos seus gastos`, type: 'tip' })
+    const topLabel = localizeCategoryLabel(top.category)
+    insights.push({
+      text: isBRL
+        ? `${topLabel} concentra ${pct}% dos seus gastos. Revise essa categoria primeiro.`
+        : `${topLabel} accounts for ${pct}% of your spending. Review this category first.`,
+      type: 'tip',
+    })
   }
 
   const balChange = comparison.comparison.balanceChange
   if (balChange >= 0) {
-    insights.push({ text: `Seu saldo aumentou ${formatCurrency(Math.abs(balChange))} em relação ao mês anterior`, type: 'positive' })
+    insights.push({
+      text: isBRL
+        ? `Seu saldo subiu ${formatCurrency(Math.abs(balChange))} vs o mês anterior.`
+        : `Your balance improved by ${formatCurrency(Math.abs(balChange))} vs last month.`,
+      type: 'positive',
+    })
   } else {
-    insights.push({ text: `Seu saldo diminuiu ${formatCurrency(Math.abs(balChange))} em relação ao mês anterior`, type: 'negative' })
+    insights.push({
+      text: isBRL
+        ? `Seu saldo caiu ${formatCurrency(Math.abs(balChange))} vs o mês anterior.`
+        : `Your balance dropped by ${formatCurrency(Math.abs(balChange))} vs last month.`,
+      type: 'negative',
+    })
   }
 
   if (comparison.comparison.expenseChange > 0) {
-    insights.push({ text: `Suas despesas aumentaram ${formatCurrency(comparison.comparison.expenseChange)} em relação ao mês anterior`, type: 'negative' })
+    insights.push({
+      text: isBRL
+        ? `As despesas subiram ${formatCurrency(comparison.comparison.expenseChange)}. Defina um teto por categoria.`
+        : `Expenses increased by ${formatCurrency(comparison.comparison.expenseChange)}. Set a spending cap by category.`,
+      type: 'negative',
+    })
   } else if (comparison.comparison.expenseChange < 0) {
-    insights.push({ text: `Você reduziu ${formatCurrency(Math.abs(comparison.comparison.expenseChange))} nas despesas em relação ao mês anterior`, type: 'positive' })
+    insights.push({
+      text: isBRL
+        ? `Você reduziu ${formatCurrency(Math.abs(comparison.comparison.expenseChange))} em despesas. Bom controle.`
+        : `You reduced expenses by ${formatCurrency(Math.abs(comparison.comparison.expenseChange))}. Great control.`,
+      type: 'positive',
+    })
   }
 
   if (comparison.comparison.incomeChange > 0) {
-    insights.push({ text: `Sua receita aumentou ${formatCurrency(comparison.comparison.incomeChange)} em relação ao mês anterior`, type: 'positive' })
+    insights.push({
+      text: isBRL
+        ? `Sua receita aumentou ${formatCurrency(comparison.comparison.incomeChange)}. Direcione parte para reserva.`
+        : `Income increased by ${formatCurrency(comparison.comparison.incomeChange)}. Allocate part to savings.`,
+      type: 'positive',
+    })
   }
 
-  return insights.slice(0, 5)
+  return normalizeInsightsForDisplay(insights)
 }
 
 export default function ReportsClient({
@@ -112,6 +172,10 @@ export default function ReportsClient({
   const { t, locale } = useApp()
 
   const isBRL = locale === 'pt-BR'
+  const localizeCategoryLabel = useCallback(
+    (category: string) => t(`category.${category}`),
+    [t]
+  )
 
   // Rate
   const [rate, setRate] = useState(5.5)
@@ -223,15 +287,34 @@ export default function ReportsClient({
     })
       .then(async (r) => r.ok ? r.json() : null)
       .then((data) => {
-        if (data?.insights) setAiInsights(data.insights)
-        else setAiInsights(generateStaticFallbackInsights(categoryData, comparison, formatCurrency))
+        if (data?.insights) {
+          setAiInsights(normalizeInsightsForDisplay(data.insights))
+        } else {
+          setAiInsights(
+            generateStaticFallbackInsights(
+              categoryData,
+              comparison,
+              formatCurrency,
+              isBRL,
+              localizeCategoryLabel
+            )
+          )
+        }
         setInsightsLoading(false)
       })
       .catch(() => {
-        setAiInsights(generateStaticFallbackInsights(categoryData, comparison, formatCurrency))
+        setAiInsights(
+          generateStaticFallbackInsights(
+            categoryData,
+            comparison,
+            formatCurrency,
+            isBRL,
+            localizeCategoryLabel
+          )
+        )
         setInsightsLoading(false)
       })
-  }, [selectedMonth])
+  }, [selectedMonth, locale, categoryData, comparison, formatCurrency, isBRL, localizeCategoryLabel])
 
   const displaySummary = monthlySummary ?? monthly
 
@@ -351,11 +434,11 @@ export default function ReportsClient({
               {isBRL ? 'Adicione transações para receber insights' : 'Add transactions to receive insights'}
             </div>
           ) : (
-            <div className="grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-              {aiInsights.map((insight, i) => (
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {aiInsights.slice(0, MAX_INSIGHTS).map((insight, i) => (
                 <div
                   key={i}
-                  className={`flex items-start gap-3 p-4 rounded-xl border transition-all duration-200 ${
+                  className={`flex items-start gap-2.5 rounded-xl border p-3.5 transition-all duration-200 sm:gap-3 sm:p-4 ${
                     insight.type === 'positive'
                       ? 'bg-emerald-50/80 border-emerald-200/70 dark:bg-emerald-900/20 dark:border-emerald-800/50 hover:bg-emerald-50 dark:hover:bg-emerald-900/25 hover:shadow-sm'
                       : insight.type === 'negative'
@@ -384,7 +467,7 @@ export default function ReportsClient({
                       </div>
                     )}
                   </div>
-                  <p className={`text-sm leading-relaxed ${
+                  <p className={`break-words text-[13px] leading-5 sm:text-sm sm:leading-6 ${
                     insight.type === 'positive'
                       ? 'text-emerald-700 dark:text-emerald-300'
                       : insight.type === 'negative'
