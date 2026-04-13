@@ -44,7 +44,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ insights })
   } catch (error) {
-    console.error('Error generating AI insights:', error)
-    return NextResponse.json({ error: 'Failed to generate insights' }, { status: 500 })
+    console.error('[Insights API] Failed to generate insights:', error)
+    const errorMessage =
+      language === 'pt-BR'
+        ? 'A geração de insights está temporariamente indisponível. Tente novamente em instantes.'
+        : 'Insights generation is temporarily unavailable. Please try again shortly.'
+
+    return NextResponse.json({ error: errorMessage }, { status: 503 })
   }
 }

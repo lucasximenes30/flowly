@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { generateAIText } from '@/services/ai.service'
 
 export interface AIInsight {
   text: string
@@ -23,6 +23,201 @@ export interface InsightsInput {
 // Cache em memória para server-side (Map com TTL)
 const cache = new Map<string, { data: AIInsight[]; timestamp: number }>()
 const CACHE_TTL = 24 * 60 * 60 * 1000 // 24h
+const MAX_AI_INSIGHTS = 4
+const MAX_INSIGHT_CHARS = 180
+
+type SupportedLocale = 'pt-BR' | 'en'
+
+const CATEGORY_LABELS: Record<string, Record<SupportedLocale, string>> = {
+  Salary: { 'pt-BR': 'Salário', en: 'Salary' },
+  Freelance: { 'pt-BR': 'Freelance', en: 'Freelance' },
+  Food: { 'pt-BR': 'Alimentação', en: 'Food' },
+  Transport: { 'pt-BR': 'Transporte', en: 'Transport' },
+  Entertainment: { 'pt-BR': 'Lazer', en: 'Entertainment' },
+  Shopping: { 'pt-BR': 'Compras', en: 'Shopping' },
+  Bills: { 'pt-BR': 'Contas', en: 'Bills' },
+  Health: { 'pt-BR': 'Saúde', en: 'Health' },
+  General: { 'pt-BR': 'Geral', en: 'General' },
+  Investment: { 'pt-BR': 'Investimento', en: 'Investment' },
+  Other: { 'pt-BR': 'Outro', en: 'Other' },
+  Restaurant: { 'pt-BR': 'Restaurante', en: 'Restaurant' },
+  Gym: { 'pt-BR': 'Academia', en: 'Gym' },
+  Home: { 'pt-BR': 'Casa', en: 'Home' },
+  Education: { 'pt-BR': 'Educação', en: 'Education' },
+}
+
+const CATEGORY_ALIASES: Record<string, string> = {
+  salario: 'Salary',
+  alimentação: 'Food',
+  alimentacao: 'Food',
+  transporte: 'Transport',
+  lazer: 'Entertainment',
+  entretenimento: 'Entertainment',
+  compras: 'Shopping',
+  contas: 'Bills',
+  saúde: 'Health',
+  saude: 'Health',
+  geral: 'General',
+  investimento: 'Investment',
+  outro: 'Other',
+  restaurante: 'Restaurant',
+  academia: 'Gym',
+  casa: 'Home',
+  educação: 'Education',
+  educacao: 'Education',
+}
+
+function normalizeLanguage(language: string): SupportedLocale {
+  return language === 'en' ? 'en' : 'pt-BR'
+}
+
+function normalizeCategoryText(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+}
+
+function resolveCanonicalCategory(category: string): string | null {
+  if (category in CATEGORY_LABELS) return category
+
+  const normalized = normalizeCategoryText(category)
+  const fromAlias = CATEGORY_ALIASES[normalized]
+  if (fromAlias) return fromAlias
+
+  for (const [canonical, labels] of Object.entries(CATEGORY_LABELS)) {
+    if (
+      normalizeCategoryText(labels['pt-BR']) === normalized ||
+      normalizeCategoryText(labels.en) === normalized ||
+      normalizeCategoryText(canonical) === normalized
+    ) {
+      return canonical
+    }
+  }
+
+  return null
+}
+
+function localizeCategoryName(category: string, language: SupportedLocale): string {
+  const canonical = resolveCanonicalCategory(category)
+  if (!canonical) return category
+  return CATEGORY_LABELS[canonical][language]
+}
+
+function localizeTopCategories(
+  categories: { category: string; amount: number }[],
+  language: SupportedLocale
+): { category: string; amount: number }[] {
+  return categories.map((item) => ({
+    ...item,
+    category: localizeCategoryName(item.category, language),
+  }))
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function applyCategoryLocalizationToText(text: string, language: SupportedLocale): string {
+  let localizedText = text
+
+  for (const [canonical, labels] of Object.entries(CATEGORY_LABELS)) {
+    const target = labels[language]
+    const variants = [canonical, labels.en, labels['pt-BR']]
+
+    for (const variant of variants) {
+      if (!variant || variant === target) continue
+      const regex = new RegExp(`\\b${escapeRegex(variant)}\\b`, 'gi')
+      localizedText = localizedText.replace(regex, target)
+    }
+  }
+
+  return localizedText
+}
+
+function shortenInsightText(text: string): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim()
+  if (!cleaned) return ''
+
+  if (cleaned.length <= MAX_INSIGHT_CHARS) {
+    return cleaned
+  }
+
+  const truncated = cleaned.slice(0, MAX_INSIGHT_CHARS)
+  const lastPunctuation = Math.max(
+    truncated.lastIndexOf('.'),
+    truncated.lastIndexOf(';'),
+    truncated.lastIndexOf(','),
+    truncated.lastIndexOf('!')
+  )
+
+  if (lastPunctuation >= 80) {
+    return truncated.slice(0, lastPunctuation).trim()
+  }
+
+  const lastSpace = truncated.lastIndexOf(' ')
+  if (lastSpace >= 70) {
+    return `${truncated.slice(0, lastSpace).trim()}...`
+  }
+
+  return `${truncated.trim()}...`
+}
+
+function scoreInsight(insight: AIInsight): number {
+  let score = 0
+
+  if (insight.type === 'negative') score += 4
+  else if (insight.type === 'tip') score += 3
+  else score += 2
+
+  if (/(R\$|\$|\d+%)/.test(insight.text)) score += 2
+  if (insight.text.length >= 70 && insight.text.length <= 170) score += 1
+
+  return score
+}
+
+function normalizeAndPrioritizeInsights(raw: AIInsight[], language: SupportedLocale): AIInsight[] {
+  const normalized = raw
+    .map((item) => {
+      const rawText = typeof item?.text === 'string' ? item.text : ''
+      const localizedText = applyCategoryLocalizationToText(rawText, language)
+      const shortText = shortenInsightText(localizedText)
+
+      const type: AIInsight['type'] =
+        item?.type === 'positive' || item?.type === 'negative' || item?.type === 'tip'
+          ? item.type
+          : 'tip'
+
+      return {
+        text: shortText,
+        type,
+      }
+    })
+    .filter((item) => item.text.length > 0)
+
+  const unique: AIInsight[] = []
+  const seen = new Set<string>()
+
+  for (const item of normalized) {
+    const signature = item.text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '')
+      .slice(0, 120)
+
+    if (!signature || seen.has(signature)) continue
+    seen.add(signature)
+    unique.push(item)
+  }
+
+  return unique
+    .map((item, index) => ({ item, index, score: scoreInsight(item) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, MAX_AI_INSIGHTS)
+    .map((entry) => entry.item)
+}
 
 function cacheKey(input: InsightsInput): string {
   return JSON.stringify({
@@ -39,120 +234,125 @@ export async function generateAIInsights(input: InsightsInput): Promise<AIInsigh
   const cached = cache.get(key)
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.data
 
-  const apiKey = process.env.GEMINI_API_KEY
-  if (!apiKey) throw new Error('GEMINI_API_KEY not configured')
+  const language = normalizeLanguage(input.language)
+  const localizedTopCategories = localizeTopCategories(input.topCategories, language)
 
-  const genAI = new GoogleGenerativeAI(apiKey)
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.0-flash',
-    generationConfig: {
-      temperature: 0.7,
-    },
-  })
-
-  const totalExpenses = input.topCategories.reduce((s, c) => s + c.amount, 0)
-  const categoryDetails = input.topCategories.map((c) => {
+  const totalExpenses = localizedTopCategories.reduce((s, c) => s + c.amount, 0)
+  const categoryDetails = localizedTopCategories
+    .map((c) => {
     const pct = totalExpenses > 0 ? ((c.amount / totalExpenses) * 100).toFixed(0) : '0'
-    return `- ${c.category}: R$ ${c.amount.toFixed(2)} (${pct}% do total de gastos)`
-  }).join('\n')
+      if (language === 'pt-BR') {
+        return `- ${c.category}: R$ ${c.amount.toFixed(2)} (${pct}% dos gastos)`
+      }
+      return `- ${c.category}: R$ ${c.amount.toFixed(2)} (${pct}% of expenses)`
+    })
+    .join('\n')
 
-  const trendText = input.trend.map((t) => `${t.month}: Receita R$ ${t.income.toFixed(2)} | Despesa R$ ${t.expense.toFixed(2)}`).join('\n')
+  const trendText = input.trend
+    .map((t) =>
+      language === 'pt-BR'
+        ? `${t.month}: Receita R$ ${t.income.toFixed(2)} | Despesa R$ ${t.expense.toFixed(2)}`
+        : `${t.month}: Income R$ ${t.income.toFixed(2)} | Expense R$ ${t.expense.toFixed(2)}`
+    )
+    .join('\n')
 
   const incomeChange = input.previousIncome > 0 ? ((input.monthlyIncome - input.previousIncome) / input.previousIncome) * 100 : 0
   const expenseChange = input.previousExpense > 0 ? ((input.monthlyExpense - input.previousExpense) / input.previousExpense) * 100 : 0
   const balanceChange = input.monthlyBalance - input.previousBalance
 
-  const topCategory = input.topCategories[0]
-  const topCategoryPct = totalExpenses > 0 ? (topCategory ? (topCategory.amount / totalExpenses) * 100 : 0) : 0
   const savingsRate = input.monthlyIncome > 0 ? ((input.monthlyBalance / input.monthlyIncome) * 100).toFixed(1) : '0'
 
-  const prompt = `Atue como um consultor financeiro pessoal inteligente chamado "Flowly AI". O idioma de saída OBRIGATÓRIO é ${input.language === 'pt-BR' ? 'Português do Brasil' : 'Inglês'}.
-Sua missão é dar 5 insights analíticos, não-triviais, acionáveis e humanizados baseados nos dados financeiros reais abaixo.
+  const prompt = `You are Flowly AI, a practical personal finance assistant.
 
-Diretrizes de Qualidade e Tom de Voz:
-1. Tom: Confidente, direto e humanizado (como um bom conselheiro). Nunca soe robótico ou panfletário. Evite clichês vazios como "Ótima notícia!", "Parabéns!" ou "Atenção!".
-2. Precisão: Embasamento nos números e categorias exatas. Nunca invente dados.
-3. Equilíbrio: Dê feedbacks negativos construtivos (redução de excessos), positivos (crescimento ou economia) e sugestões operacionais ou estratégicas.
-4. Clareza e Profundidade: Em vez de "Sua despesa em Alimentação foi de X", prefira "Alimentação consumiu X (Y% da sua renda). Tente substituir pequenos gastos diários nessa categoria para liberar limite para investimentos."
-5. Se o saldo for negativo: Foco total em ação de corte e alerta crítico, mas construtivo num tom empático. Sugira com gentileza um limite realista.
-6. Compare: Faça pequenas análises cruzadas (ex.: como um gasto X impactou o mês de modo geral vs. mês passado).
+Output language: ${language === 'pt-BR' ? 'Brazilian Portuguese' : 'English'}.
 
-Formato Extrito:
-- NUNCA retorne outro texto, cumprimentos ou marcações fora do bloco JSON.
-- ARRAY JSON EXATO com 5 objetos: [{"text":"string","type":"positive"|"negative"|"tip"}]
+STRICT OUTPUT FORMAT:
+- Return ONLY a JSON array.
+- Return exactly 4 items.
+- Each item must be: {"text":"string","type":"positive"|"negative"|"tip"}
+- No markdown, no code block, no extra text.
 
-DADOS FINANCEIROS - Análise:
-Receita Mensal: R$ ${input.monthlyIncome.toFixed(2)} (${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(1)}% vs. último mês)
-Despesas Mensais: R$ ${input.monthlyExpense.toFixed(2)} (${expenseChange >= 0 ? '+' : ''}${expenseChange.toFixed(1)}% vs. último mês)
-Saldo Mensal (Líquido): R$ ${input.monthlyBalance.toFixed(2)} (Diferença para o mês anterior: ${balanceChange >= 0 ? '+' : ''}R$ ${Math.abs(balanceChange).toFixed(2)})
-Taxa de Retenção/Poupança: ${savingsRate}% da renda retida (dinheiro sobrando)
+INSIGHT RULES:
+- Prioritize only the 4 most relevant insights.
+- Keep each insight short and practical (single short paragraph, up to 180 characters).
+- Use the category names exactly as listed in "Top Categories".
+- Do not invent numbers.
+- Avoid repetitive sentences.
 
-Maiores Gastos do Mês:
+FINANCIAL DATA:
+- Monthly income: R$ ${input.monthlyIncome.toFixed(2)} (${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(1)}% vs previous month)
+- Monthly expense: R$ ${input.monthlyExpense.toFixed(2)} (${expenseChange >= 0 ? '+' : ''}${expenseChange.toFixed(1)}% vs previous month)
+- Monthly balance: R$ ${input.monthlyBalance.toFixed(2)} (${balanceChange >= 0 ? '+' : ''}R$ ${Math.abs(balanceChange).toFixed(2)} vs previous month)
+- Savings rate: ${savingsRate}%
+
+Top Categories:
 ${categoryDetails}
 
-Tendência Recente de Gastos e Receitas (Últimos 6 meses):
-${trendText}
+6-Month Trend:
+${trendText}`
 
-Ações Importantes a Refletir:
-- Encontre oportunidades de corte ou otimização.
-- Ofereça conselhos realistas sobre investimento, segurança financeira ou contenção.
-- Não soe alarmista, mas sim orientador firme.`
-
-  const result = await model.generateContent(prompt)
-  const response = result.response
-  let text = response.text().trim()
-
-  // Extrair JSON se tiver markdown wrapping
-  const jsonMatch = text.match(/\[[\s\S]*\]/)
-  if (jsonMatch) {
-    text = jsonMatch[0]
-  }
-
-  // Parse response
-  let insights: AIInsight[]
   try {
-    insights = JSON.parse(text)
-  } catch {
-    return getStaticInsights(input)
-  }
+    const aiResult = await generateAIText({
+      purpose: 'reports',
+      prompt,
+      temperature: 0.45,
+    })
 
-  if (!Array.isArray(insights) || insights.length === 0) {
-    return getStaticInsights(input)
-  }
+    let text = aiResult.text.trim()
 
-  // Normalize types
-  insights = insights.map((i) => ({
-    text: i.text ?? '',
-    type: ['positive', 'negative', 'tip'].includes(i.type) ? i.type : 'tip',
-  }))
-
-  // Save to cache
-  cache.set(key, { data: insights, timestamp: Date.now() })
-
-  // Limpar entradas velhas do cache (>100 entries)
-  if (cache.size > 100) {
-    const keys = Array.from(cache.keys())
-    for (let i = 0; i < keys.length - 80; i++) {
-      cache.delete(keys[i])
+    // Extrair JSON se tiver markdown wrapping
+    const jsonMatch = text.match(/\[[\s\S]*\]/)
+    if (jsonMatch) {
+      text = jsonMatch[0]
     }
-  }
 
-  return insights
+    let insights: AIInsight[] = JSON.parse(text)
+
+    if (!Array.isArray(insights) || insights.length === 0) {
+      return getStaticInsights(input)
+    }
+
+    insights = normalizeAndPrioritizeInsights(insights, language)
+
+    if (insights.length === 0) {
+      return getStaticInsights(input)
+    }
+
+    // Save to cache
+    cache.set(key, { data: insights, timestamp: Date.now() })
+
+    // Limpar entradas velhas do cache (>100 entries)
+    if (cache.size > 100) {
+      const keys = Array.from(cache.keys())
+      for (let i = 0; i < keys.length - 80; i++) {
+        cache.delete(keys[i])
+      }
+    }
+
+    return insights
+  } catch (error) {
+    console.error('[Insights AI] Falling back to static insights', {
+      message: error instanceof Error ? error.message : String(error),
+    })
+    return getStaticInsights(input)
+  }
 }
 
 function getStaticInsights(input: InsightsInput): AIInsight[] {
   const insights: AIInsight[] = []
-  const totalExpenses = input.topCategories.reduce((s, c) => s + c.amount, 0)
-  const isEn = input.language === 'en'
+  const language = normalizeLanguage(input.language)
+  const isEn = language === 'en'
+  const localizedTopCategories = localizeTopCategories(input.topCategories, language)
+  const totalExpenses = localizedTopCategories.reduce((s, c) => s + c.amount, 0)
 
-  if (input.topCategories.length > 0) {
-    const top = input.topCategories[0]
+  if (localizedTopCategories.length > 0) {
+    const top = localizedTopCategories[0]
     const pct = totalExpenses > 0 ? ((top.amount / totalExpenses) * 100).toFixed(0) : '0'
     const high = topCategoryIsHigh(totalExpenses, top.amount)
     insights.push({
       text: isEn 
-        ? `${top.category} is your highest expense: R$ ${top.amount.toFixed(2)} (${pct}% of total spending). ${high ? 'Consider reviewing this to free up your budget.' : 'Keep an eye on it to maintain control.'}` 
-        : `${top.category} é o seu maior gasto: R$ ${top.amount.toFixed(2)} (${pct}% do total). ${high ? 'Considere avaliar essa categoria para liberar mais orçamento.' : 'Acompanhe esse valor para continuar no controle.'}`,
+        ? `${top.category} is your top expense (${pct}%). Review this category first to improve your monthly margin.`
+        : `${top.category} é seu maior gasto (${pct}%). Revise essa categoria primeiro para melhorar sua margem no mês.`,
       type: high ? 'negative' : 'tip'
     })
   }
@@ -161,15 +361,15 @@ function getStaticInsights(input: InsightsInput): AIInsight[] {
   if (balChange >= 0) {
     insights.push({ 
       text: isEn 
-        ? `Your balance improved by R$ ${Math.abs(balChange).toFixed(2)} compared to last month. Great job keeping your finances healthy!` 
-        : `Seu saldo melhorou R$ ${Math.abs(balChange).toFixed(2)} em relação ao mês anterior. Ótimo trabalho em manter suas finanças saudáveis!`, 
+        ? `Your balance improved by R$ ${Math.abs(balChange).toFixed(2)} vs last month. Keep this pace and reserve part of the surplus.`
+        : `Seu saldo melhorou R$ ${Math.abs(balChange).toFixed(2)} vs o mês anterior. Mantenha o ritmo e reserve parte do excedente.`, 
       type: 'positive' 
     })
   } else {
     insights.push({ 
       text: isEn 
-        ? `Your balance dropped by R$ ${Math.abs(balChange).toFixed(2)} compared to last month. Try to identify any unusual expenses that might have caused this.` 
-        : `Seu saldo caiu R$ ${Math.abs(balChange).toFixed(2)} em relação ao último mês. Tente identificar gastos atípicos que geraram essa queda.`, 
+        ? `Your balance dropped by R$ ${Math.abs(balChange).toFixed(2)} vs last month. Focus on cutting variable expenses this week.`
+        : `Seu saldo caiu R$ ${Math.abs(balChange).toFixed(2)} vs o último mês. Foque em reduzir gastos variáveis nesta semana.`, 
       type: 'negative' 
     })
   }
@@ -178,15 +378,15 @@ function getStaticInsights(input: InsightsInput): AIInsight[] {
   if (expChange > 0) {
     insights.push({ 
       text: isEn 
-        ? `Your expenses increased by R$ ${expChange.toFixed(2)} compared to last month. Planning ahead can help you avoid surprises.` 
-        : `Suas despesas subiram R$ ${expChange.toFixed(2)} em comparação ao mês passado. Um bom planejamento pode evitar surpresas futuras.`, 
+        ? `Expenses increased by R$ ${expChange.toFixed(2)}. Set a spending cap for your top category in the next cycle.`
+        : `As despesas subiram R$ ${expChange.toFixed(2)}. Defina um teto para sua principal categoria no próximo ciclo.`, 
       type: 'negative' 
     })
   } else if (expChange < 0) {
     insights.push({ 
       text: isEn 
-        ? `You reduced your expenses by R$ ${Math.abs(expChange).toFixed(2)} compared to last month. This shows excellent cost control!` 
-        : `Você reduziu suas despesas em R$ ${Math.abs(expChange).toFixed(2)} comparado ao mês passado. Mostra um excelente controle de custos!`, 
+        ? `You reduced expenses by R$ ${Math.abs(expChange).toFixed(2)}. Good control, keep tracking this pattern.`
+        : `Você reduziu despesas em R$ ${Math.abs(expChange).toFixed(2)}. Bom controle, mantenha esse padrão.`, 
       type: 'positive' 
     })
   }
@@ -195,8 +395,8 @@ function getStaticInsights(input: InsightsInput): AIInsight[] {
   if (incChange > 0) {
     insights.push({ 
       text: isEn 
-        ? `Your income grew by R$ ${incChange.toFixed(2)} compared to last month. This is a great opportunity to increase your savings.` 
-        : `Sua receita cresceu R$ ${incChange.toFixed(2)} em relação ao mês anterior. Esta é uma ótima oportunidade para poupar ou investir mais.`, 
+        ? `Income grew by R$ ${incChange.toFixed(2)}. Consider directing part of this gain to savings or investing.`
+        : `A receita cresceu R$ ${incChange.toFixed(2)}. Direcione parte desse ganho para reserva ou investimento.`, 
       type: 'positive' 
     })
   }
@@ -206,32 +406,32 @@ function getStaticInsights(input: InsightsInput): AIInsight[] {
     if (parseInt(savingsRate) >= 20) {
       insights.push({ 
         text: isEn 
-          ? `You are saving ${savingsRate}% of your income. Consider investing this surplus to build your wealth.` 
-          : `Você está poupando ${savingsRate}% do que ganha. Considere investir esse excedente para construir seu patrimônio.`, 
+          ? `Savings rate is ${savingsRate}%, a strong level. Keep consistency and avoid inflating lifestyle costs.`
+          : `A taxa de poupança está em ${savingsRate}%, um nível forte. Mantenha constância e evite inflar o padrão de gastos.`, 
         type: 'positive' 
       })
     } else if (parseInt(savingsRate) < 0) {
       insights.push({ 
         text: isEn 
-          ? `Your expenses have exceeded your income. Look for non-essential spending that you can easily cut back on.` 
-          : `Suas despesas ultrapassaram sua receita. Revise os gastos não essenciais que podem ser cortados no curto prazo.`, 
+          ? `Expenses exceeded income this month. Cut non-essential items now to stop the deficit from compounding.`
+          : `As despesas superaram a receita neste mês. Corte itens não essenciais agora para evitar efeito acumulado.`, 
         type: 'negative' 
       })
     }
   }
 
-  if (input.topCategories.length >= 2) {
-    const top2 = input.topCategories.slice(0, 2).reduce((s, c) => s + c.amount, 0)
+  if (localizedTopCategories.length >= 2) {
+    const top2 = localizedTopCategories.slice(0, 2).reduce((s, c) => s + c.amount, 0)
     const pct = totalExpenses > 0 ? ((top2 / totalExpenses) * 100).toFixed(0) : '0'
     insights.push({ 
       text: isEn 
-        ? `Combined, ${input.topCategories[0].category} and ${input.topCategories[1].category} make up ${pct}% of your expenses. Managing these two effectively will have a huge impact.` 
-        : `Juntos, ${input.topCategories[0].category} e ${input.topCategories[1].category} representam ${pct}% das despesas. Focar em otimizar esses dois pontos trará um impacto enorme.`, 
+        ? `${localizedTopCategories[0].category} and ${localizedTopCategories[1].category} account for ${pct}% of spending. Optimizing these two gives the biggest impact.`
+        : `${localizedTopCategories[0].category} e ${localizedTopCategories[1].category} somam ${pct}% dos gastos. Otimizar essas duas traz maior impacto.`, 
       type: 'tip' 
     })
   }
 
-  return insights.slice(0, 5)
+  return normalizeAndPrioritizeInsights(insights, language)
 }
 
 function topCategoryIsHigh(total: number, topAmount: number): boolean {

@@ -158,6 +158,29 @@ export const translations = {
 
     // Cards
     'cards.title': 'Cartões',
+
+    // Workout Generator
+    'workout.generatePlan': 'Gerar Plano com IA',
+    'workout.objective': 'Objetivo',
+    'workout.objectiveMusclGain': 'Ganho de Massa Muscular',
+    'workout.objectiveFatLoss': 'Perda de Gordura / Definição',
+    'workout.objectiveStrength': 'Ganho de Força',
+    'workout.objectiveEndurance': 'Resistência Cardiovascular',
+    'workout.objectiveGeneral': 'Condicionamento Geral',
+    'workout.level': 'Nível de Experiência',
+    'workout.levelBeginner': 'Iniciante',
+    'workout.levelIntermediate': 'Intermediário',
+    'workout.levelAdvanced': 'Avançado',
+    'workout.daysPerWeek': 'Dias por Semana',
+    'workout.focus': 'Foco / Áreas de Trabalho',
+    'workout.focusPlaceholder': 'Ex: peito e tríceps, costas e bíceps, pernas, etc',
+    'workout.sex': 'Sexo (Opcional)',
+    'workout.sexMale': 'Masculino',
+    'workout.sexFemale': 'Feminino',
+    'workout.sexPreferNotSay': 'Prefiro não informar',
+    'workout.sexHint': 'Servirá como contexto para personalizar o plano, mas não é regra absoluta.',
+    'workout.generating': 'Gerando plano...',
+    'workout.generateError': 'Erro ao gerar plano. Tente novamente.',
   },
   'en': {
     'common.signIn': 'Sign In',
@@ -285,6 +308,29 @@ export const translations = {
     'month.december': 'December',
 
     'cards.title': 'Cards',
+
+    // Workout Generator
+    'workout.generatePlan': 'Generate Plan with AI',
+    'workout.objective': 'Objective',
+    'workout.objectiveMusclGain': 'Muscle Gain / Hypertrophy',
+    'workout.objectiveFatLoss': 'Fat Loss / Definition',
+    'workout.objectiveStrength': 'Strength Gain',
+    'workout.objectiveEndurance': 'Cardiovascular Endurance',
+    'workout.objectiveGeneral': 'General Fitness',
+    'workout.level': 'Experience Level',
+    'workout.levelBeginner': 'Beginner',
+    'workout.levelIntermediate': 'Intermediate',
+    'workout.levelAdvanced': 'Advanced',
+    'workout.daysPerWeek': 'Days per Week',
+    'workout.focus': 'Focus / Areas of Work',
+    'workout.focusPlaceholder': 'Ex: chest and triceps, back and biceps, legs, etc',
+    'workout.sex': 'Sex (Optional)',
+    'workout.sexMale': 'Male',
+    'workout.sexFemale': 'Female',
+    'workout.sexPreferNotSay': 'Prefer not to say',
+    'workout.sexHint': 'Will serve as context to personalize the plan, but is not an absolute rule.',
+    'workout.generating': 'Generating plan...',
+    'workout.generateError': 'Error generating plan. Try again.',
   },
 }
 
