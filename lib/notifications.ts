@@ -1,10 +1,37 @@
+export type NotificationType = 'upcoming' | 'today' | 'late'
+
+export type NotificationSourceType = 'recurring' | 'installment' | 'card_bill' | 'card_limit'
+
+export type NotificationActionType = 'REGISTER_PAYMENT'
+
 export interface Notification {
   id: string
+  notificationKey: string
   title: string
   description: string
-  type: 'upcoming' | 'today' | 'late'
+  type: NotificationType
   days: number
   sourceTxId: string
+  sourceType: NotificationSourceType
+  dueDate: Date
+  actionable: boolean
+  actionType: NotificationActionType | null
+}
+
+function formatDateKey(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function getNotificationKey(sourceType: NotificationSourceType, sourceId: string, dueDate: Date): string {
+  return `${sourceType}:${sourceId}:${formatDateKey(dueDate)}`
+}
+
+function isActionableNotification(sourceType: NotificationSourceType, type: NotificationType): boolean {
+  if (sourceType === 'card_limit') return false
+  return type === 'today' || type === 'late'
 }
 
 /**
@@ -103,7 +130,6 @@ export function generateNotifications(
 ): Notification[] {
   const now = today ?? new Date()
   now.setHours(0, 0, 0, 0)
-  const todayDay = now.getDate()
 
   const notifications: Notification[] = []
 
@@ -116,18 +142,25 @@ export function generateNotifications(
       if (tx.endDate && tx.endDate < now) continue
       if (!tx.recurringDay) continue
 
-      const diff = getDaysDiffForDay(now, tx.recurringDay)
+      const { diff, dueDate } = getDueInfoForDay(now, tx.recurringDay)
       const type = diff > 0 && diff <= 5 ? 'upcoming' : diff === 0 ? 'today' : diff < 0 ? 'late' : null
 
       if (type) {
         const absDays = Math.abs(diff)
+        const sourceType: NotificationSourceType = 'recurring'
+        const notificationKey = getNotificationKey(sourceType, tx.id, dueDate)
         notifications.push({
-          id: `recurring-${tx.id}`,
+          id: `recurring-${tx.id}-${formatDateKey(dueDate)}`,
+          notificationKey,
           title: tx.title,
           description: getDescription(type, absDays),
           type,
           days: absDays,
           sourceTxId: tx.id,
+          sourceType,
+          dueDate,
+          actionable: isActionableNotification(sourceType, type),
+          actionType: isActionableNotification(sourceType, type) ? 'REGISTER_PAYMENT' : null,
         })
       }
     }
@@ -136,7 +169,7 @@ export function generateNotifications(
     if (tx.isInstallment && tx.dueDay) {
       if (!isInstallmentActive(tx.purchaseDate, tx.totalInstallments, tx.dueDay)) continue
 
-      const diff = getDaysDiffForDay(now, tx.dueDay)
+      const { diff, dueDate } = getDueInfoForDay(now, tx.dueDay)
       const type = diff > 0 && diff <= 5 ? 'upcoming' : diff === 0 ? 'today' : diff < 0 ? 'late' : null
 
       if (type) {
@@ -149,13 +182,20 @@ export function generateNotifications(
         }
 
         const absDays = Math.abs(diff)
+        const sourceType: NotificationSourceType = 'installment'
+        const notificationKey = getNotificationKey(sourceType, tx.id, dueDate)
         notifications.push({
-          id: `installment-${tx.id}`,
+          id: `installment-${tx.id}-${formatDateKey(dueDate)}`,
+          notificationKey,
           title: displayTitle,
           description: getDescription(type, absDays),
           type,
           days: absDays,
           sourceTxId: tx.id,
+          sourceType,
+          dueDate,
+          actionable: isActionableNotification(sourceType, type),
+          actionType: isActionableNotification(sourceType, type) ? 'REGISTER_PAYMENT' : null,
         })
       }
     }
@@ -164,18 +204,25 @@ export function generateNotifications(
   // --- Card Bills (Fatura do Cartão) & Limits ---
   for (const card of cards) {
     // 1. Check Due Date
-    const diff = getDaysDiffForDay(now, card.dueDay)
+    const { diff, dueDate } = getDueInfoForDay(now, card.dueDay)
     const type = diff > 0 && diff <= 5 ? 'upcoming' : diff === 0 ? 'today' : diff < 0 ? 'late' : null
     
     if (type) {
       const absDays = Math.abs(diff)
+      const sourceType: NotificationSourceType = 'card_bill'
+      const notificationKey = getNotificationKey(sourceType, card.id, dueDate)
       notifications.push({
-        id: `cardbill-${card.id}`,
+        id: `cardbill-${card.id}-${formatDateKey(dueDate)}`,
+        notificationKey,
         title: `Fatura ${card.name} (**** ${card.lastFourDigits})`,
         description: getDescription(type, absDays),
         type,
         days: absDays,
         sourceTxId: card.id,
+        sourceType,
+        dueDate,
+        actionable: isActionableNotification(sourceType, type),
+        actionType: isActionableNotification(sourceType, type) ? 'REGISTER_PAYMENT' : null,
       })
     }
 
@@ -194,13 +241,21 @@ export function generateNotifications(
 
       const usagePercent = (usedLimit / cardLimit) * 100
       if (usagePercent >= 85) {
+        const sourceType: NotificationSourceType = 'card_limit'
+        const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+        const dueDate = new Date(now)
         notifications.push({
-          id: `cardlimit-${card.id}`,
+          id: `cardlimit-${card.id}-${monthKey}`,
+          notificationKey: `card_limit:${card.id}:${monthKey}`,
           title: `Limite alto: ${card.name}`,
           description: `Você já utilizou ${usagePercent.toFixed(0)}% do limite do seu cartão.`,
           type: 'upcoming', // Use 'upcoming' as a warning
           days: 0,
           sourceTxId: card.id,
+          sourceType,
+          dueDate,
+          actionable: false,
+          actionType: null,
         })
       }
     }
@@ -221,17 +276,21 @@ export function generateNotifications(
  * Calculate days difference for a given day-of-month relative to today.
  * Returns: 0 if today is the due day, positive if upcoming, negative if late.
  */
-function getDaysDiffForDay(now: Date, dayOfMonth: number): number {
+function getDueInfoForDay(now: Date, dayOfMonth: number): { diff: number; dueDate: Date } {
   const todayDay = now.getDate()
-
-  if (dayOfMonth === todayDay) return 0
-
-  // This month's due date
   const thisMonthDue = new Date(now.getFullYear(), now.getMonth(), dayOfMonth)
+  thisMonthDue.setHours(0, 0, 0, 0)
+
+  if (dayOfMonth === todayDay) {
+    return { diff: 0, dueDate: thisMonthDue }
+  }
 
   if (thisMonthDue > now) {
     // Upcoming this month
-    return Math.round((thisMonthDue.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return {
+      diff: Math.round((thisMonthDue.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      dueDate: thisMonthDue,
+    }
   }
 
   // Past this month — calculate how many days late
@@ -240,6 +299,7 @@ function getDaysDiffForDay(now: Date, dayOfMonth: number): number {
   // If only 1-2 days late, we could still show "upcoming" for next month
   // But if we're within the 5-day window looking ahead at next month:
   const nextMonthDue = new Date(now.getFullYear(), now.getMonth() + 1, dayOfMonth)
+  nextMonthDue.setHours(0, 0, 0, 0)
   const daysToNext = Math.round((nextMonthDue.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
 
   // If both late and the next one is within 5 days, show late (it's still late!)
@@ -251,16 +311,16 @@ function getDaysDiffForDay(now: Date, dayOfMonth: number): number {
 
   // Show as upcoming for next month only if less than 3 days late
   if (daysLate <= 3 && daysToNext <= 5) {
-    return daysToNext
+    return { diff: daysToNext, dueDate: nextMonthDue }
   }
 
-  return -daysLate
+  return { diff: -daysLate, dueDate: thisMonthDue }
 }
 
 /**
  * Generate Portuguese description for notification type.
  */
-function getDescription(type: 'upcoming' | 'today' | 'late', days: number): string {
+function getDescription(type: NotificationType, days: number): string {
   switch (type) {
     case 'upcoming':
       if (days === 1) return 'Falta 1 dia para o pagamento'

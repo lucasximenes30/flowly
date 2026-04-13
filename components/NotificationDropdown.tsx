@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useMemo } from 'react'
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { generateNotifications, Notification } from '@/lib/notifications'
 import * as Lucide from 'lucide-react'
 
@@ -33,9 +33,14 @@ interface Props {
 
 export default function NotificationDropdown({ transactions, cards = [], isBRL }: Props) {
   const [open, setOpen] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [apiReady, setApiReady] = useState(false)
+  const [notifications, setNotifications] = useState<Array<Notification & { read: boolean; paidAt: string | null }>>([])
+  const [processingId, setProcessingId] = useState<string | null>(null)
+  const [feedback, setFeedback] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
-  const notifications = useMemo(() => {
+  const fallbackNotifications = useMemo<Array<Notification & { read: boolean; paidAt: string | null }>>(() => {
     const tx = transactions.map((t) => ({
       id: t.id,
       title: t.title,
@@ -51,11 +56,98 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
       cardId: t.cardId ?? null,
       amount: t.amount,
     }))
-    return generateNotifications(tx, cards)
+    return generateNotifications(tx, cards).map((notification) => ({
+      ...notification,
+      read: false,
+      paidAt: null,
+    }))
   }, [transactions, cards])
 
-  const count = notifications.length
-  const lateCount = notifications.filter((n) => n.type === 'late').length
+  const fetchNotifications = useCallback(async () => {
+    try {
+      const res = await fetch('/api/notifications', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Failed to fetch notifications')
+
+      const data = await res.json()
+      const next = Array.isArray(data.notifications) ? data.notifications : []
+      setNotifications(next)
+      setApiReady(true)
+    } catch {
+      setNotifications(fallbackNotifications)
+      setApiReady(false)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [fallbackNotifications])
+
+  const runNotificationAction = useCallback(
+    async (payload: Record<string, unknown>) => {
+      const res = await fetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'Notification action failed')
+      }
+
+      const data = await res.json()
+      if (Array.isArray(data.notifications)) {
+        setNotifications(data.notifications)
+      }
+      setApiReady(true)
+    },
+    [],
+  )
+
+  useEffect(() => {
+    void fetchNotifications()
+  }, [fetchNotifications])
+
+  useEffect(() => {
+    if (!apiReady) {
+      setNotifications(fallbackNotifications)
+    }
+  }, [apiReady, fallbackNotifications])
+
+  useEffect(() => {
+    if (open) {
+      void fetchNotifications()
+    }
+  }, [open, fetchNotifications])
+
+  const count = notifications.filter((notification) => !notification.read).length
+  const lateCount = notifications.filter((notification) => notification.type === 'late' && !notification.read).length
+
+  const groups = useMemo(() => {
+    return {
+      late: notifications.filter((notification) => notification.type === 'late'),
+      today: notifications.filter((notification) => notification.type === 'today'),
+      upcoming: notifications.filter((notification) => notification.type === 'upcoming'),
+    }
+  }, [notifications])
+
+  useEffect(() => {
+    if (!open || notifications.length === 0) return
+
+    const unreadIds = notifications.filter((notification) => !notification.read).map((notification) => notification.id)
+    if (unreadIds.length === 0) return
+
+    const unreadIdSet = new Set(unreadIds)
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        unreadIdSet.has(notification.id) ? { ...notification, read: true } : notification,
+      ),
+    )
+
+    if (apiReady) {
+      void runNotificationAction({ action: 'mark-read', ids: unreadIds }).catch(() => {
+        void fetchNotifications()
+      })
+    }
+  }, [apiReady, fetchNotifications, notifications, open, runNotificationAction])
 
   // Close on click outside
   useEffect(() => {
@@ -67,6 +159,44 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
     if (open) document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [open])
+
+  const markAllAsRead = async () => {
+    const unreadIds = notifications.filter((notification) => !notification.read).map((notification) => notification.id)
+    if (unreadIds.length === 0) return
+
+    const unreadIdSet = new Set(unreadIds)
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        unreadIdSet.has(notification.id) ? { ...notification, read: true } : notification,
+      ),
+    )
+
+    if (!apiReady) return
+
+    try {
+      await runNotificationAction({ action: 'mark-all-read' })
+    } catch {
+      void fetchNotifications()
+    }
+  }
+
+  const handleRegisterPayment = async (id: string) => {
+    if (!apiReady) return
+
+    setProcessingId(id)
+    try {
+      await runNotificationAction({ action: 'register-payment', id })
+      setFeedback(isBRL ? 'Pagamento registrado com sucesso.' : 'Payment registered successfully.')
+    } catch {
+      setFeedback(isBRL ? 'Nao foi possivel registrar o pagamento.' : 'Could not register payment.')
+      void fetchNotifications()
+    } finally {
+      setProcessingId(null)
+      window.setTimeout(() => setFeedback(null), 2200)
+    }
+  }
+
+  const emptyState = notifications.length === 0
 
   return (
     <div ref={ref} className="relative">
@@ -92,21 +222,48 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 z-[60] mt-2 w-[min(20rem,calc(100vw-2rem))] origin-top-right rounded-2xl border border-surface-200 bg-white shadow-xl dark:border-surface-700/60 dark:bg-surface-900 transition-all duration-200 animate-in fade-in zoom-in-95">
+        <div className="absolute right-0 z-[60] mt-2 w-[min(22rem,calc(100vw-1.5rem))] origin-top-right rounded-2xl border border-surface-200 bg-white shadow-xl dark:border-surface-700/60 dark:bg-surface-900 transition-all duration-200 animate-in fade-in zoom-in-95">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-surface-100 px-4 py-3 dark:border-surface-700/60">
-            <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-              {isBRL ? 'Notificações' : 'Notifications'}
-            </h3>
-            {count > 0 && (
+          <div className="border-b border-surface-100 px-4 py-3 dark:border-surface-700/60">
+            <div className="flex items-center justify-between gap-3">
+              <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-200">
+                {isBRL ? 'Notificacoes' : 'Notifications'}
+              </h3>
               <span className="text-xs font-medium text-surface-400">
-                {count} {isBRL ? (count === 1 ? 'pendência' : 'pendências') : count === 1 ? 'pending' : 'pending'}
+                {count > 0
+                  ? `${count} ${isBRL ? (count === 1 ? 'nao lida' : 'nao lidas') : count === 1 ? 'unread' : 'unread'}`
+                  : isBRL
+                  ? 'Tudo lido'
+                  : 'All read'}
               </span>
+            </div>
+            {count > 0 && (
+              <button
+                onClick={markAllAsRead}
+                className="mt-2 text-[11px] font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+              >
+                {isBRL ? 'Marcar todas como lidas' : 'Mark all as read'}
+              </button>
+            )}
+            {!apiReady && (
+              <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
+                {isBRL ? 'Sincronizacao indisponivel no momento.' : 'Sync is temporarily unavailable.'}
+              </p>
+            )}
+            {feedback && (
+              <p className="mt-2 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+                {feedback}
+              </p>
             )}
           </div>
 
           {/* List */}
-          {count === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-surface-500 dark:text-surface-400">
+              <Lucide.Loader2 className="h-4 w-4 animate-spin" />
+              {isBRL ? 'Carregando notificacoes...' : 'Loading notifications...'}
+            </div>
+          ) : emptyState ? (
             <div className="flex flex-col items-center gap-2 px-4 py-8">
               <Lucide.CheckCircle2 className="h-8 w-8 text-emerald-400 dark:text-emerald-500" />
               <p className="text-sm text-surface-400 dark:text-surface-500 text-center">
@@ -114,10 +271,37 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
               </p>
             </div>
           ) : (
-            <div className="max-h-72 overflow-y-auto py-1">
-              {notifications.map((n) => (
-                <NotificationItem key={n.id} notification={n} isBRL={isBRL} />
-              ))}
+            <div className="max-h-80 overflow-y-auto py-2">
+              {groups.late.length > 0 && (
+                <NotificationSection
+                  title={isBRL ? 'Atrasadas' : 'Overdue'}
+                  items={groups.late}
+                  isBRL={isBRL}
+                  onRegisterPayment={handleRegisterPayment}
+                  processingId={processingId}
+                  actionableEnabled={apiReady}
+                />
+              )}
+              {groups.today.length > 0 && (
+                <NotificationSection
+                  title={isBRL ? 'Hoje' : 'Today'}
+                  items={groups.today}
+                  isBRL={isBRL}
+                  onRegisterPayment={handleRegisterPayment}
+                  processingId={processingId}
+                  actionableEnabled={apiReady}
+                />
+              )}
+              {groups.upcoming.length > 0 && (
+                <NotificationSection
+                  title={isBRL ? 'Em breve' : 'Soon'}
+                  items={groups.upcoming}
+                  isBRL={isBRL}
+                  onRegisterPayment={handleRegisterPayment}
+                  processingId={processingId}
+                  actionableEnabled={apiReady}
+                />
+              )}
             </div>
           )}
         </div>
@@ -126,8 +310,55 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
   )
 }
 
-function NotificationItem({ notification, isBRL }: { notification: Notification; isBRL: boolean }) {
+function NotificationSection({
+  title,
+  items,
+  isBRL,
+  onRegisterPayment,
+  processingId,
+  actionableEnabled,
+}: {
+  title: string
+  items: Array<Notification & { read: boolean; paidAt: string | null }>
+  isBRL: boolean
+  onRegisterPayment: (id: string) => void
+  processingId: string | null
+  actionableEnabled: boolean
+}) {
+  return (
+    <section className="mb-2">
+      <div className="px-4 pb-1 pt-2">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-surface-400">{title}</p>
+      </div>
+      {items.map((notification) => (
+        <NotificationItem
+          key={notification.id}
+          notification={notification}
+          isBRL={isBRL}
+          onRegisterPayment={onRegisterPayment}
+          processing={processingId === notification.id}
+          actionableEnabled={actionableEnabled}
+        />
+      ))}
+    </section>
+  )
+}
+
+function NotificationItem({
+  notification,
+  isBRL,
+  onRegisterPayment,
+  processing,
+  actionableEnabled,
+}: {
+  notification: Notification & { read: boolean; paidAt: string | null }
+  isBRL: boolean
+  onRegisterPayment: (id: string) => void
+  processing: boolean
+  actionableEnabled: boolean
+}) {
   const { title, description, type } = notification
+  const unread = !notification.read
 
   const iconMap = {
     late: (
@@ -153,29 +384,64 @@ function NotificationItem({ notification, isBRL }: { notification: Notification;
     upcoming: 'border-l-amber-500',
   }
 
+  const actionLabel =
+    notification.sourceType === 'card_bill'
+      ? isBRL
+        ? 'Registrar pagamento'
+        : 'Register payment'
+      : isBRL
+      ? 'Marcar como pago'
+      : 'Mark as paid'
+
   return (
     <div
       className={`flex items-start gap-3 border-l-2 px-4 py-3 transition-colors hover:bg-surface-50 dark:hover:bg-surface-800/50 ${
+        unread ? 'bg-surface-50/80 dark:bg-surface-800/40' : 'opacity-80'
+      } ${
         borderMap[type]
       }`}
     >
       {iconMap[type]}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold text-surface-800 dark:text-surface-200">
+        <p className={`truncate text-sm font-semibold ${unread ? 'text-surface-900 dark:text-surface-100' : 'text-surface-700 dark:text-surface-300'}`}>
           {title}
         </p>
         <p className="mt-0.5 text-xs text-surface-500 dark:text-surface-400">
           {description}
         </p>
+
+        {notification.actionable && (
+          <div className="mt-2">
+            <button
+              onClick={() => onRegisterPayment(notification.id)}
+              disabled={processing || !actionableEnabled}
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-brand-300/70 bg-brand-50 px-2.5 py-1.5 text-[11px] font-semibold text-brand-700 transition-all hover:bg-brand-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-brand-700/60 dark:bg-brand-900/20 dark:text-brand-300 dark:hover:bg-brand-900/30 sm:w-auto"
+            >
+              {processing ? (
+                <>
+                  <Lucide.Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  {isBRL ? 'Registrando...' : 'Registering...'}
+                </>
+              ) : (
+                <>
+                  <Lucide.CheckCircle2 className="h-3.5 w-3.5" />
+                  {actionLabel}
+                </>
+              )}
+            </button>
+          </div>
+        )}
       </div>
       {/* Quick status dot */}
       <span
         className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
-          type === 'late'
+          unread && type === 'late'
             ? 'bg-red-500'
-            : type === 'today'
+            : unread && type === 'today'
             ? 'bg-emerald-500'
-            : 'bg-amber-500'
+            : unread
+            ? 'bg-amber-500'
+            : 'bg-surface-300 dark:bg-surface-600'
         }`}
       />
     </div>
