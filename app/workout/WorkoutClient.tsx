@@ -398,6 +398,10 @@ export default function WorkoutClient({
   const [dayActionError, setDayActionError] = useState('')
   const createPlanModalBodyRef = useRef<HTMLDivElement | null>(null)
   const dayModalBodyRef = useRef<HTMLDivElement | null>(null)
+  const addExerciseModalBodyRef = useRef<HTMLDivElement | null>(null)
+  const createCustomExerciseModalBodyRef = useRef<HTMLDivElement | null>(null)
+  const editDayExerciseModalBodyRef = useRef<HTMLDivElement | null>(null)
+  const workoutExecutionModalBodyRef = useRef<HTMLDivElement | null>(null)
   const [mobileKeyboardInset, setMobileKeyboardInset] = useState(0)
 
   const [deletingDayId, setDeletingDayId] = useState<string | null>(null)
@@ -469,17 +473,6 @@ export default function WorkoutClient({
   const [deletingDayExerciseSubmitting, setDeletingDayExerciseSubmitting] = useState(false)
   const [deleteDayExerciseError, setDeleteDayExerciseError] = useState('')
   const [reorderingDayExerciseId, setReorderingDayExerciseId] = useState<string | null>(null)
-
-  // AI Generation Form State
-  const [showGeneratePlanModal, setShowGeneratePlanModal] = useState(false)
-  const [generatePlanModalVisible, setGeneratePlanModalVisible] = useState(false)
-  const [generateObjective, setGenerateObjective] = useState<'muscle_gain' | 'fat_loss' | 'strength' | 'endurance' | 'general_fitness'>('muscle_gain')
-  const [generateLevel, setGenerateLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner')
-  const [generateDaysPerWeek, setGenerateDaysPerWeek] = useState('3')
-  const [generateFocus, setGenerateFocus] = useState('')
-  const [generatingPlan, setGeneratingPlan] = useState(false)
-  const [generatePlanError, setGeneratePlanError] = useState('')
-  const generatePlanModalBodyRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     document.title = locale === 'pt-BR' ? 'Treino | Flowly' : 'Workout | Flowly'
@@ -811,6 +804,22 @@ export default function WorkoutClient({
     revealFormFieldOnMobile(event.target, dayModalBodyRef.current)
   }
 
+  const handleAddExerciseModalFocus = (event: React.FocusEvent<HTMLElement>) => {
+    revealFormFieldOnMobile(event.target, addExerciseModalBodyRef.current)
+  }
+
+  const handleCreateCustomExerciseModalFocus = (event: React.FocusEvent<HTMLElement>) => {
+    revealFormFieldOnMobile(event.target, createCustomExerciseModalBodyRef.current)
+  }
+
+  const handleEditDayExerciseModalFocus = (event: React.FocusEvent<HTMLElement>) => {
+    revealFormFieldOnMobile(event.target, editDayExerciseModalBodyRef.current)
+  }
+
+  const handleWorkoutExecutionModalFocus = (event: React.FocusEvent<HTMLElement>) => {
+    revealFormFieldOnMobile(event.target, workoutExecutionModalBodyRef.current)
+  }
+
   const persistTodayWorkoutLog = async (
     doneByExerciseId: Record<string, boolean>,
     options?: { completed?: boolean }
@@ -1098,65 +1107,6 @@ export default function WorkoutClient({
       setPlanActionError('Erro de conexao. Tente novamente.')
     } finally {
       setDeletingPlan(false)
-    }
-  }
-
-  const openGeneratePlanModal = () => {
-    setGeneratePlanError('')
-    setGenerateObjective('muscle_gain')
-    setGenerateLevel('beginner')
-    setGenerateDaysPerWeek('3')
-    setGenerateFocus('')
-    setShowGeneratePlanModal(true)
-    requestAnimationFrame(() => setGeneratePlanModalVisible(true))
-  }
-
-  const closeGeneratePlanModal = () => {
-    setGeneratePlanModalVisible(false)
-    window.setTimeout(() => setShowGeneratePlanModal(false), 200)
-  }
-
-  const handleGeneratePlan = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-
-    if (generatingPlan) return
-
-    const focus = generateFocus.trim()
-    if (!focus) {
-      setGeneratePlanError(locale === 'pt-BR' ? 'Informe o foco/áreas de trabalho' : 'Please specify focus areas')
-      return
-    }
-
-    setGeneratingPlan(true)
-    setGeneratePlanError('')
-
-    try {
-      const response = await fetch('/api/workout/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          objective: generateObjective,
-          level: generateLevel,
-          daysPerWeek: Number(generateDaysPerWeek),
-          focus,
-          language: locale,
-        }),
-      })
-
-      const payload: { error?: string; plan?: { planId: string; planName: string } } = await response.json().catch(() => ({}))
-
-      if (!response.ok) {
-        setGeneratePlanError(payload.error ?? (locale === 'pt-BR' ? 'Erro ao gerar plano' : 'Failed to generate plan'))
-        return
-      }
-
-      // Refresh the page to load the newly generated plan
-      router.refresh()
-      closeGeneratePlanModal()
-    } catch {
-      setGeneratePlanError(locale === 'pt-BR' ? 'Erro de conexão. Tente novamente.' : 'Connection error. Please try again.')
-    } finally {
-      setGeneratingPlan(false)
     }
   }
 
@@ -1919,14 +1869,9 @@ export default function WorkoutClient({
                 : 'Organize your workouts and track progress'}
             </p>
 
-            <button onClick={openCreateModal} className="btn-primary mt-8 w-full sm:w-auto">
-              <Lucide.Plus className="mr-1.5 h-4 w-4" />
+            <button onClick={openCreateModal} className="btn-primary mt-8 h-12 w-full text-[15px] font-medium sm:h-auto sm:w-auto">
+              <Lucide.Plus className="mr-2 h-5 w-5" />
               {locale === 'pt-BR' ? 'Criar plano de treino' : 'Create workout plan'}
-            </button>
-
-            <button onClick={openGeneratePlanModal} className="btn-secondary mt-3 w-full sm:mt-0 sm:w-auto">
-              <Lucide.Sparkles className="mr-1.5 h-4 w-4" />
-              {locale === 'pt-BR' ? 'Gerar com IA' : 'Generate with AI'}
             </button>
           </section>
         ) : (
@@ -1969,23 +1914,26 @@ export default function WorkoutClient({
               )}
             </section>
 
-            <section className="card animate-dashboard-fade relative overflow-hidden border border-brand-400/20 bg-gradient-to-br from-brand-500/10 via-white to-surface-50 dark:border-brand-700/40 dark:from-brand-500/10 dark:via-surface-900 dark:to-surface-950">
-              <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-brand-500/20 to-transparent" />
+            <section className="card animate-dashboard-fade relative overflow-hidden border-2 border-brand-500/30 bg-gradient-to-br from-brand-500/10 via-surface-50 to-surface-100 dark:border-brand-500/50 dark:from-brand-900/40 dark:via-surface-900 dark:to-surface-950 p-6 sm:p-8 shadow-lg">
+              <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-brand-500/20 to-transparent" />
 
-              <div className="relative space-y-5">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="relative space-y-6">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-600 dark:text-brand-300">
-                      {locale === 'pt-BR' ? 'Treino de hoje' : "Today's workout"}
-                    </p>
-                    <h3 className="mt-1 break-words text-xl font-semibold tracking-tight text-surface-900 dark:text-surface-100 sm:text-2xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Lucide.Flame className="h-5 w-5 text-brand-600 dark:text-brand-400 animate-pulse" />
+                      <p className="text-sm font-bold uppercase tracking-[0.15em] text-brand-600 dark:text-brand-400">
+                        {locale === 'pt-BR' ? 'Treino de hoje' : "Today's workout"}
+                      </p>
+                    </div>
+                    <h3 className="break-words text-2xl font-bold tracking-tight text-surface-900 dark:text-white sm:text-3xl">
                       {todayWorkout
                         ? todayWorkout.name
                         : locale === 'pt-BR'
                           ? 'Nenhum treino programado para hoje'
                           : 'No workout scheduled for today'}
                     </h3>
-                    <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">{todayDateLabel}</p>
+                    <p className="mt-2 text-sm font-medium text-surface-600 dark:text-surface-300 bg-surface-200/50 dark:bg-surface-800/50 inline-block px-3 py-1 rounded-full">{todayDateLabel}</p>
                   </div>
 
                   {todayWorkout ? (
@@ -1993,18 +1941,18 @@ export default function WorkoutClient({
                       type="button"
                       onClick={() => openWorkoutExecutionModal(todayWorkout)}
                       disabled={todayWorkoutExercises.length === 0}
-                      className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                      className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto h-12 sm:h-auto text-[15px] font-bold shadow-md shadow-brand-500/20"
                     >
-                      <Lucide.Play className="mr-1.5 h-4 w-4" />
+                      <Lucide.Play className="mr-2 h-5 w-5 fill-current" />
                       {locale === 'pt-BR' ? 'Iniciar treino' : 'Start workout'}
                     </button>
                   ) : days.length > 0 ? (
                     <button
                       type="button"
                       onClick={openChooseTodayWorkoutModal}
-                      className="btn-secondary w-full sm:w-auto"
+                      className="btn-secondary w-full sm:w-auto h-12 sm:h-auto text-[15px] font-medium border-2 border-surface-300 dark:border-surface-600"
                     >
-                      <Lucide.CalendarCheck2 className="mr-1.5 h-4 w-4" />
+                      <Lucide.CalendarCheck2 className="mr-2 h-5 w-5" />
                       {locale === 'pt-BR' ? 'Escolher treino de hoje' : 'Choose today\'s workout'}
                     </button>
                   ) : null}
@@ -2136,13 +2084,13 @@ export default function WorkoutClient({
                           loadingTodayWorkoutLog ||
                           todayWorkoutExercises.length === 0
                         }
-                        className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all sm:w-auto ${
+                        className={`inline-flex w-full items-center justify-center rounded-xl px-4 py-2.5 h-12 sm:h-auto text-[15px] sm:text-sm font-semibold transition-all shadow-md sm:w-auto ${
                           todayWorkoutCompleted
-                            ? 'cursor-not-allowed bg-emerald-600 text-white shadow-sm'
-                            : 'bg-brand-600 text-white shadow-sm hover:bg-brand-700'
+                            ? 'cursor-not-allowed bg-emerald-600 text-white'
+                            : 'bg-brand-600 text-white hover:bg-brand-700 hover:-translate-y-0.5'
                         } disabled:opacity-90`}
                       >
-                        <Lucide.CheckCircle2 className="mr-1.5 h-4 w-4" />
+                        <Lucide.CheckCircle2 className="mr-2 h-5 w-5 sm:mr-1.5 sm:h-4 sm:w-4" />
                         {todayWorkoutCompleted
                           ? locale === 'pt-BR'
                             ? 'Treino concluido hoje'
@@ -2745,154 +2693,6 @@ export default function WorkoutClient({
         </div>
       )}
 
-      {showGeneratePlanModal && (
-        <div
-          className={`fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 transition-opacity duration-200 sm:items-center sm:p-4 ${
-            generatePlanModalVisible ? 'opacity-100' : 'opacity-0'
-          }`}
-          onClick={(e) => e.target === e.currentTarget && !generatingPlan && closeGeneratePlanModal()}
-        >
-          <div
-            className={`flex max-h-[94dvh] w-full flex-col rounded-t-3xl border border-surface-200/80 bg-white shadow-xl transition-all duration-200 dark:border-surface-700/60 dark:bg-surface-900 sm:max-h-[calc(100vh-2rem)] sm:max-w-lg sm:rounded-2xl ${
-              generatePlanModalVisible
-                ? 'translate-y-0 opacity-100 sm:scale-100'
-                : 'translate-y-6 opacity-0 sm:translate-y-0 sm:scale-95'
-            }`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-surface-200/80 p-5 dark:border-surface-800">
-              <div>
-                <h3 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
-                  {locale === 'pt-BR' ? 'Gerar Plano com IA' : 'Generate Plan with AI'}
-                </h3>
-                <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-                  {locale === 'pt-BR'
-                    ? 'Deixe a IA criar um plano personalizado para você.'
-                    : 'Let AI create a personalized plan for you.'}
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeGeneratePlanModal}
-                disabled={generatingPlan}
-                className="rounded-full p-2 text-surface-400 transition-colors hover:bg-surface-100 hover:text-surface-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-surface-800 dark:hover:text-surface-300"
-              >
-                <Lucide.X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form
-              onSubmit={handleGeneratePlan}
-              className="flex min-h-0 flex-1 flex-col"
-            >
-              <div ref={generatePlanModalBodyRef} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5">
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                    {locale === 'pt-BR' ? 'Objetivo' : 'Objective'}
-                  </label>
-                  <select
-                    value={generateObjective}
-                    onChange={(e) => setGenerateObjective(e.target.value as any)}
-                    className="input-field"
-                  >
-                    <option value="muscle_gain">{locale === 'pt-BR' ? 'Ganho de Massa Muscular' : 'Muscle Gain / Hypertrophy'}</option>
-                    <option value="fat_loss">{locale === 'pt-BR' ? 'Perda de Gordura / Definição' : 'Fat Loss / Definition'}</option>
-                    <option value="strength">{locale === 'pt-BR' ? 'Ganho de Força' : 'Strength Gain'}</option>
-                    <option value="endurance">{locale === 'pt-BR' ? 'Resistência Cardiovascular' : 'Cardiovascular Endurance'}</option>
-                    <option value="general_fitness">{locale === 'pt-BR' ? 'Condicionamento Geral' : 'General Fitness'}</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                    {locale === 'pt-BR' ? 'Nível de Experiência' : 'Experience Level'}
-                  </label>
-                  <select
-                    value={generateLevel}
-                    onChange={(e) => setGenerateLevel(e.target.value as any)}
-                    className="input-field"
-                  >
-                    <option value="beginner">{locale === 'pt-BR' ? 'Iniciante' : 'Beginner'}</option>
-                    <option value="intermediate">{locale === 'pt-BR' ? 'Intermediário' : 'Intermediate'}</option>
-                    <option value="advanced">{locale === 'pt-BR' ? 'Avançado' : 'Advanced'}</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                    {locale === 'pt-BR' ? 'Dias por Semana' : 'Days per Week'}
-                  </label>
-                  <select
-                    value={generateDaysPerWeek}
-                    onChange={(e) => setGenerateDaysPerWeek(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="1">1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="6">6</option>
-                    <option value="7">7</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-                    {locale === 'pt-BR' ? 'Foco / Áreas de Trabalho' : 'Focus / Areas of Work'}
-                  </label>
-                  <textarea
-                    maxLength={500}
-                    className="input-field min-h-24"
-                    placeholder={locale === 'pt-BR' ? 'Ex: peito e tríceps, costas e bíceps, pernas, etc' : 'Ex: chest and triceps, back and biceps, legs, etc'}
-                    value={generateFocus}
-                    onChange={(e) => setGenerateFocus(e.target.value)}
-                  />
-                </div>
-
-                {generatePlanError && (
-                  <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                    {generatePlanError}
-                  </p>
-                )}
-              </div>
-
-              <div
-                className="border-t border-surface-200/80 p-4 dark:border-surface-800 sm:p-5"
-                style={
-                  mobileKeyboardInset > 0
-                    ? {
-                        paddingBottom: `${mobileKeyboardInset + 16}px`,
-                      }
-                    : undefined
-                }
-              >
-                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={closeGeneratePlanModal}
-                    disabled={generatingPlan}
-                    className="btn-secondary w-full sm:w-auto"
-                  >
-                    {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
-                  </button>
-                  <button type="submit" disabled={generatingPlan} className="btn-primary w-full sm:w-auto">
-                    {generatingPlan
-                      ? locale === 'pt-BR'
-                        ? 'Gerando...'
-                        : 'Generating...'
-                      : locale === 'pt-BR'
-                        ? 'Gerar Plano'
-                        : 'Generate Plan'}
-                  </button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {showDayModal && (
         <div
           className={`fixed inset-0 z-[55] flex items-end justify-center bg-black/60 p-0 transition-opacity duration-200 sm:items-center sm:p-4 ${
@@ -3056,7 +2856,18 @@ export default function WorkoutClient({
               </button>
             </div>
 
-            <div className="space-y-4 overflow-y-auto p-5">
+            <div
+              ref={addExerciseModalBodyRef}
+              onFocusCapture={handleAddExerciseModalFocus}
+              className="space-y-4 overflow-y-auto p-5"
+              style={
+                mobileKeyboardInset > 0
+                  ? {
+                      paddingBottom: `${mobileKeyboardInset + 20}px`,
+                    }
+                  : undefined
+              }
+            >
               <div className="grid gap-3 sm:grid-cols-[1fr_180px]">
                 <input
                   type="text"
@@ -3254,7 +3065,7 @@ export default function WorkoutClient({
           onClick={closeCreateCustomExerciseModal}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl border border-surface-200/80 bg-white shadow-elevated dark:border-surface-700/60 dark:bg-surface-900 sm:rounded-2xl"
+            className="flex max-h-[92dvh] w-full max-w-md flex-col rounded-t-3xl border border-surface-200/80 bg-white shadow-elevated dark:border-surface-700/60 dark:bg-surface-900 sm:rounded-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-4 border-b border-surface-200/80 p-5 dark:border-surface-800">
@@ -3278,75 +3089,95 @@ export default function WorkoutClient({
               </button>
             </div>
 
-            <form onSubmit={handleCreateCustomExercise} className="space-y-4 p-5">
-              <div className="space-y-1">
-                <label className="block text-xs text-surface-500 dark:text-surface-400">
-                  {locale === 'pt-BR' ? 'Nome do exercicio' : 'Exercise name'}
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={customExerciseName}
-                  onChange={(e) => setCustomExerciseName(e.target.value)}
-                  maxLength={80}
-                  autoFocus
-                />
+            <form
+              onSubmit={handleCreateCustomExercise}
+              onFocusCapture={handleCreateCustomExerciseModalFocus}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div
+                ref={createCustomExerciseModalBodyRef}
+                className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5"
+              >
+                <div className="space-y-1">
+                  <label className="block text-xs text-surface-500 dark:text-surface-400">
+                    {locale === 'pt-BR' ? 'Nome do exercicio' : 'Exercise name'}
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={customExerciseName}
+                    onChange={(e) => setCustomExerciseName(e.target.value)}
+                    maxLength={80}
+                    autoFocus
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs text-surface-500 dark:text-surface-400">
+                    {locale === 'pt-BR' ? 'Grupo muscular' : 'Muscle group'}
+                  </label>
+                  <select
+                    className="input-field"
+                    value={customExerciseMuscleGroup}
+                    onChange={(e) => setCustomExerciseMuscleGroup(e.target.value as ExerciseMuscleGroup)}
+                  >
+                    {MUSCLE_GROUP_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
+                      <option key={item.value} value={item.value}>
+                        {locale === 'pt-BR' ? item.labelPt : item.labelEn}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs text-surface-500 dark:text-surface-400">
+                    {locale === 'pt-BR' ? 'Equipamento (opcional)' : 'Equipment (optional)'}
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    value={customExerciseEquipment}
+                    onChange={(e) => setCustomExerciseEquipment(e.target.value)}
+                    maxLength={80}
+                  />
+                </div>
+
+                {createCustomExerciseError && (
+                  <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
+                    {createCustomExerciseError}
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-1">
-                <label className="block text-xs text-surface-500 dark:text-surface-400">
-                  {locale === 'pt-BR' ? 'Grupo muscular' : 'Muscle group'}
-                </label>
-                <select
-                  className="input-field"
-                  value={customExerciseMuscleGroup}
-                  onChange={(e) => setCustomExerciseMuscleGroup(e.target.value as ExerciseMuscleGroup)}
-                >
-                  {MUSCLE_GROUP_OPTIONS.filter((item) => item.value !== 'ALL').map((item) => (
-                    <option key={item.value} value={item.value}>
-                      {locale === 'pt-BR' ? item.labelPt : item.labelEn}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs text-surface-500 dark:text-surface-400">
-                  {locale === 'pt-BR' ? 'Equipamento (opcional)' : 'Equipment (optional)'}
-                </label>
-                <input
-                  type="text"
-                  className="input-field"
-                  value={customExerciseEquipment}
-                  onChange={(e) => setCustomExerciseEquipment(e.target.value)}
-                  maxLength={80}
-                />
-              </div>
-
-              {createCustomExerciseError && (
-                <p className="rounded-lg bg-red-50 p-2.5 text-xs text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                  {createCustomExerciseError}
-                </p>
-              )}
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                <button
-                  type="button"
-                  onClick={closeCreateCustomExerciseModal}
-                  disabled={creatingCustomExercise}
-                  className="btn-secondary w-full sm:w-auto"
-                >
-                  {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
-                </button>
-                <button type="submit" disabled={creatingCustomExercise} className="btn-primary w-full sm:w-auto">
-                  {creatingCustomExercise
-                    ? locale === 'pt-BR'
-                      ? 'Criando...'
-                      : 'Creating...'
-                    : locale === 'pt-BR'
-                      ? 'Criar exercicio'
-                      : 'Create exercise'}
-                </button>
+              <div
+                className="border-t border-surface-200/80 p-4 dark:border-surface-800 sm:p-5"
+                style={
+                  mobileKeyboardInset > 0
+                    ? {
+                        paddingBottom: `${mobileKeyboardInset + 16}px`,
+                      }
+                    : undefined
+                }
+              >
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeCreateCustomExerciseModal}
+                    disabled={creatingCustomExercise}
+                    className="btn-secondary w-full sm:w-auto"
+                  >
+                    {locale === 'pt-BR' ? 'Cancelar' : 'Cancel'}
+                  </button>
+                  <button type="submit" disabled={creatingCustomExercise} className="btn-primary w-full sm:w-auto">
+                    {creatingCustomExercise
+                      ? locale === 'pt-BR'
+                        ? 'Criando...'
+                        : 'Creating...'
+                      : locale === 'pt-BR'
+                        ? 'Criar exercicio'
+                        : 'Create exercise'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -3393,8 +3224,15 @@ export default function WorkoutClient({
               </button>
             </div>
 
-            <form onSubmit={handleUpdateDayExercise} className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6">
+            <form
+              onSubmit={handleUpdateDayExercise}
+              onFocusCapture={handleEditDayExerciseModalFocus}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div
+                ref={editDayExerciseModalBodyRef}
+                className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 sm:p-6"
+              >
                 <div className="rounded-2xl border border-surface-200/80 bg-surface-50/80 p-4 dark:border-surface-700/80 dark:bg-surface-900/80">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
                     {locale === 'pt-BR' ? 'Parametros principais' : 'Main parameters'}
@@ -3465,7 +3303,16 @@ export default function WorkoutClient({
                 )}
               </div>
 
-              <div className="border-t border-surface-200/80 p-4 dark:border-surface-700/70 sm:p-5">
+              <div
+                className="border-t border-surface-200/80 p-4 dark:border-surface-700/70 sm:p-5"
+                style={
+                  mobileKeyboardInset > 0
+                    ? {
+                        paddingBottom: `${mobileKeyboardInset + 16}px`,
+                      }
+                    : undefined
+                }
+              >
                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                   <button
                     type="button"
@@ -3534,8 +3381,15 @@ export default function WorkoutClient({
               </div>
             </div>
 
-            <form onSubmit={handleCompleteWorkoutSession} className="flex min-h-0 flex-1 flex-col">
-              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+            <form
+              onSubmit={handleCompleteWorkoutSession}
+              onFocusCapture={handleWorkoutExecutionModalFocus}
+              className="flex min-h-0 flex-1 flex-col"
+            >
+              <div
+                ref={workoutExecutionModalBodyRef}
+                className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6"
+              >
                 <div className="rounded-2xl border border-surface-200/80 bg-surface-50/80 p-4 dark:border-surface-700/70 dark:bg-surface-900/70">
                   <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
                     {locale === 'pt-BR' ? 'Observacoes do treino (opcional)' : 'Session notes (optional)'}
@@ -3670,7 +3524,16 @@ export default function WorkoutClient({
                 )}
               </div>
 
-              <div className="border-t border-surface-200/80 p-4 dark:border-surface-700/70 sm:p-5">
+              <div
+                className="border-t border-surface-200/80 p-4 dark:border-surface-700/70 sm:p-5"
+                style={
+                  mobileKeyboardInset > 0
+                    ? {
+                        paddingBottom: `${mobileKeyboardInset + 16}px`,
+                      }
+                    : undefined
+                }
+              >
                 <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
                   <button
                     type="button"

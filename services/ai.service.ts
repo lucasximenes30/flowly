@@ -1,9 +1,9 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-export type AIPurpose = 'reports' | 'workout'
-export type AIProvider = 'google' | 'openai'
+export type AIPurpose = 'reports'
+export type AIProvider = 'google' | 'openai' | 'groq'
 
-type ConfigSlot = 'reports' | 'workouts' | 'fallback'
+type ConfigSlot = 'reports' | 'fallback'
 
 interface ProviderConfig {
   provider: AIProvider
@@ -54,16 +54,18 @@ function normalizeProvider(input: string | undefined, fallback: AIProvider): AIP
   const normalized = input?.trim().toLowerCase()
   if (normalized === 'google' || normalized === 'gemini') return 'google'
   if (normalized === 'openai') return 'openai'
+  if (normalized === 'groq') return 'groq'
   return fallback
 }
 
 function defaultModelForProvider(provider: AIProvider): string {
-  return provider === 'google' ? 'gemini-2.0-flash' : 'gpt-4o-mini'
+  if (provider === 'google') return 'gemini-2.0-flash'
+  if (provider === 'groq') return 'llama-3.1-8b-instant'
+  return 'gpt-4o-mini'
 }
 
 function envSuffix(slot: ConfigSlot): string {
   if (slot === 'reports') return 'REPORTS'
-  if (slot === 'workouts') return 'WORKOUTS'
   return 'FALLBACK'
 }
 
@@ -86,6 +88,13 @@ function resolveApiKey(provider: AIProvider, slot: ConfigSlot): string | undefin
     )
   }
 
+  if (provider === 'groq') {
+    return pickFirstDefined(
+      process.env[`GROQ_API_KEY_${suffix}`],
+      process.env.GROQ_API_KEY
+    ) || ''
+  }
+
   return pickFirstDefined(
     process.env[`OPENAI_API_KEY_${suffix}`],
     process.env.OPENAI_API_KEY
@@ -93,19 +102,11 @@ function resolveApiKey(provider: AIProvider, slot: ConfigSlot): string | undefin
 }
 
 function resolvePrimaryConfig(purpose: AIPurpose): ProviderConfig {
-  const slot: ConfigSlot = purpose === 'reports' ? 'reports' : 'workouts'
+  const provider = normalizeProvider(process.env.AI_PROVIDER_REPORTS, 'google')
 
-  const provider = normalizeProvider(
-    slot === 'reports' ? process.env.AI_PROVIDER_REPORTS : process.env.AI_PROVIDER_WORKOUTS,
-    'google'
-  )
+  const model = pickFirstDefined(process.env.AI_MODEL_REPORTS, defaultModelForProvider(provider))
 
-  const model = pickFirstDefined(
-    slot === 'reports' ? process.env.AI_MODEL_REPORTS : process.env.AI_MODEL_WORKOUTS,
-    defaultModelForProvider(provider)
-  )
-
-  const apiKey = resolveApiKey(provider, slot)
+  const apiKey = resolveApiKey(provider, 'reports')
   if (!apiKey) {
     throw new AIServiceError({
       code: 'AI_CONFIG_ERROR',
@@ -203,39 +204,10 @@ async function callGoogle(input: GenerateAITextInput, config: ProviderConfig): P
   return result.response.text().trim()
 }
 
-function extractOpenAIText(payload: unknown): string {
-  if (!payload || typeof payload !== 'object') return ''
-
-  const withOutputText = payload as { output_text?: unknown }
-  if (typeof withOutputText.output_text === 'string' && withOutputText.output_text.trim()) {
-    return withOutputText.output_text.trim()
-  }
-
-  const withOutput = payload as {
-    output?: Array<{
-      content?: Array<{ type?: string; text?: string }>
-    }>
-  }
-
-  const chunks = withOutput.output ?? []
-  const parts: string[] = []
-
-  for (const chunk of chunks) {
-    const content = chunk.content ?? []
-    for (const item of content) {
-      if (item.type === 'output_text' && typeof item.text === 'string' && item.text.trim()) {
-        parts.push(item.text.trim())
-      }
-    }
-  }
-
-  return parts.join('\n').trim()
-}
-
-async function callOpenAI(input: GenerateAITextInput, config: ProviderConfig): Promise<string> {
+async function callGroqOrOpenAI(input: GenerateAITextInput, config: ProviderConfig, endpoint: string): Promise<string> {
   const body: Record<string, unknown> = {
     model: config.model,
-    input: input.prompt,
+    messages: [{ role: 'user', content: input.prompt }],
   }
 
   if (typeof input.temperature === 'number') {
@@ -243,10 +215,10 @@ async function callOpenAI(input: GenerateAITextInput, config: ProviderConfig): P
   }
 
   if (typeof input.maxOutputTokens === 'number') {
-    body.max_output_tokens = input.maxOutputTokens
+    body.max_tokens = input.maxOutputTokens
   }
 
-  const response = await fetch('https://api.openai.com/v1/responses', {
+  const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${config.apiKey}`,
@@ -259,7 +231,7 @@ async function callOpenAI(input: GenerateAITextInput, config: ProviderConfig): P
 
   if (!response.ok) {
     const snippet = raw.length > 300 ? `${raw.slice(0, 300)}...` : raw
-    const error = new Error(`OpenAI request failed (${response.status}): ${snippet}`) as Error & {
+    const error = new Error(`${config.provider} request failed (${response.status}): ${snippet}`) as Error & {
       status?: number
       statusCode?: number
     }
@@ -269,20 +241,23 @@ async function callOpenAI(input: GenerateAITextInput, config: ProviderConfig): P
   }
 
   const payload = JSON.parse(raw)
-  const text = extractOpenAIText(payload)
+  const text = payload?.choices?.[0]?.message?.content
 
   if (!text) {
-    throw new Error('OpenAI response does not contain text output')
+    throw new Error(`${config.provider} response does not contain text output`)
   }
 
-  return text
+  return text.trim()
 }
 
 async function callProvider(input: GenerateAITextInput, config: ProviderConfig): Promise<string> {
   if (config.provider === 'google') {
     return callGoogle(input, config)
   }
-  return callOpenAI(input, config)
+  if (config.provider === 'groq') {
+    return callGroqOrOpenAI(input, config, 'https://api.groq.com/openai/v1/chat/completions')
+  }
+  return callGroqOrOpenAI(input, config, 'https://api.openai.com/v1/chat/completions')
 }
 
 function shouldTryFallback(error: unknown): boolean {
