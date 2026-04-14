@@ -108,7 +108,7 @@ async function getNotificationCandidates(userId: string): Promise<Notification[]
       isActive: tx.isActive,
       endDate: tx.endDate,
       cardId: tx.cardId,
-      amount: tx.amount,
+      amount: Number(tx.amount),
     })),
     cards.map((card) => ({
       id: card.id,
@@ -116,7 +116,7 @@ async function getNotificationCandidates(userId: string): Promise<Notification[]
       lastFourDigits: card.lastFourDigits,
       dueDay: card.dueDay,
       closingDay: card.closingDay,
-      limitAmount: card.limitAmount,
+      limitAmount: card.limitAmount == null ? null : Number(card.limitAmount),
     })),
   )
 }
