@@ -263,16 +263,6 @@ export default function ReportsClient({
     return t(keys[monthNumber - 1])
   }
 
-  // Update Document Title Dynamically
-  useEffect(() => {
-    if (selectedMonth) {
-      const [year, month] = selectedMonth.split('-').map(Number)
-      document.title = `${getMonthName(month)} ${year} | ${t('reports.title')} | Flowly`
-    } else {
-      document.title = `${t('reports.title')} | Flowly`
-    }
-  }, [selectedMonth, t])
-
   // AI Insights
   const [aiInsights, setAiInsights] = useState<AIInsight[]>([])
   const [insightsLoading, setInsightsLoading] = useState(false)
@@ -335,9 +325,16 @@ export default function ReportsClient({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
               </svg>
             </button>
-            <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-semibold tracking-tight text-surface-900 dark:text-surface-100">
+                {isBRL ? 'Relatórios' : 'Reports'}
+              </h1>
+              <p className="hidden text-xs text-surface-500 dark:text-surface-400 sm:block">
+                {isBRL ? 'Visão mensal e tendências' : 'Monthly overview and trends'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
               {isBRL ? `Olá` : `Hi`}, {session.name}
             </span>
@@ -674,8 +671,8 @@ export default function ReportsClient({
   )
 }
 
-const cacheKey = 'flowly_exchange_rate'
-const cacheTimeKey = 'flowly_exchange_rate_time'
+const cacheKey = 'vynta_exchange_rate'
+const cacheTimeKey = 'vynta_exchange_rate_time'
 let cachedRate: { value: number; time: number } | null = null
 
 async function getExchangeRate(): Promise<number> {

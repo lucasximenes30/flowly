@@ -348,27 +348,30 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null)
 
+const LOCALE_STORAGE_KEY = 'vynta_locale'
+const THEME_STORAGE_KEY = 'vynta_theme'
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>('pt-BR')
   const [theme, setTheme] = useState<Theme>('system')
 
   useEffect(() => {
-    const saved = localStorage.getItem('flowly_locale') as Locale | null
+    const saved = localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null
     if (saved && (saved === 'pt-BR' || saved === 'en')) setLocale(saved)
   }, [])
 
   useEffect(() => {
-    const saved = localStorage.getItem('flowly_theme') as Theme | null
+    const saved = localStorage.getItem(THEME_STORAGE_KEY) as Theme | null
     if (saved && ['light', 'dark', 'system'].includes(saved)) setTheme(saved)
   }, [])
 
   useEffect(() => {
-    localStorage.setItem('flowly_locale', locale)
+    localStorage.setItem(LOCALE_STORAGE_KEY, locale)
     document.documentElement.lang = locale
   }, [locale])
 
   useEffect(() => {
-    localStorage.setItem('flowly_theme', theme)
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
   }, [theme])
 
   const resolvedTheme = (() => {

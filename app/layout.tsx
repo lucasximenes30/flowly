@@ -1,14 +1,27 @@
 import type { Metadata } from 'next'
+import { Manrope, Sora } from 'next/font/google'
 import { AppProvider } from '@/lib/i18n'
 import SidebarLayout from '@/components/SidebarLayout'
 import './globals.css'
 
+const manrope = Manrope({
+  subsets: ['latin'],
+  variable: '--font-sans',
+  display: 'swap',
+})
+
+const sora = Sora({
+  subsets: ['latin'],
+  variable: '--font-display',
+  display: 'swap',
+})
+
 export const metadata: Metadata = {
   title: {
-    template: '%s | Flowly',
-    default: 'Flowly — Finanças Pessoais',
+    default: 'Vynta',
+    template: '%s | Vynta',
   },
-  description: 'Gestão financeira pessoal, de um jeito simples e bonito.',
+  description: 'Gestão financeira pessoal com clareza e fluidez.',
 }
 
 export default function RootLayout({
@@ -22,7 +35,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {
-              var theme = localStorage.getItem('flowly_theme');
+              var theme = localStorage.getItem('vynta_theme');
               if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
               } else if (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -36,7 +49,7 @@ export default function RootLayout({
           })();
         `}} />
       </head>
-      <body className="min-h-screen">
+      <body className={`${manrope.variable} ${sora.variable} min-h-screen font-sans`}>
         <AppProvider>
           <SidebarLayout>
             {children}

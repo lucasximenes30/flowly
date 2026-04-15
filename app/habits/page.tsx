@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getHabitsByUser, getCheckinsForWeek, getHistoricalScore, getUserRanking } from '@/services/habit.service'
 import HabitsClient from './HabitsClient'
+
+export const metadata: Metadata = {
+  title: 'Hábitos',
+}
 
 /** Returns the 7 dates (YYYY-MM-DD) of the current week, Sun → Sat */
 function getWeekDates(): string[] {

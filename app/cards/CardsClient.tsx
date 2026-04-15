@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import { useApp } from '@/lib/i18n'
@@ -87,11 +87,6 @@ export default function CardsClient({ session, initialCards, transactions = [] }
     setColor(card.color)
     setShowModal({ isOpen: true, mode: 'edit', cardId: card.id })
   }
-
-  // Update Document Title Dynamically
-  useEffect(() => {
-    document.title = `${t('cards.title')} | Flowly`
-  }, [t])
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -230,9 +225,16 @@ export default function CardsClient({ session, initialCards, transactions = [] }
             >
               <Lucide.ArrowLeft className="h-5 w-5" />
             </button>
-            <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-semibold tracking-tight text-surface-900 dark:text-surface-100">
+                {isBRL ? 'Cartões' : 'Cards'}
+              </h1>
+              <p className="hidden text-xs text-surface-500 dark:text-surface-400 sm:block">
+                {isBRL ? 'Gestão de cartões e limites' : 'Card and limit management'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
               {isBRL ? `Olá` : `Hi`}, {session.name}
             </span>
@@ -240,8 +242,18 @@ export default function CardsClient({ session, initialCards, transactions = [] }
             {/* Notification bell */}
             <NotificationDropdown transactions={transactions} cards={cards} isBRL={isBRL} />
 
-            <button onClick={handleLogout} className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors">
+            <button
+              onClick={handleLogout}
+              className="hidden text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200 sm:inline"
+            >
               {t('common.signOut')}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 sm:hidden"
+              aria-label={t('common.signOut')}
+            >
+              <Lucide.LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>

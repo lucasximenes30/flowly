@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getCardsByUser } from '@/services/card.service'
 import { getTransactionsByUser } from '@/services/transaction.service'
 import CardsClient from './CardsClient'
+
+export const metadata: Metadata = {
+  title: 'Cartões',
+}
 
 export default async function CardsPage() {
   const session = await getSession()

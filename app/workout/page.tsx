@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getLocalToday } from '@/lib/dateUtils'
@@ -6,6 +7,10 @@ import { getWorkoutDaysByPlan } from '@/services/workoutDay.service'
 import { getWorkoutDayExercisesByPlan } from '@/services/workoutDayExercise.service'
 import { getWorkoutDayAssignmentByDate } from '@/services/workoutDayAssignment.service'
 import WorkoutClient from './WorkoutClient'
+
+export const metadata: Metadata = {
+  title: 'Treino',
+}
 
 export default async function WorkoutPage() {
   const session = await getSession()

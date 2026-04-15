@@ -164,11 +164,6 @@ export default function HabitsClient({
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Document title
-  useEffect(() => {
-    document.title = 'Hábitos | Flowly'
-  }, [])
-
   // ── Helpers ──
   const isChecked = useCallback(
     (habitId: string, date: string) =>
@@ -378,19 +373,32 @@ export default function HabitsClient({
       {/* ── Header ── */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <div>
-            <h1 className="text-base font-bold text-surface-900 dark:text-surface-100 tracking-tight">Hábitos</h1>
-            <p className="text-xs text-surface-500 dark:text-surface-400 hidden sm:block">Construa uma rotina consistente</p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold tracking-tight text-surface-900 dark:text-surface-100">
+                {isBRL ? 'Hábitos' : 'Habits'}
+              </h1>
+              <p className="mt-0.5 text-[13px] leading-5 text-surface-600 dark:text-surface-300">
+                {isBRL ? 'Construa uma rotina consistente' : 'Build a consistent routine'}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
-              Olá, {session.name}
+              {isBRL ? 'Olá' : 'Hi'}, {session.name}
             </span>
             <button
               onClick={handleLogout}
-              className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors"
+              className="hidden text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200 sm:inline"
             >
-              Sair
+              {isBRL ? 'Sair' : 'Sign out'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 sm:hidden"
+              aria-label={isBRL ? 'Sair' : 'Sign out'}
+            >
+              <Lucide.LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>

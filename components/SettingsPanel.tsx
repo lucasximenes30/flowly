@@ -126,7 +126,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
       }
       setNameMessage(t('settings.nameUpdated'))
       setNewName('')
-      window.dispatchEvent(new CustomEvent('flowly:nameUpdated', { detail: newName.trim() }))
+      window.dispatchEvent(new CustomEvent('vynta:nameUpdated', { detail: newName.trim() }))
       router.refresh()
     } catch {
       setNameMessage('Erro de rede')
@@ -566,7 +566,7 @@ function DangerZoneCard({
         className="w-full rounded-xl border border-red-300 dark:border-red-800/50 bg-red-100 dark:bg-red-950/30 px-4 py-3 text-sm font-semibold text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/30 transition-colors"
         onClick={() => {
           // Trigger dashboard delete flow via a custom event
-          window.dispatchEvent(new CustomEvent('flowly:deleteAccount'))
+          window.dispatchEvent(new CustomEvent('vynta:deleteAccount'))
         }}
       >
         {t('settings.deleteAccount')}

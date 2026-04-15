@@ -6,3 +6,7 @@ node_modules/
 out/
 dist/
 .cache/
+.agents
+.claude
+.qwen
+.idea/
