@@ -76,17 +76,17 @@ export default function LandingPage() {
           <div className="lg:col-span-5 space-y-8 text-left">
             <ScrollReveal delay={0.1}>
               <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-md">
-                O Fim da Procrastinação
+                O seu sistema pessoal
               </span>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <h1 className="font-display text-5xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-tighter text-white leading-[1.05]">
-                Você não precisa <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400">viver perdido</span> todos os dias.
+                Assuma o controle da sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400">rotina.</span>
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[50ch] font-light">
-                O Vynta é o único sistema premium que conecta sua vida financeira, treinos e rotinas diárias. Pare de perder dinheiro e tempo com a falta de organização e controle.
+                O Vynta centraliza sua gestão financeira, fortalece seus bons hábitos diários e, como bônus, organiza seus treinos. Pare de perder energia usando diversos aplicativos desconexos.
               </p>
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
@@ -116,44 +116,44 @@ export default function LandingPage() {
         <section className="py-32 border-t border-white/5">
           <div className="max-w-5xl mx-auto space-y-16">
             <ScrollReveal>
-              <div className="text-center">
-                <span className="inline-block rounded-full px-4 py-1.5 mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs uppercase tracking-[0.2em] font-bold">Por que você trava?</span>
-                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl tracking-tight font-semibold text-white max-w-3xl mx-auto">
-                  A desorganização está destruindo o seu potencial silenciosamente.
+              <div className="text-center px-4">
+                <span className="inline-block rounded-full px-4 py-1.5 mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs uppercase tracking-[0.2em] font-bold">A raiz do problema</span>
+                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl tracking-tight font-semibold text-white max-w-3xl mx-auto leading-tight">
+                  Você não precisa de mais motivação. Precisa de direção.
                 </h2>
               </div>
             </ScrollReveal>
             
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-10">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-10 px-4 md:px-0">
               <ScrollReveal delay={0.1} className="md:col-span-7">
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 md:p-12 space-y-6 flex flex-col justify-between h-full">
-                  <LayoutDashboard className="w-10 h-10 text-rose-400" strokeWidth={1.5} />
+                <div className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors duration-500 rounded-[2rem] p-8 md:p-12 space-y-6 flex flex-col justify-between h-full group">
+                  <LayoutDashboard className="w-10 h-10 text-rose-400 group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
                   <div className="space-y-4">
-                    <h3 className="text-2xl font-bold text-white">O peso invisível do caos</h3>
+                    <h3 className="text-2xl font-bold text-white">O caos de 10 apps diferentes</h3>
                     <p className="text-surface-400 text-lg leading-relaxed max-w-sm font-light">
-                      Quando suas obrigações estão espalhadas em dezenas de cadernos e apps soltos, você perde horas tentando decidir o que fazer. O resultado? Fadiga mental aguda.
+                      Anotações perdidas e planilhas confusas. Quando sua vida está espalhada, você perde a vontade de se organizar antes mesmo de começar.
                     </p>
                   </div>
                 </div>
               </ScrollReveal>
               <ScrollReveal delay={0.2} className="md:col-span-5">
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 md:p-12 space-y-6 flex flex-col justify-between h-full">
-                  <Target className="w-10 h-10 text-amber-400" strokeWidth={1.5} />
+                <div className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors duration-500 rounded-[2rem] p-8 md:p-12 space-y-6 flex flex-col justify-between h-full group">
+                  <Target className="w-10 h-10 text-amber-400 group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
                   <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-white">Procrastinação Oculta</h3>
+                    <h3 className="text-xl font-bold text-white">Problemas de constância</h3>
                     <p className="text-surface-400 leading-relaxed font-light">
-                      Você jura que amanhã será diferente. Mas sem um sistema limpo te cobrando progresso diário, você se engana e desiste.
+                      É fácil fazer o certo por 3 dias e parar. Sem um histórico simples na palma da mão, desistir vira o padrão.
                     </p>
                   </div>
                 </div>
               </ScrollReveal>
               <ScrollReveal delay={0.3} className="md:col-span-12">
-                <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 md:p-12 md:py-16 flex flex-col md:flex-row items-start md:items-center gap-10">
+                <div className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors duration-500 rounded-[2rem] p-8 md:p-12 md:py-16 flex flex-col md:flex-row items-start md:items-center gap-10 group">
                   <div className="flex-1 space-y-4">
-                    <Activity className="w-10 h-10 text-emerald-400" strokeWidth={1.5} />
-                    <h3 className="text-3xl font-bold text-white">Sangramento Financeiro</h3>
+                    <Activity className="w-10 h-10 text-emerald-400 group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
+                    <h3 className="text-3xl font-bold text-white">Descontrole Financeiro</h3>
                     <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-2xl font-light">
-                      Gastos invisíveis estão devorando seu suor. Planilhas de Excel e anotações no celular morrem sempre na segunda semana. Você trabalha no escuro e a conta não bate no fim do mês.
+                      Não saber para onde o dinheiro foi gera estresse constante. Sem clareza rápida, você não prevê gastos mensais e vive tentando corrigir surpresas.
                     </p>
                   </div>
                 </div>
@@ -165,46 +165,46 @@ export default function LandingPage() {
         {/* Solution Section */}
         <section id="solucao" className="py-24 md:py-32">
           <ScrollReveal>
-            <div className="max-w-4xl mx-auto text-center space-y-10">
-              <h2 className="font-display text-5xl md:text-7xl font-semibold tracking-tighter text-white">
-                O Fim do Piloto Automático.
+            <div className="max-w-4xl mx-auto text-center space-y-8 md:space-y-10 px-4">
+              <h2 className="font-display text-4xl md:text-5xl lg:text-7xl font-semibold tracking-tighter text-white">
+                O fim da desorganização.
               </h2>
-              <p className="text-xl md:text-2xl text-surface-400 leading-relaxed font-light">
-                O segredo não está na força de vontade, está no ambiente perfeito. Substitua sua ansiedade por visibilidade total sobre de que sua vida é feita.
+              <p className="text-lg md:text-xl lg:text-2xl text-surface-400 leading-relaxed font-light">
+                Uma única plataforma intuitiva para gerenciar seu dinheiro, manter seus bons hábitos em dia e ter controle da sua rotina.
               </p>
             </div>
           </ScrollReveal>
         </section>
 
-        {/* How It Works Section (New CRO Addition) */}
-        <section className="py-24 border-t border-white/5 space-y-16">
+        {/* How It Works Section */}
+        <section className="py-20 md:py-24 border-t border-white/5 space-y-12 md:space-y-16">
           <ScrollReveal>
-             <div className="text-center">
-                <span className="inline-block rounded-full px-4 py-1.5 mb-6 bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs uppercase tracking-[0.2em] font-bold">A Lógica</span>
-                <h2 className="font-display text-4xl md:text-5xl font-semibold text-white tracking-tighter">O método infalível, em 3 passos.</h2>
+             <div className="text-center px-4">
+                <span className="inline-block rounded-full px-4 py-1.5 mb-6 bg-brand-500/10 border border-brand-500/20 text-brand-300 text-xs uppercase tracking-[0.2em] font-bold">Como funciona</span>
+                <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-semibold text-white tracking-tighter">Sua vida em 3 pilares.</h2>
              </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-6xl mx-auto px-4 lg:px-0">
              <ScrollReveal delay={0.1} className="h-full">
-                 <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 text-center space-y-6 h-full flex flex-col items-center">
+                 <div className="bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-white/5 hover:border-white/10 rounded-[2rem] p-8 text-center space-y-6 h-full flex flex-col items-center">
                     <div className="w-16 h-16 rounded-full bg-brand-900/40 text-brand-400 font-display text-2xl font-bold flex items-center justify-center border border-brand-500/20 shadow-lg shadow-brand-500/10">1</div>
-                    <h4 className="text-xl font-bold text-white">Organize sua vida</h4>
-                    <p className="text-surface-400 leading-relaxed font-light">Centralize seus contatos, dinheiro e hábitos num único ecossistema desenhado para aliviar rapidamente sua carga mental.</p>
+                    <h4 className="text-xl font-bold text-white">Finanças Claras</h4>
+                    <p className="text-surface-400 leading-relaxed font-light text-sm md:text-base">Mapeie toda sua entrada e saída de dinheiro em segundos. Entenda seus gastos com painéis fáceis de ler e agir.</p>
                  </div>
              </ScrollReveal>
              <ScrollReveal delay={0.2} className="h-full">
-                 <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 text-center space-y-6 h-full flex flex-col items-center">
+                 <div className="bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-white/5 hover:border-white/10 rounded-[2rem] p-8 text-center space-y-6 h-full flex flex-col items-center">
                     <div className="w-16 h-16 rounded-full bg-brand-900/40 text-brand-400 font-display text-2xl font-bold flex items-center justify-center border border-brand-500/20 shadow-lg shadow-brand-500/10">2</div>
-                    <h4 className="text-xl font-bold text-white">Acompanhe sua evolução</h4>
-                    <p className="text-surface-400 leading-relaxed font-light">Deixe de lado suposições. Alimente seus dias e veja gráficos incisivos provarem cada pequeno esforço que você faz valer a pena.</p>
+                    <h4 className="text-xl font-bold text-white">Hábitos Diários</h4>
+                    <p className="text-surface-400 leading-relaxed font-light text-sm md:text-base">Crie uma lista simples com tarefas cruciais. Preencha todo dia e veja a sua constância se tornando real.</p>
                  </div>
              </ScrollReveal>
              <ScrollReveal delay={0.3} className="h-full">
-                 <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 text-center space-y-6 h-full flex flex-col items-center">
+                 <div className="bg-white/[0.02] hover:bg-white/[0.04] transition-colors border border-white/5 hover:border-white/10 rounded-[2rem] p-8 text-center space-y-6 h-full flex flex-col items-center">
                     <div className="w-16 h-16 rounded-full bg-brand-900/40 text-brand-400 font-display text-2xl font-bold flex items-center justify-center border border-brand-500/20 shadow-lg shadow-brand-500/10">3</div>
-                    <h4 className="text-xl font-bold text-white">Tenha controle absoluto</h4>
-                    <p className="text-surface-400 leading-relaxed font-light">A sensação invencível de nunca ser surpreendido por surpresas ruins. Respire fundo: sua vida está mapeada com domínio absoluto.</p>
+                    <h4 className="text-xl font-bold text-white">Treinos (Módulo Extra)</h4>
+                    <p className="text-surface-400 leading-relaxed font-light text-sm md:text-base">Gosta de treinar? Marque o peso atual, séries e repetições de forma prática sem depender de fichas de papel.</p>
                  </div>
              </ScrollReveal>
           </div>
@@ -214,50 +214,50 @@ export default function LandingPage() {
         <section className="py-24 space-y-32 md:space-y-48">
           
           {/* Controle Financeiro */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
             <div className="space-y-6 order-2 lg:order-1">
               <SectionHeading 
                 eyebrow="Controle Financeiro" 
-                title="Pare de sofrer com planilhas frustrantes." 
+                title="Decida o que fazer com seu dinheiro." 
               />
               <ScrollReveal delay={0.3}>
-                <p className="text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  A ansiedade do fim do mês desaparece quando você enxerga claramente cada centavo gasto em gráficos premium. Suas metas financeiras finalmente têm uma data exata de conclusão.
+                <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
+                  A tranquilidade no fim do mês vem de ver seus ganhos e gastos de forma organizada. Chega de somar tudo na calculadora e terminar confuso.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Tome decisões de compra com 100% de clareza', 'Categorização veloz em menos de 5 segundos', 'Monitoramento da sua evolução patrimonial'].map((feature, i) => (
+                  {['Tome decisões de compra com segurança', 'Adicione gastos rapidamente do celular', 'Acompanhe seu progresso mês a mês'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckCircle2 className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
-                      <span className="text-lg">{feature}</span>
+                      <span className="text-base md:text-lg">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </ScrollReveal>
             </div>
-            <div className="relative order-1 lg:order-2 w-full">
+            <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
               <BezelImage src="/images/relatorios.png" alt="Controle Financeiro Vynta" />
             </div>
           </div>
 
           {/* Hábitos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-            <div className="relative w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
+            <div className="relative w-full max-w-md md:max-w-full mx-auto">
               <BezelImage src="/images/habitos.png" alt="Gestão de Hábitos Vynta" />
             </div>
             <div className="space-y-6">
               <SectionHeading 
-                eyebrow="Hábitos Irrefutáveis" 
-                title="Chega de depender apenas da motivação." 
+                eyebrow="Gestão de Hábitos" 
+                title="Mantenha o foco todos os dias." 
               />
               <ScrollReveal delay={0.3}>
-                <p className="text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  A nossa famosa 'Tabela Verde' muda você por meio do reforço positivo. Visualizar os dias em que você concluiu o que prometeu se torna a sua maior recompensa diária.
+                <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
+                  Acompanhar seu dia a dia é o que constrói a disciplina. Nossa interface visual recompensa instantaneamente cada vez que você avança um pouco.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['A magia dos streaks: Não quer quebrar a corrente', 'Construa uma rotina alinhada ao seu limite', 'Feedback químico de endorfina direto no painel'].map((feature, i) => (
+                  {['Não quebre a corrente: streaks diários', 'Rotina desenhada para sua realidade', 'Dopamina limpa na tabela verde'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckCircle2 className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
-                      <span className="text-lg">{feature}</span>
+                      <span className="text-base md:text-lg">{feature}</span>
                     </li>
                   ))}
                 </ul>
@@ -265,28 +265,28 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Treinos */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+          {/* Treinos (Optional Addon) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
             <div className="space-y-6 order-2 lg:order-1">
               <SectionHeading 
-                eyebrow="Treinos Dinâmicos" 
-                title="O seu físico exige dados. Não pressentimentos." 
+                eyebrow="Módulo Opcional" 
+                title="Mais prático que ficha de papel." 
               />
               <ScrollReveal delay={0.3}>
-                <p className="text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Guarde suas planilhas pdf empoeiradas. Registre os treinos diretamente no app durante os intervalos, veja sua carga evoluir e destrave a estética que você vem buscando por anos.
+                <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
+                  Sem complicação. Um extra focado e prático para quem leva o treino a sério. Acompanhe a evolução do seu peso e repetições de forma leve.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Progresso de carga visível para hipertrofia real', 'Fichas em mãos construídas para as academias', 'O histórico da sua disciplina mapeado em volume'].map((feature, i) => (
+                  {['Guarde qual carga você usou por último', 'Otimizado para usar enquanto descansa', 'Visualize seu corpo mudando na prática'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckCircle2 className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
-                      <span className="text-lg">{feature}</span>
+                      <span className="text-base md:text-lg">{feature}</span>
                     </li>
                   ))}
                 </ul>
               </ScrollReveal>
             </div>
-            <div className="relative order-1 lg:order-2 w-full">
+            <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
               <BezelImage src="/images/treino.png" alt="Módulo de Treino Vynta" />
             </div>
           </div>
@@ -321,56 +321,56 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Social Proof Section (Fake Testimonials Optimized) */}
-        <section className="py-32 border-t border-white/5">
+        {/* Social Proof */}
+        <section className="py-24 md:py-32 border-t border-white/5">
            <ScrollReveal>
-             <div className="text-center mb-20 max-w-3xl mx-auto space-y-6">
-                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tighter">Mentes que pararam de desperdiçar os próprios dias.</h2>
+             <div className="text-center mb-16 md:mb-20 max-w-3xl mx-auto space-y-6 px-4">
+                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tighter">Feito para pessoas reais.</h2>
              </div>
            </ScrollReveal>
            
-           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
+           <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 px-4 md:px-0">
               <ScrollReveal delay={0.1} className="md:col-span-4">
-                <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-10 flex flex-col justify-between space-y-12 shrink-0 h-full">
-                    <p className="text-surface-300 leading-relaxed text-lg font-light">"Em menos de 2 semanas de uso direto, eu parei de esquecer minhas contas e de falhar absurdamente nos treinos. Minha mente ficou tão leve que observei a minha produtividade dobrar. O Vynta limpou completamente o lixo mental da minha rotina."</p>
+                <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 md:p-10 flex flex-col justify-between space-y-8 h-full">
+                    <p className="text-surface-300 leading-relaxed text-base md:text-lg font-light">"Em curtas duas semanas eu parei de esquecer as contas e comecei a ter constância na academia. É muito mais leve colocar tudo no Vynta do que tentar lembrar de cabeça."</p>
                     <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-full bg-brand-900 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                          <span className="text-brand-300 font-bold text-lg">M</span>
+                        <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-brand-900 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                          <span className="text-brand-300 font-bold text-sm md:text-lg">M</span>
                         </div>
                         <div>
-                          <p className="font-bold text-white text-[1.05rem]">Murilo Ramos</p>
-                          <p className="text-surface-500 text-sm">Desenvolvedor Back-end</p>
+                          <p className="font-bold text-white text-sm md:text-[1.05rem]">Murilo R.</p>
+                          <p className="text-surface-500 text-xs md:text-sm">Desenvolvedor Back-end</p>
                         </div>
                     </div>
                 </div>
               </ScrollReveal>
               <ScrollReveal delay={0.2} className="md:col-span-8">
-                <div className="bg-white/[0.04] border border-white/10 rounded-[2rem] p-10 md:p-14 flex flex-col justify-between space-y-12 h-full">
-                    <p className="text-surface-200 leading-relaxed text-xl md:text-2xl font-light">"Eu gastava, no mínimo, várias horas confusas cruzando gastos no Notion com apps gratuitos no fim de todo mês e tudo ficava errado. Hoje, eu finalizo meu fechamento em 5 minutos semanais. Ver os gráficos do meu dinheiro subindo junto com minha assiduidade na academia traz o melhor sentimento de controle e dopamina limpa."</p>
+                <div className="bg-white/[0.04] border border-white/10 rounded-[2rem] p-8 md:p-12 flex flex-col justify-between space-y-8 h-full">
+                    <p className="text-surface-200 leading-relaxed text-lg md:text-xl font-light">"Eu perdia horas tentando alinhar meus gastos em planilhas todos os fins de semana e quase sempre as contas não batiam. Agora, adiciono tudo pelo celular na hora e levo 5 minutos para revisar a semana inteira. Simplesmente funciona e alivia a mente."</p>
                     <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-purple-900 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                          <span className="text-purple-300 font-bold text-xl">L</span>
+                        <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-purple-900 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                          <span className="text-purple-300 font-bold text-base md:text-xl">L</span>
                         </div>
                         <div>
-                          <p className="font-bold text-white text-[1.05rem]">Luiza Machado</p>
-                          <p className="text-surface-400 text-sm">Product Manager</p>
+                          <p className="font-bold text-white text-sm md:text-[1.05rem]">Luiza M.</p>
+                          <p className="text-surface-400 text-xs md:text-sm">Product Manager</p>
                         </div>
                     </div>
                 </div>
               </ScrollReveal>
               
               <ScrollReveal delay={0.3} className="md:col-span-12">
-                <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-10 flex flex-col md:flex-row justify-between md:items-center gap-10">
-                  <p className="text-surface-300 leading-relaxed text-lg md:text-xl md:max-w-4xl font-light">
-                    "O simples fato estético de querer 'fechar o dia completando todos os verdes' abrindo a interface impecável do app eliminou por completo minha inclinação crônica à procrastinação destrutiva. O Vynta impõe uma beleza em ser altamente disciplinado que eu não quero nunca mais parar. Literalmente impossível continuar indisciplinado com tanta clareza bem na sua frente todos os dias."
+                <div className="bg-white/[0.02] border border-white/5 rounded-[2rem] p-8 md:p-10 flex flex-col md:flex-row justify-between md:items-center gap-8">
+                  <p className="text-surface-300 leading-relaxed text-base md:text-lg md:max-w-4xl font-light">
+                    "O visual escuro com as tarefas cumpridas em verde dá uma pequena satisfação que me faz abrir o app todo dia. É tão rápido preencher que usar o Vynta já virou parte da rotina, parei de procrastinar no celular de manhã."
                   </p>
                   <div className="flex items-center gap-4 shrink-0">
-                      <div className="w-12 h-12 rounded-full bg-surface-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
-                        <span className="text-surface-300 font-bold text-lg">R</span>
+                      <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-surface-800 border border-white/10 overflow-hidden flex items-center justify-center shrink-0">
+                        <span className="text-surface-300 font-bold text-sm md:text-lg">R</span>
                       </div>
                       <div>
-                        <p className="font-bold text-white text-[1.05rem]">Rafaela Souza</p>
-                        <p className="text-surface-500 text-sm">Investidora de Riscos</p>
+                        <p className="font-bold text-white text-sm md:text-[1.05rem]">Rafaela S.</p>
+                        <p className="text-surface-500 text-xs md:text-sm">Analista de Negócios</p>
                       </div>
                   </div>
                 </div>
@@ -379,37 +379,51 @@ export default function LandingPage() {
         </section>
 
         {/* Objection Handling Section */}
-        <section className="py-24 border-t border-white/5 space-y-16">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="py-20 md:py-24 border-t border-white/5 space-y-12 md:space-y-16">
+          <div className="text-center px-4 max-w-2xl mx-auto mb-12">
+             <h2 className="font-display text-3xl md:text-4xl font-semibold text-white tracking-tighter">Ainda em dúvida?</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4 md:px-0 max-w-5xl mx-auto">
              <ScrollReveal delay={0.1}>
-                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-8 flex flex-col md:flex-row gap-6 items-start h-full hover:bg-white/[0.02] transition-colors">
-                    <Clock className="w-8 h-8 text-brand-400 shrink-0" strokeWidth={1.5} />
-                    <div className="space-y-3">
-                      <h4 className="text-lg font-bold text-white">Comece em exatamente 2 minutos</h4>
-                      <p className="text-surface-400 font-light text-[0.95rem] leading-relaxed">
-                        Um design feito para tirar as fricções em vez de apresentar tutoriais confusos de 30 minutos. Zero complexidade de configuração e painel limpo desde o 1º login.
+                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
+                    <Clock className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
+                    <div className="space-y-2">
+                      <h4 className="text-base md:text-lg font-bold text-white">"Eu não sou muito disciplinado"</h4>
+                      <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
+                        É exatamente para isso que estamos aqui. Você não precisa ser perfeito. O Vynta foca no básico para construir a disciplina de preencher dia após dia.
                       </p>
                     </div>
                  </div>
              </ScrollReveal>
              <ScrollReveal delay={0.2}>
-                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-8 flex flex-col md:flex-row gap-6 items-start h-full hover:bg-white/[0.02] transition-colors">
-                    <CheckSquare className="w-8 h-8 text-brand-400 shrink-0" strokeWidth={1.5} />
-                    <div className="space-y-3">
-                      <h4 className="text-lg font-bold text-white">Você não precisa saber sobre finanças</h4>
-                      <p className="text-surface-400 font-light text-[0.95rem] leading-relaxed">
-                        Você não é obrigado a se tornar um mago do Excel para sair das dores da inflação. Preencha apenas o óbvio. Os gráficos de performance inteligente são processados automaticamente para você.
+                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
+                    <CheckSquare className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
+                    <div className="space-y-2">
+                      <h4 className="text-base md:text-lg font-bold text-white">"Já tentei outros apps e parei"</h4>
+                      <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
+                        A maioria dos aplicativos tenta fazer tudo e complica. Nós removemos as fricções. Com uma interface minimalista e amigável, você resolve seu dia em segundos.
                       </p>
                     </div>
                  </div>
              </ScrollReveal>
              <ScrollReveal delay={0.3}>
-                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-8 flex flex-col md:flex-row gap-6 items-start h-full hover:bg-white/[0.02] transition-colors">
-                    <ThumbsUp className="w-8 h-8 text-brand-400 shrink-0" strokeWidth={1.5} />
-                    <div className="space-y-3">
-                      <h4 className="text-lg font-bold text-white">Absolutamente nenhum risco invisível</h4>
-                      <p className="text-surface-400 font-light text-[0.95rem] leading-relaxed">
-                        Sem taxas falsas e não existe fidelidade. Se os primeiros 14 dias não alavancarem consideravelmente o senso estrito do seu foco, saia livremente com um botão sem complicações ou telefonemas.
+                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
+                    <Activity className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
+                    <div className="space-y-2">
+                      <h4 className="text-base md:text-lg font-bold text-white">"Não entendo nada de finanças"</h4>
+                      <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
+                        Não é necessário. Basta adicionar o que você ganhou e o que gastou. Nossos painéis de performance são processados automaticamente, mostrando apenas o óbvio e útil.
+                      </p>
+                    </div>
+                 </div>
+             </ScrollReveal>
+             <ScrollReveal delay={0.4}>
+                 <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
+                    <ThumbsUp className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
+                    <div className="space-y-2">
+                      <h4 className="text-base md:text-lg font-bold text-white">"Não quero adicionar mais um custo"</h4>
+                      <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
+                        O Vynta resolve justamente isso. Nossa primeira meta é ajudar a identificar e cortar vazamentos. No primeiro mês, a assinatura se paga com a economia que você não via.
                       </p>
                     </div>
                  </div>
@@ -418,45 +432,54 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section - Highly Optimized */}
-        <section className="py-24">
+        <section className="py-20 md:py-24 px-4 md:px-0">
           <ScrollReveal>
-            <div className="max-w-4xl mx-auto rounded-[3rem] bg-gradient-to-b from-brand-900/20 to-[#050505] p-2 ring-1 ring-white/10 shadow-[0_40px_80px_-20px_rgba(48,64,235,0.2)] relative overflow-hidden">
-               <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-500/20 rounded-full blur-[120px] pointer-events-none" />
-               <div className="relative rounded-[calc(3rem-0.5rem)] bg-[#050505]/80 backdrop-blur-3xl border border-white/5 p-12 md:p-20 flex flex-col md:flex-row items-center justify-between gap-16">
+            <div className="max-w-5xl mx-auto rounded-[2rem] md:rounded-[3rem] bg-gradient-to-b from-brand-900/20 to-[#050505] p-1.5 md:p-2 ring-1 ring-white/10 shadow-[0_40px_80px_-20px_rgba(48,64,235,0.2)] relative overflow-hidden group">
+               <div className="absolute top-0 right-0 w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-brand-500/20 rounded-full blur-[100px] md:blur-[120px] pointer-events-none group-hover:bg-brand-500/30 transition-colors duration-1000" />
+               <div className="relative rounded-[calc(2rem-0.375rem)] md:rounded-[calc(3rem-0.5rem)] bg-[#050505]/80 backdrop-blur-3xl border border-white/5 p-8 md:p-12 lg:p-20 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16">
                   
-                  <div className="flex-1 space-y-8 text-center md:text-left">
+                  <div className="flex-1 space-y-6 md:space-y-8 text-center lg:text-left w-full">
                     <div className="space-y-4">
-                       <span className="inline-block rounded-full px-4 py-2 bg-brand-500/10 text-brand-300 border border-brand-500/20 text-xs font-bold tracking-widest uppercase">
-                         Acesso Completo. Sem Pegadinhas.
+                       <span className="inline-block rounded-full px-4 py-1.5 md:py-2 bg-brand-500/10 text-brand-300 border border-brand-500/20 text-xs font-bold tracking-widest uppercase">
+                         Plano Base
                        </span>
-                       <h2 className="font-display text-5xl md:text-7xl font-semibold text-white tracking-tighter">R$ 19,90<span className="text-2xl text-surface-500 font-normal tracking-normal">/mês</span></h2>
-                       <div className="space-y-1">
-                          <p className="text-brand-300 font-semibold text-lg pt-1 bg-brand-500/10 inline-block px-3 py-1 rounded-md border border-brand-500/20">Menos de R$ 0,70 por dia.</p>
-                          <p className="text-surface-400 font-medium text-[0.95rem]">Um investimento que paga menos que o valor de uma única pizza por semana, transformando uma vida mal organizada inteira.</p>
+                       <h2 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white tracking-tighter">R$ 19,90<span className="text-xl md:text-2xl text-surface-500 font-normal tracking-normal">/mês</span></h2>
+                       <div className="space-y-2">
+                          <p className="text-brand-300 font-semibold text-base md:text-lg pt-1 bg-brand-500/10 inline-block px-3 py-1 rounded-md border border-brand-500/20">Apenas R$ 0,66 por dia.</p>
+                          <p className="text-surface-400 font-medium text-sm md:text-base leading-relaxed max-w-sm mx-auto lg:mx-0">O foco principal: colocar sua vida financeira e sua consistência diária nos eixos de vez.</p>
                        </div>
                     </div>
                     
-                    <div className="pt-4 border-t border-white/10">
-                      <ul className="space-y-4 mt-8">
-                        {['Painel Financeiro Automatizado e Seguro', 'Grid Tracker Intuitivo que bloqueia a procrastinação', 'Diário de Progressão Lógica de Treinos e Fisiologia', 'Aconselhamento por Relatórios Visuais Mensais'].map((item, i) => (
-                            <li key={i} className="flex items-center justify-center md:justify-start gap-4 text-surface-200">
-                              <CheckCircle2 className="w-5 h-5 text-brand-400 shrink-0" strokeWidth={2} />
-                              <span className="font-medium text-[1.05rem]">{item}</span>
+                    <div className="pt-6 border-t border-white/10 w-full text-left">
+                      <p className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-4 mx-auto lg:mx-0 text-center lg:text-left">O que está incluído:</p>
+                      <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8 max-w-sm mx-auto lg:mx-0">
+                        {['Controle Financeiro Completo', 'Gestão Visual de Hábitos', 'Sincronização instantânea na nuvem', 'Estatísticas mensais em tempo real'].map((item, i) => (
+                            <li key={i} className="flex items-start gap-3 text-surface-200">
+                              <CheckCircle2 className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" strokeWidth={2} />
+                              <span className="font-medium text-sm md:text-[1.05rem] leading-snug">{item}</span>
                             </li>
                         ))}
                       </ul>
+                      <div className="bg-white/[0.03] border border-white/5 rounded-xl p-4 md:p-5 flex items-start gap-3 backdrop-blur-sm mx-auto lg:mx-0 max-w-sm transform hover:scale-[1.02] transition-transform">
+                         <Target className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" strokeWidth={2} />
+                         <div>
+                            <p className="font-bold text-white text-sm mb-1">Módulo de Treinos (Opcional)</p>
+                            <p className="text-xs text-surface-400 font-light leading-relaxed">Você pode adicionar este módulo separadamente no checkout, caso faça sentido para sua rotina na academia.</p>
+                         </div>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="w-full md:w-auto shrink-0 flex flex-col gap-6 pt-8 md:pt-0">
+                  <div className="w-full lg:w-auto shrink-0 flex flex-col gap-6 pt-4 lg:pt-0">
                     <MagneticButton href="/register" intensity={0.4}>
-                      <div className="group w-full md:w-[280px] flex justify-between items-center rounded-full bg-white text-[#050505] px-8 py-5 font-bold text-[1.05rem] shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.4)]">
-                        <span>Começar minha transformação</span>
-                        <span className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center ml-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
-                           <ArrowRight className="w-5 h-5 text-black" strokeWidth={2.5} />
+                      <div className="group w-full lg:w-[300px] flex justify-between items-center rounded-full bg-white text-[#050505] px-6 md:px-8 py-4 md:py-5 font-bold text-base md:text-[1.05rem] shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.4)] transition-all">
+                        <span>Quero assinar</span>
+                        <span className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/5 flex items-center justify-center ml-2 md:ml-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
+                           <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-black" strokeWidth={2.5} />
                         </span>
                       </div>
                     </MagneticButton>
+                    <p className="text-xs text-center text-surface-500 font-medium bg-white/[0.02] py-2 rounded-full border border-white/5">Cancele quando quiser, sem burocracia.</p>
                   </div>
                </div>
             </div>
