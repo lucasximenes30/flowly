@@ -55,24 +55,24 @@ export async function POST(req: Request) {
       eventLower.includes('subscription.renewed') ||
       eventLower.includes('subscription.created')
     ) {
-      targetStatus = 'ACTIVE'
+      targetStatus = UserSubscriptionStatus.ACTIVE
     } else if (
       eventLower.includes('payment.refused') || 
       eventLower.includes('renewal.refused')
     ) {
-      targetStatus = 'REFUSED' // Or PAST_DUE
+      targetStatus = UserSubscriptionStatus.REFUSED // Or PAST_DUE
     } else if (
       eventLower.includes('subscription.canceled') || 
       eventLower.includes('subscription.cancelled')
     ) {
-      targetStatus = 'CANCELED'
+      targetStatus = UserSubscriptionStatus.CANCELED
     } else if (
       eventLower.includes('payment.generated') ||
       eventLower.includes('payment.pending')
     ) {
-      targetStatus = 'PENDING'
+      targetStatus = UserSubscriptionStatus.PENDING
     } else if (eventLower.includes('subscription.past_due')) {
-        targetStatus = 'PAST_DUE'
+        targetStatus = UserSubscriptionStatus.PAST_DUE
     }
 
     // Attempt to detect if the "workout" extra module was purchased.
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     if (!user) {
       // If user does not exist but payment is approved, we MUST create a skeleton user 
       // so they can claim their account (e.g. via "Forgot Password").
-      if (targetStatus === 'ACTIVE') {
+      if (targetStatus === UserSubscriptionStatus.ACTIVE) {
         const randomPassword = crypto.randomBytes(16).toString('hex')
         const hashedPassword = await bcrypt.hash(randomPassword, 10)
         
@@ -96,7 +96,7 @@ export async function POST(req: Request) {
             email,
             name: data.customer?.name || data.user?.name || data.name || 'Usuário Vynta',
             password: hashedPassword,
-            subscriptionStatus: 'ACTIVE',
+            subscriptionStatus: UserSubscriptionStatus.ACTIVE,
             billingProvider: 'cakto',
             hasWorkoutModule,
             caktoOrderId: orderId,
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
             // Defaulting hasWorkoutModule to true only if detected in *this* payload. 
             // Might need adjustments if partial payloads overwrite this.
             ...(hasWorkoutModule ? { hasWorkoutModule: true } : {}),
-            ...(targetStatus === 'ACTIVE' ? { billingApprovedAt: new Date() } : {})
+            ...(targetStatus === UserSubscriptionStatus.ACTIVE ? { billingApprovedAt: new Date() } : {})
           }
         })
       }
