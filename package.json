@@ -1,5 +1,5 @@
 {
-  "name": "flowly",
+  "name": "vynta",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -15,12 +15,15 @@
     "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^6.5.0",
     "bcryptjs": "^3.0.2",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
     "jose": "^5.9.0",
     "lucide-react": "^1.7.0",
     "next": "^15.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "recharts": "^3.8.1",
+    "tailwind-merge": "^3.5.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {

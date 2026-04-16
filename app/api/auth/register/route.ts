@@ -19,6 +19,8 @@ export async function POST(request: NextRequest) {
       userId: result.user.id,
       email: result.user.email,
       name: result.user.name,
+      subscriptionStatus: result.user.subscriptionStatus,
+      hasWorkoutModule: result.user.hasWorkoutModule,
     })
 
     return NextResponse.json({ success: true, user: result.user })

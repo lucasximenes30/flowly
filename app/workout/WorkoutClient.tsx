@@ -475,10 +475,6 @@ export default function WorkoutClient({
   const [reorderingDayExerciseId, setReorderingDayExerciseId] = useState<string | null>(null)
 
   useEffect(() => {
-    document.title = locale === 'pt-BR' ? 'Treino | Flowly' : 'Workout | Flowly'
-  }, [locale])
-
-  useEffect(() => {
     if (typeof window === 'undefined') return
 
     const viewport = window.visualViewport
@@ -1826,26 +1822,35 @@ export default function WorkoutClient({
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300 reports-page-enter">
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <div>
-            <h1 className="text-base font-bold tracking-tight text-surface-900 dark:text-surface-100">
-              {locale === 'pt-BR' ? 'Treino' : 'Workout'}
-            </h1>
-            <p className="hidden text-xs text-surface-500 dark:text-surface-400 sm:block">
-              {locale === 'pt-BR'
-                ? 'Organize seus treinos e acompanhe sua evolucao'
-                : 'Organize your workouts and track progress'}
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-bold tracking-tight text-surface-900 dark:text-surface-100">
+                {locale === 'pt-BR' ? 'Treino' : 'Workout'}
+              </h1>
+              <p className="mt-0.5 text-[13px] leading-5 text-surface-600 dark:text-surface-300">
+                {locale === 'pt-BR'
+                  ? 'Organize seus treinos e acompanhe sua evolucao'
+                  : 'Organize your workouts and track progress'}
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden text-sm text-surface-500 dark:text-surface-400 sm:inline">
               {locale === 'pt-BR' ? 'Ola' : 'Hi'}, {session.name}
             </span>
             <button
               onClick={handleLogout}
-              className="text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200"
+              className="hidden text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200 sm:inline"
             >
               {locale === 'pt-BR' ? 'Sair' : 'Sign out'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 sm:hidden"
+              aria-label={locale === 'pt-BR' ? 'Sair' : 'Sign out'}
+            >
+              <Lucide.LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -1863,7 +1868,7 @@ export default function WorkoutClient({
             <h2 className="text-2xl font-semibold tracking-tight text-surface-900 dark:text-surface-100 sm:text-3xl">
               {locale === 'pt-BR' ? 'Treino' : 'Workout'}
             </h2>
-            <p className="mt-3 max-w-md text-sm leading-relaxed text-surface-500 dark:text-surface-400 sm:text-base">
+            <p className="mt-3 max-w-md text-[15px] leading-relaxed text-surface-600 dark:text-surface-300 sm:text-base">
               {locale === 'pt-BR'
                 ? 'Organize seus treinos e acompanhe sua evolucao'
                 : 'Organize your workouts and track progress'}

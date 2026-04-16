@@ -1,8 +1,13 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getTransactionsByUser, getUserBalance, getMonthlySummary } from '@/services/transaction.service'
 import { getCardsByUser } from '@/services/card.service'
 import DashboardClient from './DashboardClient'
+
+export const metadata: Metadata = {
+  title: 'Dashboard',
+}
 
 function serializeData(transactions: any[], balance: any, monthly: any) {
   const serializedTransactions = transactions.map((t) => ({

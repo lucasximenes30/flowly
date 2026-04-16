@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
 import { getUserBalance, getMonthSummary, getMonthComparison } from '@/services/transaction.service'
 import ReportsClient from './ReportsClient'
+
+export const metadata: Metadata = {
+  title: 'Relatórios',
+}
 
 function serializeData(balance: any, monthly: any, comparison: any) {
   return {

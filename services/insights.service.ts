@@ -262,7 +262,7 @@ export async function generateAIInsights(input: InsightsInput): Promise<AIInsigh
 
   const savingsRate = input.monthlyIncome > 0 ? ((input.monthlyBalance / input.monthlyIncome) * 100).toFixed(1) : '0'
 
-  const prompt = `You are Flowly AI, a practical personal finance assistant.
+  const prompt = `You are Vynta AI, a practical personal finance assistant.
 
 Output language: ${language === 'pt-BR' ? 'Brazilian Portuguese' : 'English'}.
 

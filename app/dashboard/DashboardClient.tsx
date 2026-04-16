@@ -19,8 +19,8 @@ interface Monthly { income: number; expense: number; balance: number; transactio
 interface Card { id: string; name: string; lastFourDigits: string; dueDay: number; closingDay: number }
 
 // Cache de taxa de câmbio (atualiza a cada 5 min)
-const cacheKey = 'flowly_exchange_rate'
-const cacheTimeKey = 'flowly_exchange_rate_time'
+const cacheKey = 'vynta_exchange_rate'
+const cacheTimeKey = 'vynta_exchange_rate_time'
 let cachedRate: { value: number; time: number } | null = null
 
 interface Props {
@@ -52,13 +52,6 @@ export default function DashboardClient({
 }: Props) {
   const router = useRouter()
   const { t, locale } = useApp()
-
-  // Loading animation
-  const [isLoading, setIsLoading] = useState(true)
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 600)
-    return () => clearTimeout(timer)
-  }, [])
 
   // Exchange rate
   const [rate, setRate] = useState<number>(5.5)
@@ -244,22 +237,6 @@ export default function DashboardClient({
     setFilterCardId('ALL')
   }
 
-  // Update Document Title Dynamically
-  useEffect(() => {
-    if (selectedMonth) {
-      const [year, monthStr] = selectedMonth.split('-')
-      const monthNames = [
-        t('month.january'), t('month.february'), t('month.march'), t('month.april'),
-        t('month.may'), t('month.june'), t('month.july'), t('month.august'),
-        t('month.september'), t('month.october'), t('month.november'), t('month.december')
-      ]
-      const monthName = monthNames[parseInt(monthStr) - 1]
-      document.title = `${monthName} ${year} | ${t('dashboard.title')} | Flowly`
-    } else {
-      document.title = `${t('dashboard.title')} | Flowly`
-    }
-  }, [selectedMonth, t])
-
   // Filter transactions for selected month
   const filteredMonthTransactions = useMemo(() => {
     if (transactions.length === 0) return []
@@ -377,8 +354,8 @@ export default function DashboardClient({
   // Listen for delete account trigger from SettingsPanel
   useEffect(() => {
     const handler = () => setShowDeleteConfirm1(true)
-    window.addEventListener('flowly:deleteAccount', handler)
-    return () => window.removeEventListener('flowly:deleteAccount', handler)
+    window.addEventListener('vynta:deleteAccount', handler)
+    return () => window.removeEventListener('vynta:deleteAccount', handler)
   }, [])
 
   // Listen for name updates from SettingsPanel
@@ -387,8 +364,8 @@ export default function DashboardClient({
       const name = (e as CustomEvent<string>).detail
       setProfileName(name)
     }
-    window.addEventListener('flowly:nameUpdated', handler)
-    return () => window.removeEventListener('flowly:nameUpdated', handler)
+    window.addEventListener('vynta:nameUpdated', handler)
+    return () => window.removeEventListener('vynta:nameUpdated', handler)
   }, [])
 
   const handleLogout = async () => {
@@ -419,28 +396,18 @@ export default function DashboardClient({
     }
   }
 
-  // ── Loading screen ──
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-brand-200 border-t-brand-600 dark:border-brand-800 dark:border-t-brand-400" />
-          <p className="text-sm font-medium text-surface-500 dark:text-surface-400">
-            {isBRL ? 'Carregando...' : 'Loading...'}
-          </p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <>
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 animate-dashboard-fade">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <p className="text-sm font-semibold tracking-wide text-brand-600 dark:text-brand-400">Flowly</p>
-          <div className="flex items-center gap-3">
+          <div className="min-w-0">
+            <h1 className="truncate font-display text-base font-semibold tracking-tight text-surface-900 dark:text-surface-100">
+              Vynta
+            </h1>
+          </div>
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
               {isBRL ? `Olá` : `Hi`}, {profileName}
             </span>
@@ -460,8 +427,18 @@ export default function DashboardClient({
             {/* Notification bell */}
             <NotificationDropdown transactions={transactions} cards={cards} isBRL={isBRL} />
 
-            <button onClick={handleLogout} className="text-sm text-surface-500 dark:text-surface-400 hover:text-surface-800 dark:hover:text-surface-200 transition-colors">
+            <button
+              onClick={handleLogout}
+              className="hidden text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200 sm:inline"
+            >
               {t('common.signOut')}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 sm:hidden"
+              aria-label={t('common.signOut')}
+            >
+              <Lucide.LogOut className="h-4 w-4" />
             </button>
           </div>
         </div>
@@ -479,7 +456,7 @@ export default function DashboardClient({
               <div className="space-y-1">
                 <p className="text-sm/6 font-medium text-white/70">{t('dashboard.currentBalance')}</p>
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <p className="text-3xl sm:text-4xl font-semibold tracking-tight">{formatCurrency(balance.balance)}</p>
+                  <p className="text-4xl sm:text-5xl font-bold tracking-[-0.02em] leading-none">{formatCurrency(balance.balance)}</p>
                   {!isBRL && (
                     <span className="text-sm font-medium text-white/50">
                       ≈ {formatConverted(balance.balance)}

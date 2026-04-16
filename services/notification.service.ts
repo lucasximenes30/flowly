@@ -25,7 +25,7 @@ function buildNotificationRowId(userId: string, notificationKey: string): string
     .digest('hex')
     .slice(0, 32)
 
-  return `flowly-notif-${digest}`
+  return `vynta-notif-${digest}`
 }
 
 function parseStoredPayload(message: string): StoredNotificationPayload | null {

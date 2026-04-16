@@ -15,6 +15,12 @@ model User {
   plan                  UserPlan               @default(FREE)
   subscriptionStatus    UserSubscriptionStatus @default(INACTIVE)
   subscriptionId        String?
+  billingProvider       String?                @default("cakto")
+  hasWorkoutModule      Boolean                @default(false)
+  caktoOrderId          String?
+  caktoSubscriptionId   String?
+  billingEmail          String?
+  billingApprovedAt     DateTime?
   sex                   UserSex?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
@@ -355,6 +361,9 @@ enum UserSubscriptionStatus {
   ACTIVE
   INACTIVE
   CANCELED
+  PENDING
+  REFUSED
+  PAST_DUE
 }
 
 enum TransactionType {
