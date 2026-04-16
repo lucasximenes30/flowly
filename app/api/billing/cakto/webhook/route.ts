@@ -10,9 +10,21 @@ export async function POST(req: Request) {
   try {
     const rawBody = await req.text()
     
-    // Basic verification stub (could check headers like x-cakto-signature in future if Cakto provides it)
-    const token = req.headers.get('x-cakto-token') || req.headers.get('authorization')?.split(' ')[1]
+    // Sometimes Cakto sends a token in headers or query. We will attempt various locations.
+    const token = req.headers.get('x-cakto-token') 
+      || req.headers.get('authorization')?.split(' ')[1] 
+      || req.headers.get('x-cakto-signature');
+
+    // Safety log for debugging payloads during setup. Remove sensitive PII if needed.
+    if (process.env.NODE_ENV === 'development') {
+      console.log('--- CAKTO WEBHOOK TEST LOG DE INICIO ---');
+      console.log('Webhook Headers:', Object.fromEntries(req.headers.entries()));
+    }
+
     if (!verifyCaktoWebhookSignature(token)) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Cakto Webhook Warning: Invalid Signature. Denying request due to unmatching secret.');
+      }
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -23,7 +35,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    // Safety log for debugging payloads during setup. Remove sensitive PII if needed.
     if (process.env.NODE_ENV === 'development') {
       console.log('Cakto Webhook Payload:', JSON.stringify(payload, null, 2))
     }
