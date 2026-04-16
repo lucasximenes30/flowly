@@ -4,7 +4,7 @@ export const CAKTO_CONFIG = {
   webhookSecret: process.env.CAKTO_WEBHOOK_SECRET || '',
   checkoutUrl: process.env.CAKTO_CHECKOUT_URL || 'https://pay.cakto.com.br/c2iyui9_851221',
   oauthUrl: 'https://api.cakto.com.br/public_api/token/',
-  apiUrl: 'https://api.cakto.com.br/v1' // Example generic API url
+  apiUrl: 'https://api.cakto.com.br/public_api' // Corrected based on Cakto docs
 }
 
 /**
@@ -72,7 +72,8 @@ export async function getCaktoToken(): Promise<string> {
  */
 export async function caktoFetch(endpoint: string, options: RequestInit = {}) {
   const token = await getCaktoToken();
-  const targetUrl = endpoint.startsWith('http') ? endpoint : `${CAKTO_CONFIG.apiUrl}${endpoint}`;
+  const baseEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
+  const targetUrl = endpoint.startsWith('http') ? endpoint : `${CAKTO_CONFIG.apiUrl}${baseEndpoint}`;
   
   return fetch(targetUrl, {
     ...options,
@@ -82,4 +83,19 @@ export async function caktoFetch(endpoint: string, options: RequestInit = {}) {
       'Accept': 'application/json'
     }
   });
+}
+
+/**
+ * Helper methods for common authenticated endpoints based on /public_api/...
+ */
+export async function getCaktoProduct(productId: string) {
+  return caktoFetch(`/products/${productId}`);
+}
+
+export async function getCaktoOrder(orderId: string) {
+  return caktoFetch(`/orders/${orderId}`);
+}
+
+export async function getCaktoSubscription(subscriptionId: string) {
+  return caktoFetch(`/subscriptions/${subscriptionId}`);
 }
