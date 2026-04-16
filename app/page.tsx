@@ -57,15 +57,17 @@ export default function LandingPage() {
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
         
         {/* Header */}
-        <header className="flex items-center justify-between py-8">
-          <BrandLogo size="md" />
-          <div className="flex justify-end gap-6 items-center">
+        <header className="flex items-center justify-between py-6 md:py-8">
+          <div className="shrink-0">
+             <BrandLogo size="md" />
+          </div>
+          <div className="flex justify-end gap-3 md:gap-6 items-center">
             <Link href="/login" className="text-sm font-semibold text-surface-400 hover:text-white transition-colors duration-300">
-              Acessar Conta
+              Entrar
             </Link>
-            <MagneticButton href="/register" intensity={0.2}>
-               <div className="rounded-full bg-white/10 hover:bg-white/15 border border-white/10 px-6 py-2.5 text-sm font-semibold flex items-center gap-2 text-white transition-colors duration-300">
-                 Quero organizar minha vida
+            <MagneticButton href="https://pay.cakto.com.br/c2iyui9_851221" intensity={0.2}>
+               <div className="hidden sm:flex rounded-full bg-white/10 hover:bg-white/15 border border-white/10 px-6 py-2.5 text-sm font-semibold items-center gap-2 text-white transition-colors duration-300">
+                 Desbloquear acesso
                </div>
             </MagneticButton>
           </div>
@@ -91,16 +93,16 @@ export default function LandingPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <MagneticButton href="/register" intensity={0.4}>
-                  <div className="group w-full sm:w-auto inline-flex justify-between items-center rounded-full bg-white text-[#050505] px-8 py-4 font-bold shadow-lg">
+                <MagneticButton href="https://pay.cakto.com.br/c2iyui9_851221" intensity={0.4}>
+                  <div className="group w-full sm:w-auto inline-flex justify-between items-center rounded-full bg-white text-[#050505] px-6 sm:px-8 py-4 font-bold shadow-lg text-sm sm:text-base">
                     <span>Quero organizar minha vida</span>
-                    <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center ml-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
+                    <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center ml-4 shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
                       <ArrowRight className="w-4 h-4 text-black" strokeWidth={2.5} />
                     </span>
                   </div>
                 </MagneticButton>
                 <MagneticButton href="#solucao" intensity={0.2}>
-                  <div className="w-full sm:w-auto inline-flex items-center justify-center rounded-full px-8 py-4 font-bold text-white bg-transparent border border-white/15 hover:bg-white/5 transition-colors duration-300">
+                  <div className="w-full sm:w-auto inline-flex items-center justify-center rounded-full px-6 sm:px-8 py-4 font-bold text-white bg-transparent border border-white/15 hover:bg-white/5 transition-colors duration-300 text-sm sm:text-base">
                     Como o Vynta resolve isso?
                   </div>
                 </MagneticButton>
@@ -432,7 +434,7 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section - Highly Optimized */}
-        <section className="py-20 md:py-24 px-4 md:px-0">
+        <section id="planos" className="py-20 md:py-24 px-4 md:px-0">
           <ScrollReveal>
             <div className="max-w-5xl mx-auto rounded-[2rem] md:rounded-[3rem] bg-gradient-to-b from-brand-900/20 to-[#050505] p-1.5 md:p-2 ring-1 ring-white/10 shadow-[0_40px_80px_-20px_rgba(48,64,235,0.2)] relative overflow-hidden group">
                <div className="absolute top-0 right-0 w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-brand-500/20 rounded-full blur-[100px] md:blur-[120px] pointer-events-none group-hover:bg-brand-500/30 transition-colors duration-1000" />
@@ -471,10 +473,10 @@ export default function LandingPage() {
                   </div>
 
                   <div className="w-full lg:w-auto shrink-0 flex flex-col gap-6 pt-4 lg:pt-0">
-                    <MagneticButton href="/register" intensity={0.4}>
+                    <MagneticButton href="https://pay.cakto.com.br/c2iyui9_851221" intensity={0.4}>
                       <div className="group w-full lg:w-[300px] flex justify-between items-center rounded-full bg-white text-[#050505] px-6 md:px-8 py-4 md:py-5 font-bold text-base md:text-[1.05rem] shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.4)] transition-all">
                         <span>Quero assinar</span>
-                        <span className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/5 flex items-center justify-center ml-2 md:ml-4 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
+                        <span className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/5 flex items-center justify-center ml-2 md:ml-4 shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
                            <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-black" strokeWidth={2.5} />
                         </span>
                       </div>
@@ -492,10 +494,10 @@ export default function LandingPage() {
               <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-3xl leading-[1.1]">Comece a proteger a coisa mais escassa que você possui: O seu tempo livre.</h2>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <MagneticButton href="/register" intensity={0.3}>
-                <div className="group inline-flex justify-between items-center rounded-full bg-brand-600 text-white px-8 py-4 font-bold text-lg shadow-[0_0_40px_-15px_rgba(48,64,235,0.8)]">
-                  <span className="mr-8">Criar minha rotina agora</span>
-                  <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
+              <MagneticButton href="https://pay.cakto.com.br/c2iyui9_851221" intensity={0.3}>
+                <div className="group inline-flex justify-between items-center rounded-full bg-brand-600 text-white px-6 sm:px-8 py-4 font-bold text-base sm:text-lg shadow-[0_0_40px_-15px_rgba(48,64,235,0.8)]">
+                  <span className="mr-6 sm:mr-8">Desbloquear acesso agora</span>
+                  <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
                     <ArrowRight className="w-4 h-4 text-white" strokeWidth={2.5} />
                   </span>
                 </div>

@@ -136,15 +136,17 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           </button>
         </form>
 
-        <p className="text-center text-sm text-surface-300">
-          {mode === 'login' ? 'Ainda não tem conta?' : 'Já tem conta?'}{' '}
-          <Link
-            href={mode === 'login' ? '/register' : '/login'}
-            className="font-semibold text-brand-300 transition-colors hover:text-brand-200"
-          >
-            {mode === 'login' ? 'Criar conta' : 'Entrar'}
-          </Link>
-        </p>
+        {mode === 'register' && (
+          <p className="text-center text-sm text-surface-300">
+            Já tem conta?{' '}
+            <Link
+              href="/login"
+              className="font-semibold text-brand-300 transition-colors hover:text-brand-200"
+            >
+              Entrar
+            </Link>
+          </p>
+        )}
       </div>
     </div>
   )

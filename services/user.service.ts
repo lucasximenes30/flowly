@@ -32,11 +32,13 @@ export async function registerUser(input: RegisterInput) {
       userId: user.id,
       email: user.email,
       name: user.name,
+      subscriptionStatus: user.subscriptionStatus,
+      hasWorkoutModule: user.hasWorkoutModule,
     }
 
     const token = await signToken(payload)
 
-    return { user: { id: user.id, name: user.name, email: user.email }, token }
+    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule }, token }
   } catch (error: any) {
     if (error.code === 'P2002') {
       throw new Error('Email already registered')
@@ -63,9 +65,11 @@ export async function loginUser(input: LoginInput) {
     userId: user.id,
     email: user.email,
     name: user.name,
+    subscriptionStatus: user.subscriptionStatus,
+    hasWorkoutModule: user.hasWorkoutModule,
   }
 
   const token = await signToken(payload)
 
-  return { user: { id: user.id, name: user.name, email: user.email }, token }
+  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule }, token }
 }
