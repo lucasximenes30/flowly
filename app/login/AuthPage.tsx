@@ -103,9 +103,16 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           </div>
 
           <div className="space-y-1.5">
-            <label htmlFor="password" className="block text-sm font-medium text-surface-200">
-              {t('common.password')}
-            </label>
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block text-sm font-medium text-surface-200">
+                {t('common.password')}
+              </label>
+              {mode === 'login' && (
+                <Link href="/esqueci-a-senha" className="text-sm font-medium text-brand-300 hover:text-brand-200 transition-colors">
+                  Esqueceu a senha?
+                </Link>
+              )}
+            </div>
             <input
               id="password"
               type="password"
@@ -136,17 +143,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           </button>
         </form>
 
-        {mode === 'register' && (
-          <p className="text-center text-sm text-surface-300">
-            Já tem conta?{' '}
-            <Link
-              href="/login"
-              className="font-semibold text-brand-300 transition-colors hover:text-brand-200"
-            >
-              Entrar
-            </Link>
-          </p>
-        )}
+        {/* Removed public register link as new users should be created via Checkout webhook */}
       </div>
     </div>
   )
