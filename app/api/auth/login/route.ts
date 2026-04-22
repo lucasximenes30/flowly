@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       name: result.user.name,
       subscriptionStatus: result.user.subscriptionStatus,
       hasWorkoutModule: result.user.hasWorkoutModule,
+      role: result.user.role,
     })
 
     return NextResponse.json({ success: true, user: result.user })

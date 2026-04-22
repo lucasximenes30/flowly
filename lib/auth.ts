@@ -8,6 +8,7 @@ export interface JWTPayload {
   name: string
   subscriptionStatus?: string
   hasWorkoutModule?: boolean
+  role?: string
   [key: string]: unknown
 }
 
