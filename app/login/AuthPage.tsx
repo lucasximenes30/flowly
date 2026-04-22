@@ -143,7 +143,24 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           </button>
         </form>
 
-        {/* Removed public register link as new users should be created via Checkout webhook */}
+        {/* Form bottom links */}
+        <div className="text-center pt-2">
+          {mode === 'login' ? (
+            <p className="text-[1.03rem] text-surface-400">
+              Ainda não tem acesso?{' '}
+              <Link href="/register" className="font-semibold text-brand-300 hover:text-brand-200 transition-colors">
+                Criar conta
+              </Link>
+            </p>
+          ) : (
+            <p className="text-[1.03rem] text-surface-400">
+              Já possui acesso?{' '}
+              <Link href="/login" className="font-semibold text-brand-300 hover:text-brand-200 transition-colors">
+                Entrar
+              </Link>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )

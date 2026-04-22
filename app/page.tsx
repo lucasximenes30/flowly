@@ -66,7 +66,7 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm font-semibold text-surface-400 hover:text-white transition-colors duration-300">
               Entrar
             </Link>
-            <MagneticButton href={CAKTO_CONFIG.checkoutUrl} intensity={0.2}>
+            <MagneticButton href="/register" intensity={0.2}>
                <div className="hidden sm:flex rounded-full bg-white/10 hover:bg-white/15 border border-white/10 px-6 py-2.5 text-sm font-semibold items-center gap-2 text-white transition-colors duration-300">
                  Desbloquear acesso
                </div>
@@ -94,7 +94,7 @@ export default function LandingPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
               <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <MagneticButton href={CAKTO_CONFIG.checkoutUrl} intensity={0.4}>
+                <MagneticButton href="/register" intensity={0.4}>
                   <div className="group w-full sm:w-auto inline-flex justify-between items-center rounded-full bg-white text-[#050505] px-6 sm:px-8 py-4 font-bold shadow-lg text-sm sm:text-base">
                     <span>Quero organizar minha vida</span>
                     <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center ml-4 shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
@@ -474,7 +474,7 @@ export default function LandingPage() {
                   </div>
 
                   <div className="w-full lg:w-auto shrink-0 flex flex-col gap-6 pt-4 lg:pt-0">
-                    <MagneticButton href={CAKTO_CONFIG.checkoutUrl} intensity={0.4}>
+                    <MagneticButton href="/register" intensity={0.4}>
                       <div className="group w-full lg:w-[300px] flex justify-between items-center rounded-full bg-white text-[#050505] px-6 md:px-8 py-4 md:py-5 font-bold text-base md:text-[1.05rem] shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.4)] transition-all">
                         <span>Quero assinar</span>
                         <span className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/5 flex items-center justify-center ml-2 md:ml-4 shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
@@ -495,7 +495,7 @@ export default function LandingPage() {
               <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-3xl leading-[1.1]">Comece a proteger a coisa mais escassa que você possui: O seu tempo livre.</h2>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <MagneticButton href={CAKTO_CONFIG.checkoutUrl} intensity={0.3}>
+              <MagneticButton href="/register" intensity={0.3}>
                 <div className="group inline-flex justify-between items-center rounded-full bg-brand-600 text-white px-6 sm:px-8 py-4 font-bold text-base sm:text-lg shadow-[0_0_40px_-15px_rgba(48,64,235,0.8)]">
                   <span className="mr-6 sm:mr-8">Desbloquear acesso agora</span>
                   <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
