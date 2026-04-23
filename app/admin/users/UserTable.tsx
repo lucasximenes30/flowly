@@ -15,8 +15,11 @@ type UserData = {
   createdAt: string
 }
 
-export default function UserTable({
+import UserDetailsModal, { UserDetails } from './UserDetailsModal'
+import ChangeAccessModal from './ChangeAccessModal'
+import TemporaryPasswordModal from './TemporaryPasswordModal'
 
+export default function UserTable({
   initialUsers,
   initialSearch,
 }: {
@@ -27,23 +30,16 @@ export default function UserTable({
   const [search, setSearch] = useState(initialSearch)
   const [isPending, startTransition] = useTransition()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
+  
+  // Modal states
+  const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
+  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | null>(null)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
     startTransition(() => {
       router.push(`/admin/users?search=${encodeURIComponent(search)}`)
     })
-  }
-
-  const handleAccessChange = async (userId: string, type: 'FREE' | 'VIP' | 'COURTESY') => {
-    if (confirm(`Confirmar alteração de plano?`)) {
-      setLoadingAction(`access-${userId}`)
-      try {
-        await changeUserAccess(userId, type)
-      } finally {
-        setLoadingAction(null)
-      }
-    }
   }
 
   const handleStatusChange = async (userId: string, active: boolean) => {
@@ -56,6 +52,11 @@ export default function UserTable({
         setLoadingAction(null)
       }
     }
+  }
+
+  const closeModal = () => {
+    setModalType(null)
+    setTimeout(() => setSelectedUser(null), 200)
   }
 
   return (
@@ -93,7 +94,6 @@ export default function UserTable({
             <thead className="bg-surface-50 dark:bg-surface-950/50 border-b border-surface-200 dark:border-surface-800">
               <tr>
                 <th className="px-6 py-4 font-semibold text-surface-600 dark:text-surface-300">Usuário</th>
-                <th className="px-6 py-4 font-semibold text-surface-600 dark:text-surface-300">Contato</th>
                 <th className="px-6 py-4 font-semibold text-surface-600 dark:text-surface-300">Acesso</th>
                 <th className="px-6 py-4 font-semibold text-surface-600 dark:text-surface-300">Status</th>
                 <th className="px-6 py-4 font-semibold text-surface-600 dark:text-surface-300">Cadastro</th>
@@ -103,45 +103,36 @@ export default function UserTable({
             <tbody className="divide-y divide-surface-200 dark:divide-surface-800">
               {initialUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-12 text-center text-surface-500">
+                  <td colSpan={5} className="px-6 py-12 text-center text-surface-500">
                     Nenhum usuário encontrado.
                   </td>
                 </tr>
               ) : (
                 initialUsers.map((user) => {
-                  const isFree = user.plan === 'FREE' && user.role !== 'COURTESY' && user.role !== 'ADMIN'
-                  const isVIP = user.plan === 'PRO' && user.role === 'USER'
-                  const isCourtesy = user.role === 'COURTESY'
                   const isActive = user.subscriptionStatus === 'ACTIVE'
-                  const isLoadingAccess = loadingAction === `access-${user.id}`
                   const isLoadingStatus = loadingAction === `status-${user.id}`
+                  
+                  // Determine display tier
+                  let displayTier = 'Free'
+                  if (user.role === 'ADMIN') displayTier = 'Admin'
+                  else if (user.role === 'COURTESY') displayTier = 'Courtesy'
+                  else if (user.plan === 'PRO') displayTier = 'VIP (Pro)'
 
                   return (
                     <tr key={user.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/20 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-surface-900 dark:text-surface-100">{user.name}</div>
-                        <div className="text-xs text-surface-500 mt-0.5 font-mono">{user.id.split('-')[0]}...</div>
+                        <div className="text-xs text-surface-500 mt-0.5">{user.email}</div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-surface-700 dark:text-surface-300">{user.email}</div>
-                        <div className="text-xs text-surface-400 mt-0.5">Telefone: Não informado</div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="inline-flex items-center">
-                          <select
-                            disabled={isLoadingAccess || user.role === 'ADMIN'}
-                            className="bg-transparent border border-surface-200 dark:border-surface-700 rounded-lg text-sm py-1.5 pl-3 pr-8 focus:ring-2 focus:ring-brand-500 outline-none disabled:opacity-50"
-                            value={isCourtesy ? 'COURTESY' : isVIP ? 'VIP' : isFree ? 'FREE' : 'OTHER'}
-                            onChange={(e) => handleAccessChange(user.id, e.target.value as any)}
-                          >
-                            <option value="FREE">Free</option>
-                            <option value="VIP">VIP (Pro)</option>
-                            <option value="COURTESY">Courtesy</option>
-                            {user.role === 'ADMIN' && <option value="OTHER">Admin</option>}
-                            {user.role === 'LEGACY' && <option value="OTHER">Legacy</option>}
-                          </select>
-                          {isLoadingAccess && <Lucide.Loader2 className="w-4 h-4 ml-2 animate-spin text-brand-500" />}
-                        </div>
+                        <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          user.role === 'ADMIN' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' :
+                          user.role === 'COURTESY' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' :
+                          user.plan === 'PRO' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' :
+                          'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
+                        }`}>
+                          {displayTier}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span
@@ -158,25 +149,52 @@ export default function UserTable({
                         {new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(user.createdAt))}
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {user.role !== 'ADMIN' && (
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => handleStatusChange(user.id, !isActive)}
-                            disabled={isLoadingStatus}
-                            className={`inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 ${
-                              isActive 
-                                ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20' 
-                                : 'bg-brand-50 text-brand-600 hover:bg-brand-100 dark:bg-brand-500/10 dark:text-brand-400 dark:hover:bg-brand-500/20'
-                            }`}
+                            onClick={() => { setSelectedUser(user); setModalType('details'); }}
+                            title="Ver Detalhes"
+                            className="p-1.5 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-200 dark:hover:bg-surface-800 rounded-lg transition-colors"
                           >
-                            {isLoadingStatus ? (
-                              <Lucide.Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            ) : isActive ? (
-                              'Inativar'
-                            ) : (
-                              'Ativar'
-                            )}
+                            <Lucide.Eye className="w-4 h-4" />
                           </button>
-                        )}
+                          
+                          <button
+                            onClick={() => { setSelectedUser(user); setModalType('access'); }}
+                            title="Alterar Acesso"
+                            className="p-1.5 text-surface-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:text-brand-400 dark:hover:bg-brand-500/10 rounded-lg transition-colors"
+                          >
+                            <Lucide.ShieldAlert className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() => { setSelectedUser(user); setModalType('password'); }}
+                            title="Redefinir Senha"
+                            className="p-1.5 text-surface-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:text-amber-400 dark:hover:bg-amber-500/10 rounded-lg transition-colors"
+                          >
+                            <Lucide.Key className="w-4 h-4" />
+                          </button>
+
+                          {user.role !== 'ADMIN' && (
+                            <button
+                              onClick={() => handleStatusChange(user.id, !isActive)}
+                              disabled={isLoadingStatus}
+                              title={isActive ? 'Inativar Conta' : 'Ativar Conta'}
+                              className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
+                                isActive 
+                                  ? 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-300 dark:hover:bg-red-500/10' 
+                                  : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10'
+                              }`}
+                            >
+                              {isLoadingStatus ? (
+                                <Lucide.Loader2 className="w-4 h-4 animate-spin" />
+                              ) : isActive ? (
+                                <Lucide.PowerOff className="w-4 h-4" />
+                              ) : (
+                                <Lucide.Power className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
@@ -186,6 +204,23 @@ export default function UserTable({
           </table>
         </div>
       </div>
+
+      <UserDetailsModal
+        user={modalType === 'details' ? (selectedUser as UserDetails) : null}
+        onClose={closeModal}
+      />
+      <ChangeAccessModal
+        userId={modalType === 'access' ? selectedUser?.id || null : null}
+        userName={selectedUser?.name || null}
+        currentRole={selectedUser?.role || null}
+        currentPlan={selectedUser?.plan || null}
+        onClose={closeModal}
+      />
+      <TemporaryPasswordModal
+        userId={modalType === 'password' ? selectedUser?.id || null : null}
+        userName={selectedUser?.name || null}
+        onClose={closeModal}
+      />
     </div>
   )
 }
