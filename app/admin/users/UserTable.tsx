@@ -33,7 +33,7 @@ export default function UserTable({
   
   // Modal states
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
-  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | null>(null)
+  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | 'mobileActions' | null>(null)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,8 +63,8 @@ export default function UserTable({
     <div className="space-y-6">
       {/* Search Bar */}
       <div className="bg-white dark:bg-surface-900 p-4 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800">
-        <form onSubmit={handleSearch} className="flex items-center gap-3">
-          <div className="relative flex-1">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1 w-full">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-surface-400">
               <Lucide.Search className="h-5 w-5" />
             </div>
@@ -79,7 +79,7 @@ export default function UserTable({
           <button
             type="submit"
             disabled={isPending}
-            className="px-6 py-2.5 bg-surface-800 dark:bg-surface-100 hover:bg-surface-900 dark:hover:bg-white text-white dark:text-surface-900 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center gap-2"
+            className="w-full sm:w-auto px-6 py-2.5 bg-surface-800 dark:bg-surface-100 hover:bg-surface-900 dark:hover:bg-white text-white dark:text-surface-900 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {isPending && <Lucide.Loader2 className="w-4 h-4 animate-spin" />}
             Buscar
@@ -87,8 +87,8 @@ export default function UserTable({
         </form>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
+      {/* Users Desktop Table */}
+      <div className="hidden md:block bg-white dark:bg-surface-900 rounded-2xl shadow-sm border border-surface-200 dark:border-surface-800 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm whitespace-nowrap">
             <thead className="bg-surface-50 dark:bg-surface-950/50 border-b border-surface-200 dark:border-surface-800">
@@ -204,6 +204,134 @@ export default function UserTable({
           </table>
         </div>
       </div>
+
+      {/* Users Mobile Cards */}
+      <div className="block md:hidden space-y-4">
+        {initialUsers.length === 0 ? (
+          <div className="py-12 text-center text-surface-500 bg-white dark:bg-surface-900 rounded-2xl border border-surface-200 dark:border-surface-800">
+            Nenhum usuário encontrado.
+          </div>
+        ) : (
+          initialUsers.map((user) => {
+            const isActive = user.subscriptionStatus === 'ACTIVE'
+            const isLoadingStatus = loadingAction === `status-${user.id}`
+            
+            let displayTier = 'Free'
+            if (user.role === 'ADMIN') displayTier = 'Admin'
+            else if (user.role === 'COURTESY') displayTier = 'Courtesy'
+            else if (user.plan === 'PRO') displayTier = 'VIP (Pro)'
+
+            return (
+              <div key={user.id} className="bg-white dark:bg-surface-900 rounded-2xl p-5 shadow-sm border border-surface-200 dark:border-surface-800 flex flex-col gap-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-surface-900 dark:text-surface-100 truncate">{user.name}</div>
+                    <div className="text-sm text-surface-500 dark:text-surface-400 truncate mt-0.5">{user.email}</div>
+                  </div>
+                  <button
+                    onClick={() => { setSelectedUser(user); setModalType('mobileActions'); }}
+                    className="p-2 -mr-2 text-surface-400 hover:text-surface-600 hover:bg-surface-100 dark:hover:text-surface-200 dark:hover:bg-surface-800 rounded-xl transition-colors"
+                  >
+                    <Lucide.MoreVertical className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    user.role === 'ADMIN' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' :
+                    user.role === 'COURTESY' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' :
+                    user.plan === 'PRO' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' :
+                    'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
+                  }`}>
+                    {displayTier}
+                  </span>
+                  
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                      isActive
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-500/10 dark:text-emerald-400'
+                        : 'bg-surface-100 text-surface-800 dark:bg-surface-800 dark:text-surface-400'
+                    }`}
+                  >
+                    {isActive ? 'Ativo' : user.subscriptionStatus}
+                  </span>
+                </div>
+              </div>
+            )
+          })
+        )}
+      </div>
+
+      {/* Mobile Actions Bottom Sheet Modal */}
+      {modalType === 'mobileActions' && selectedUser && (
+        <div
+          className="md:hidden fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm transition-opacity duration-200"
+          onClick={(e) => e.target === e.currentTarget && closeModal()}
+        >
+          <div className="w-full bg-white dark:bg-surface-900 rounded-t-3xl border-t border-surface-200 dark:border-surface-800 overflow-hidden animate-in slide-in-from-bottom pb-8">
+            <div className="px-6 py-5 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between">
+              <h3 className="font-bold text-surface-900 dark:text-white">Ações do Usuário</h3>
+              <button onClick={closeModal} className="p-2 -mr-2 rounded-xl text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800">
+                <Lucide.X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4 flex flex-col gap-2">
+              <button
+                onClick={() => setModalType('details')}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-surface-50 dark:bg-surface-950 text-surface-700 dark:text-surface-200 font-medium active:scale-[0.98] transition-transform"
+              >
+                <div className="p-2 bg-surface-200 dark:bg-surface-800 rounded-xl text-surface-600 dark:text-surface-400">
+                  <Lucide.Eye className="w-5 h-5" />
+                </div>
+                Ver Detalhes Completos
+              </button>
+              
+              <button
+                onClick={() => setModalType('access')}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-brand-50 dark:bg-brand-500/10 text-brand-700 dark:text-brand-400 font-medium active:scale-[0.98] transition-transform"
+              >
+                <div className="p-2 bg-brand-200/50 dark:bg-brand-500/20 rounded-xl">
+                  <Lucide.ShieldAlert className="w-5 h-5" />
+                </div>
+                Alterar Nível de Acesso
+              </button>
+
+              <button
+                onClick={() => setModalType('password')}
+                className="w-full flex items-center gap-3 p-4 rounded-2xl bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium active:scale-[0.98] transition-transform"
+              >
+                <div className="p-2 bg-amber-200/50 dark:bg-amber-500/20 rounded-xl">
+                  <Lucide.Key className="w-5 h-5" />
+                </div>
+                Gerar Senha Temporária
+              </button>
+
+              {selectedUser.role !== 'ADMIN' && (
+                <button
+                  onClick={() => {
+                    handleStatusChange(selectedUser.id, selectedUser.subscriptionStatus !== 'ACTIVE')
+                    closeModal()
+                  }}
+                  className={`w-full flex items-center gap-3 p-4 rounded-2xl font-medium active:scale-[0.98] transition-transform ${
+                    selectedUser.subscriptionStatus === 'ACTIVE'
+                      ? 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400'
+                      : 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                  }`}
+                >
+                  <div className={`p-2 rounded-xl ${
+                    selectedUser.subscriptionStatus === 'ACTIVE'
+                      ? 'bg-red-200/50 dark:bg-red-500/20'
+                      : 'bg-emerald-200/50 dark:bg-emerald-500/20'
+                  }`}>
+                    {selectedUser.subscriptionStatus === 'ACTIVE' ? <Lucide.PowerOff className="w-5 h-5" /> : <Lucide.Power className="w-5 h-5" />}
+                  </div>
+                  {selectedUser.subscriptionStatus === 'ACTIVE' ? 'Inativar Conta' : 'Ativar Conta'}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <UserDetailsModal
         user={modalType === 'details' ? (selectedUser as UserDetails) : null}

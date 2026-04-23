@@ -59,10 +59,10 @@ export default function TemporaryPasswordModal({
 
   return (
     <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
+      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
       onClick={(e) => e.target === e.currentTarget && handleClose()}
     >
-      <div className={`w-full max-w-md rounded-3xl bg-white shadow-2xl dark:bg-surface-900 border border-surface-200 dark:border-surface-700/60 overflow-hidden transition-all duration-200 ${visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
+      <div className={`w-full max-w-md max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl dark:bg-surface-900 border border-surface-200 dark:border-surface-700/60 transition-all duration-300 sm:duration-200 ${visible ? 'translate-y-0 sm:scale-100 opacity-100' : 'translate-y-full sm:translate-y-0 sm:scale-95 opacity-0'}`}>
         
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-950/30">
