@@ -7,7 +7,7 @@ import BrandLogo from './BrandLogo'
 import * as Lucide from 'lucide-react'
 
 // Routes where the sidebar should NOT appear
-const NO_SIDEBAR_ROUTES = ['/', '/login', '/register']
+const NO_SIDEBAR_ROUTES = ['/', '/login', '/register', '/admin']
 
 export default function SidebarLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()

@@ -10,6 +10,18 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname
 
   const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route))
+  const isAdminRoute = path.startsWith('/admin') && !path.startsWith('/admin/login')
+
+  if (isAdminRoute) {
+    if (!sessionToken) {
+      return NextResponse.redirect(new URL('/admin/login', request.url))
+    }
+
+    const session = await verifyToken(sessionToken)
+    if (!session || session.role !== 'ADMIN') {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
+  }
 
   if (isProtectedRoute) {
     if (!sessionToken) {
@@ -37,5 +49,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/habits/:path*', '/reports/:path*', '/cards/:path*', '/workout/:path*'],
+  matcher: ['/dashboard/:path*', '/habits/:path*', '/reports/:path*', '/cards/:path*', '/workout/:path*', '/admin/:path*'],
 }
