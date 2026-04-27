@@ -23,7 +23,8 @@ export async function POST(req: Request) {
     const paymentData = await createTransaction({
       id: user.id,
       email: user.email,
-      name: user.name
+      name: user.name,
+      document: user.document ?? undefined,
     })
 
     return NextResponse.json({ success: true, data: paymentData }, { status: 200 })

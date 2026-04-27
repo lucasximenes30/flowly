@@ -19,6 +19,7 @@ model User {
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   sex                   UserSex?
+  document              String?
   billingApprovedAt     DateTime?
   billingEmail          String?
   billingProvider       String?                @default("cakto")
