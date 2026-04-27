@@ -28,7 +28,15 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true, data: paymentData }, { status: 200 })
   } catch (err: any) {
-    console.error('[BlackPayments Create] Error:', err.message)
+    console.error('[BlackPayments Create] Error:', err)
+    
+    if (err.isProviderError) {
+      return NextResponse.json({ 
+        error: 'Não foi possível gerar o pagamento agora. Tente novamente em alguns instantes.',
+        details: process.env.NODE_ENV !== 'production' ? err.details : undefined
+      }, { status: err.status || 502 })
+    }
+
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }
