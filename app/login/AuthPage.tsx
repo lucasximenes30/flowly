@@ -1,19 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
 import BrandLogo from '@/components/BrandLogo'
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { t } = useApp()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [paymentData, setPaymentData] = useState<any>(null)
+  
+  const isInactive = searchParams.get('error') === 'inactive'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,6 +48,93 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleUnlockAccess = async () => {
+    setLoading(true)
+    setError('')
+    try {
+      const res = await fetch('/api/payments/create', { method: 'POST' })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || 'Erro ao gerar pagamento')
+        return
+      }
+      setPaymentData(data.data)
+      if (data.data?.paymentLink) {
+        window.location.href = data.data.paymentLink
+      }
+    } catch {
+      setError('Erro de rede. Tente novamente.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (isInactive) {
+    return (
+      <div className="relative flex min-h-dvh items-center justify-center overflow-y-auto bg-surface-950 px-4 py-8 sm:px-6">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,88,249,0.26),transparent_45%),radial-gradient(circle_at_bottom,rgba(17,31,171,0.2),transparent_36%)]" />
+
+        <div className="relative w-full max-w-md space-y-6 animate-auth-fade text-center">
+          <BrandLogo
+            size="lg"
+            className="justify-center"
+            textClassName="font-display text-3xl text-white"
+            priority
+          />
+          <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Acesso Bloqueado
+          </h1>
+          <p className="mx-auto mt-3 max-w-sm text-[1.03rem] leading-relaxed text-surface-200 sm:text-lg">
+            Sua conta está inativa. Você precisa de uma assinatura ativa para acessar o sistema.
+          </p>
+
+          <div className="card space-y-5 border-surface-700/70 bg-surface-900/85 px-5 py-6 shadow-elevated backdrop-blur sm:px-8 sm:py-8 mt-6">
+            {error && (
+              <p className="rounded-xl border border-red-900/40 bg-red-900/20 p-3 text-sm text-red-300 mb-4">{error}</p>
+            )}
+
+            {paymentData && paymentData.qrCode ? (
+              <div className="space-y-4">
+                <p className="text-sm text-surface-200">Escaneie o QR Code abaixo para pagar via PIX:</p>
+                <img src={paymentData.qrCode} alt="PIX QR Code" className="mx-auto w-48 h-48 rounded-lg" />
+                {paymentData.pixCopyPaste && (
+                  <div className="mt-4">
+                    <p className="text-xs text-surface-400 mb-2">Ou copie o código PIX:</p>
+                    <input 
+                      type="text" 
+                      readOnly 
+                      value={paymentData.pixCopyPaste} 
+                      className="input-field text-xs text-center cursor-pointer"
+                      onClick={(e) => {
+                        (e.target as HTMLInputElement).select();
+                        navigator.clipboard.writeText(paymentData.pixCopyPaste);
+                        alert('Código copiado!');
+                      }}
+                    />
+                  </div>
+                )}
+                <p className="text-xs text-surface-400 mt-4">Após o pagamento, aguarde alguns instantes e recarregue a página.</p>
+                <button onClick={() => window.location.reload()} className="btn-primary h-11 w-full text-sm font-semibold mt-4">
+                  Já paguei
+                </button>
+              </div>
+            ) : (
+              <button onClick={handleUnlockAccess} disabled={loading} className="btn-primary h-11 w-full text-sm font-semibold">
+                {loading ? 'Gerando pagamento...' : 'Desbloquear acesso'}
+              </button>
+            )}
+            
+            <div className="pt-4 border-t border-surface-700/50 mt-4">
+               <Link href="/login" className="text-sm font-medium text-surface-400 hover:text-white transition-colors">
+                 Fazer login com outra conta
+               </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
