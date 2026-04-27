@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     const email = payload.customer?.email || payload.email
     const transactionId = payload.id || payload.transactionId
     const metadata = payload.metadata || {}
-    const userId = metadata.userId
+    const userId = typeof metadata === 'string' ? metadata : metadata.userId
 
     if (!email && !userId) {
       console.error('[BlackPayments Webhook] No email or userId found in payload data');
