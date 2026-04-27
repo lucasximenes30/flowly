@@ -3,7 +3,7 @@ export const BLACKPAY_CONFIG = {
   secretKey: process.env.BLACKPAY_SECRET_KEY || '',
   webhookSecret: process.env.BLACKPAY_WEBHOOK_SECRET || '',
   apiUrl: process.env.BLACKPAY_API_URL || 'https://api.blackpayments.pro/v1',
-  appUrl: process.env.APP_URL || 'http://localhost:3000'
+  appUrl: process.env.APP_URL || 'https://flowly-blue.vercel.app'
 }
 
 /**
@@ -17,19 +17,14 @@ export async function createTransaction(user: { id: string, email: string, name:
   // Create base64 basic auth string
   const authString = Buffer.from(`${BLACKPAY_CONFIG.publicKey}:${BLACKPAY_CONFIG.secretKey}`).toString('base64');
 
-  const isProd = process.env.NODE_ENV === 'production';
-  // TODO: Collect real CPF and Phone in the registration form in the future.
-  // We use placeholder data for local testing because acquirers usually require them for Pix.
-  // We do NOT silently use fake data in production.
-  const customerDocument = user.document || (isProd ? undefined : "00000000000");
-  const customerPhone = user.phone || (isProd ? undefined : "11999999999");
-
   const payload: any = {
     amount: 1990, // R$19.90 in cents
     paymentMethod: 'pix',
     customer: {
       email: user.email,
-      name: user.name
+      name: user.name,
+      ...(user.document ? { document: user.document.replace(/\D/g, '') } : {}),
+      ...(user.phone ? { phone: user.phone } : {}),
     },
     items: [
       {
@@ -45,14 +40,13 @@ export async function createTransaction(user: { id: string, email: string, name:
     returnUrl: `${BLACKPAY_CONFIG.appUrl}/payment/return`
   };
 
-  if (customerDocument) payload.customer.document = customerDocument;
-  if (customerPhone) payload.customer.phone = customerPhone;
-
   console.log('[BlackPayments] Creating transaction with payload:', {
     amount: payload.amount,
     paymentMethod: payload.paymentMethod,
-    customerEmail: payload.customer.email,
-    hasCustomerDocument: !!payload.customer.document,
+    customerName: !!payload.customer.name,
+    customerEmail: !!payload.customer.email,
+    customerPhone: !!payload.customer.phone,
+    customerDocument: !!payload.customer.document,
     externalRef: payload.externalRef,
     postbackUrl: payload.postbackUrl,
     returnUrl: payload.returnUrl,

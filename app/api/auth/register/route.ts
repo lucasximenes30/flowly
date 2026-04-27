@@ -7,14 +7,15 @@ const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
+  document: z.string().min(11, 'CPF inválido').max(14).optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password } = registerSchema.parse(body)
+    const { name, email, password, document } = registerSchema.parse(body)
 
-    const result = await registerUser({ name, email, password })
+    const result = await registerUser({ name, email, password, document })
     await setSession({
       userId: result.user.id,
       email: result.user.email,

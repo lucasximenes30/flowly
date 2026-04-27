@@ -13,6 +13,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [document, setDocument] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [paymentData, setPaymentData] = useState<any>(null)
@@ -26,7 +27,9 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
     try {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
-      const body = mode === 'login' ? { email, password } : { name, email, password }
+      const body = mode === 'login'
+        ? { email, password }
+        : { name, email, password, document: document.replace(/\D/g, '') }
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -162,20 +165,46 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           className="card space-y-5 border-surface-700/70 bg-surface-900/85 px-5 py-6 shadow-elevated backdrop-blur sm:px-8 sm:py-8"
         >
           {mode === 'register' && (
-            <div className="space-y-1.5">
-              <label htmlFor="name" className="block text-sm font-medium text-surface-200">
-                {t('common.name')}
-              </label>
-              <input
-                id="name"
-                type="text"
-                required
-                className="input-field"
-                placeholder={t('auth.namePlaceholder')}
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+            <>
+              <div className="space-y-1.5">
+                <label htmlFor="name" className="block text-sm font-medium text-surface-200">
+                  {t('common.name')}
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  required
+                  className="input-field"
+                  placeholder={t('auth.namePlaceholder')}
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="document" className="block text-sm font-medium text-surface-200">
+                  CPF
+                </label>
+                <input
+                  id="document"
+                  type="text"
+                  required
+                  inputMode="numeric"
+                  className="input-field"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
+                  value={document}
+                  onChange={(e) => {
+                    // Auto-format: 000.000.000-00
+                    const digits = e.target.value.replace(/\D/g, '').slice(0, 11)
+                    const fmt = digits
+                      .replace(/(\d{3})(\d)/, '$1.$2')
+                      .replace(/(\d{3})(\d)/, '$1.$2')
+                      .replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+                    setDocument(fmt)
+                  }}
+                />
+              </div>
+            </>
           )}
 
           <div className="space-y-1.5">

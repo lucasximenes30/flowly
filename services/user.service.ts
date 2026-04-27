@@ -9,6 +9,7 @@ export interface RegisterInput {
   name: string
   email: string
   password: string
+  document?: string
 }
 
 export interface LoginInput {
@@ -25,6 +26,7 @@ export async function registerUser(input: RegisterInput) {
         name: input.name,
         email: input.email.toLowerCase(),
         password: hashedPassword,
+        document: input.document || null,
       },
     })
 
