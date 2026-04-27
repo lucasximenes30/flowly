@@ -23,9 +23,15 @@ export async function createTransaction(user: { id: string, email: string, name:
       email: user.email,
       name: user.name
     },
-    metadata: {
-      userId: user.id
-    }
+    metadata: user.id, // Passing user.id as string
+    items: [
+      {
+        title: "Assinatura Vynta",
+        unitPrice: 1990,
+        quantity: 1,
+        tangible: false
+      }
+    ]
   };
 
   const response = await fetch(`${BLACKPAY_CONFIG.apiUrl}/transactions`, {
