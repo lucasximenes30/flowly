@@ -128,9 +128,9 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       
       console.log('[Auth/CheckPayment] Status response:', data)
 
-      if (data.status === 'approved') {
+      if (data.status === 'approved' || data.status === 'paid') {
         // Payment approved! User should now be ACTIVE
-        setPaymentMessage('✓ Pagamento confirmado! Redirecionando...')
+        setPaymentMessage('Pagamento confirmado! Liberando seu acesso...')
         setTimeout(() => {
           router.push('/dashboard')
           router.refresh()
@@ -157,9 +157,50 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     }
   }
 
+  const formatPixDate = (dateString?: string) => {
+    if (!dateString) return ''
+    try {
+      const d = new Date(dateString)
+      // Check if valid date
+      if (isNaN(d.getTime())) return dateString
+      // Return dd/mm/yyyy
+      return d.toLocaleDateString('pt-BR')
+    } catch {
+      return dateString
+    }
+  }
+
+  const hasPixData = isInactive && paymentData?.paymentMethod === 'pix' && (paymentData?.pix?.qrcode || paymentData?.pix?.copyPaste)
+  
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout
+
+    if (hasPixData && !checkingPayment) {
+      intervalId = setInterval(async () => {
+        try {
+          const res = await fetch('/api/subscription/status', { method: 'POST' })
+          const data = await res.json()
+          if (data.status === 'approved' || data.status === 'paid') {
+            setPaymentMessage('Pagamento confirmado! Liberando seu acesso...')
+            clearInterval(intervalId)
+            setTimeout(() => {
+              router.push('/dashboard')
+              router.refresh()
+            }, 2000)
+          }
+        } catch (err) {
+          console.error('[Auth/AutoCheck] Error:', err)
+        }
+      }, 5000)
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId)
+    }
+  }, [hasPixData, checkingPayment, router])
+
   // ── Show inactive/unlock screen ──────────────────────────────────────
   if (isInactive) {
-    const hasPixData = paymentData?.paymentMethod === 'pix' && (paymentData?.pix?.qrcode || paymentData?.pix?.copyPaste)
 
     return (
       <div className="relative flex min-h-dvh items-center justify-center overflow-y-auto bg-surface-950 px-4 py-8 sm:px-6">
@@ -257,7 +298,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 {/* Expiration date */}
                 {paymentData.pix.expirationDate && (
                   <div className="text-xs text-surface-400">
-                    Válido até: <span className="font-medium text-surface-200">{paymentData.pix.expirationDate}</span>
+                    Válido até: <span className="font-medium text-surface-200">{formatPixDate(paymentData.pix.expirationDate)}</span>
                   </div>
                 )}
 

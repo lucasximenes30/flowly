@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
 import { BLACKPAY_CONFIG } from '@/services/blackpayments.service'
+import { activateVipAccess } from '@/services/subscription.service'
 
 const prisma = new PrismaClient()
 
@@ -120,8 +121,9 @@ export async function POST() {
       `${BLACKPAY_CONFIG.publicKey}:${BLACKPAY_CONFIG.secretKey}`,
     ).toString('base64')
 
+    // Find sale/transaction by ID (BlackPayments docs: /sales/:id or /transactions/:id are sometimes identical, prioritizing /sales)
     const checkResponse = await fetch(
-      `${BLACKPAY_CONFIG.apiUrl}/transactions/${user.caktoOrderId}`,
+      `${BLACKPAY_CONFIG.apiUrl}/sales/${user.caktoOrderId}`,
       {
         method: 'GET',
         headers: {
@@ -141,24 +143,16 @@ export async function POST() {
     }
 
     const transactionData = await checkResponse.json()
-    const transactionStatus = transactionData.status?.toLowerCase()
+    // Sometimes the status is inside data.status in BlackPayments responses
+    const transactionStatus = (transactionData.status || transactionData.data?.status || 'unknown').toLowerCase()
 
     console.log(`[Subscription/Check] Transaction status: ${transactionStatus}`)
 
     // If payment is approved, activate user
-    if (transactionStatus === 'approved' || transactionStatus === 'paid') {
-      const now = new Date()
-      const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // +30 days
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          subscriptionStatus: 'ACTIVE',
-          plan: 'PRO',
-          billingApprovedAt: now,
-          subscriptionStartDate: now,
-          subscriptionEndDate: endDate,
-        },
+    if (['approved', 'paid', 'payment_confirmed', 'completed'].includes(transactionStatus)) {
+      await activateVipAccess({
+        userId: user.id,
+        transactionId: user.caktoOrderId,
       })
 
       console.log(`[Subscription/Check] User ${user.email} ACTIVATED`)
@@ -172,7 +166,7 @@ export async function POST() {
     }
 
     // If still waiting/pending, keep user blocked
-    if (transactionStatus === 'waiting_payment' || transactionStatus === 'pending') {
+    if (['waiting_payment', 'pending'].includes(transactionStatus)) {
       console.log(`[Subscription/Check] Transaction still ${transactionStatus} for user ${user.email}`)
       return NextResponse.json({
         ok: true,
@@ -182,11 +176,11 @@ export async function POST() {
       })
     }
 
-    // Payment failed
+    // Payment failed or expired
     return NextResponse.json({
       ok: false,
       status: transactionStatus,
-      message: `Pagamento foi ${transactionStatus}. Tente novamente.`,
+      message: `O status do pagamento é: ${transactionStatus}.`,
       canAccess: false,
     })
   } catch (err: any) {

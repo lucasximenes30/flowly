@@ -16,6 +16,10 @@ export async function GET() {
         name: true,
         email: true,
         sex: true,
+        plan: true,
+        subscriptionStatus: true,
+        subscriptionEndDate: true,
+        role: true,
       },
     })
 

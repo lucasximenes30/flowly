@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient, UserSubscriptionStatus, UserPlan } from '@prisma/client'
+import { activateVipAccess } from '@/services/subscription.service'
 
 const prisma = new PrismaClient()
 
@@ -146,30 +147,27 @@ export async function POST(req: Request) {
     // Apply update if needed
     if (statusUpdated && newStatus) {
       try {
-        const updateData: any = {
-          subscriptionStatus: newStatus,
-          billingProvider: 'blackpayments',
-        }
-
-        // Only set these fields if we have them
-        if (transactionId) updateData.caktoOrderId = transactionId
-        
-        // If ACTIVE, set subscription dates (30 days from now)
         if (newStatus === UserSubscriptionStatus.ACTIVE) {
-          const now = new Date()
-          updateData.plan = UserPlan.PRO
-          updateData.billingApprovedAt = now
-          updateData.subscriptionStartDate = now
-          updateData.subscriptionEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // +30 days
-          console.log(`[BlackPayments Webhook] Setting subscription dates: ${now.toISOString()} to ${updateData.subscriptionEndDate.toISOString()}`)
+          console.log(`[BlackPayments Webhook] Status is ACTIVE, activating user VIP access.`)
+          await activateVipAccess({
+            userId: user.id,
+            transactionId: transactionId || undefined,
+          })
+        } else {
+          // If not ACTIVE, just update the status (CANCELED, REFUSED, PENDING)
+          const updateData: any = {
+            subscriptionStatus: newStatus,
+            billingProvider: 'blackpayments',
+          }
+
+          if (transactionId) updateData.caktoOrderId = transactionId
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: updateData,
+          })
+          console.log(`[BlackPayments Webhook] User ${user.email} updated: subscriptionStatus=${newStatus}`)
         }
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: updateData,
-        })
-
-        console.log(`[BlackPayments Webhook] User ${user.email} updated: subscriptionStatus=${newStatus}`)
       } catch (updateErr: any) {
         console.error(`[BlackPayments Webhook] Failed to update user ${user.email}:`, updateErr.message)
         // Still return 200 so webhook doesn't retry infinitely

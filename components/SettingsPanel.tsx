@@ -51,20 +51,27 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
   /* ---------- categories ---------- */
   const [showManageCategories, setShowManageCategories] = useState(false)
 
-  /* ---------- sex ---------- */
+  /* ---------- profile data ---------- */
   const [userSex, setUserSex] = useState<string | null>(null)
   const [isUpdatingSex, setIsUpdatingSex] = useState(false)
   const [sexMessage, setSexMessage] = useState('')
   const [sexLoaded, setSexLoaded] = useState(false)
 
+  const [userPlan, setUserPlan] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<string | null>(null)
+
   useEffect(() => {
-    // Load user sex from session or API
-    const loadUserSex = async () => {
+    // Load user data from session or API
+    const loadUserData = async () => {
       try {
         const res = await fetch('/api/auth/me', { cache: 'no-store' })
         if (res.ok) {
           const data = await res.json()
           setUserSex(data.user?.sex || null)
+          setUserPlan(data.user?.plan || null)
+          setUserRole(data.user?.role || null)
+          setSubscriptionEndDate(data.user?.subscriptionEndDate || null)
         }
       } catch {
         // Silently fail
@@ -74,7 +81,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
     }
     
     if (!sexLoaded) {
-      loadUserSex()
+      loadUserData()
     }
   }, [sexLoaded])
 
@@ -253,6 +260,32 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
               title={t('settings.profile')}
             >
               <div className="space-y-4">
+                {/* User Plan & Expiration Card */}
+                <div className="flex flex-col gap-2 p-4 rounded-2xl bg-white/50 dark:bg-surface-900/50 backdrop-blur-sm border border-surface-200 dark:border-surface-800 shadow-sm relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-brand-500"></div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-semibold text-surface-900 dark:text-white">
+                        {isBRL ? 'Plano atual:' : 'Current plan:'} <span className="text-brand-600 dark:text-brand-400">
+                          {userRole === 'ADMIN' ? 'Admin' : userRole === 'COURTESY' ? (isBRL ? 'Cortesia' : 'Courtesy') : (userPlan === 'PRO' ? 'VIP' : (isBRL ? 'Gratuito' : 'Free'))}
+                        </span>
+                      </h4>
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                        {isBRL ? 'Vence em:' : 'Expires:'} <span className="font-medium text-surface-700 dark:text-surface-300">
+                          {subscriptionEndDate 
+                            ? new Date(subscriptionEndDate).toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { timeZone: 'UTC' }) 
+                            : (userRole === 'ADMIN' || userRole === 'COURTESY' ? (isBRL ? 'Sem vencimento' : 'No expiration') : (isBRL ? 'Não informado' : 'Not informed'))}
+                        </span>
+                      </p>
+                    </div>
+                    
+                    <div className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+                      {isBRL ? 'Ativo' : 'Active'}
+                    </div>
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
                     {t('settings.profileName')}
