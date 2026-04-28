@@ -21,19 +21,28 @@ function normalizePaymentResponse(rawResponse: any) {
   const paymentMethod = rawResponse.paymentMethod || 'pix'
   const redirectUrl = rawResponse.redirectUrl || null
   
-  // Extract Pix data if present
-  const pixData = rawResponse.data?.pix || {}
-  const qrcode = pixData.qrcode || ''
-  const expirationDate = pixData.expirationDate || ''
-  const copyPaste = pixData.copyPaste || pixData.qrcode || '' // Fallback to qrcode if copyPaste not provided
+  // Defensively extract Pix data from possible locations
+  const pixData = rawResponse.pix || rawResponse.data?.pix || rawResponse.data || {}
+  
+  // Try to find QR Code and Copy-Paste from common field names
+  const rawQrcode = pixData.qrcode || pixData.qrCode || pixData.qr_code || pixData.code || ''
+  const rawCopyPaste = pixData.copyPaste || pixData.copiaECola || pixData.payload || pixData.pix_link || ''
+  
+  // Combine them: if we only got one, use it for both so frontend doesn't break
+  const qrcode = rawQrcode || rawCopyPaste
+  const copyPaste = rawCopyPaste || rawQrcode
+  
+  // Extract expiration date
+  const expirationDate = pixData.expirationDate || pixData.expires_at || pixData.expiration_date || ''
   
   // Log what we extracted
   console.log('[Payments/Create] Normalized response:', {
     transactionIdExists: !!transactionId,
     status,
     paymentMethod,
+    pixFieldsFound: Object.keys(pixData),
     pixQrcodeExists: !!qrcode,
-    pixExpirationDateExists: !!expirationDate,
+    pixCopyPasteExists: !!copyPaste,
     redirectUrlExists: !!redirectUrl,
   })
   
