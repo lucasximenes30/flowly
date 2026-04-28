@@ -64,7 +64,7 @@ export default async function DashboardPage() {
 
   // Check if subscription has expired
   const isPaidActive = user.subscriptionStatus === 'ACTIVE'
-  const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY' || user.role === 'LEGACY'
+  const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY'
   const isExpired = user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)
 
   // Redirect if inactive or if VIP access expired

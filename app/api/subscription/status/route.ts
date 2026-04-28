@@ -37,7 +37,7 @@ export async function GET() {
 
     // Check if user has access based on subscription status and role
     const isPaidActive = user.subscriptionStatus === 'ACTIVE'
-    const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY' || user.role === 'LEGACY'
+    const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY'
     const canAccess = isPaidActive || isPrivileged
 
     // Check if subscription has expired (if subscriptionEndDate is set)

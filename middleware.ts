@@ -37,10 +37,11 @@ export async function middleware(request: NextRequest) {
     }
 
     const isPaidActive = session.subscriptionStatus === 'ACTIVE';
-    const isLegacyOrCourtesy = session.role === 'LEGACY' || session.role === 'COURTESY' || session.role === 'ADMIN';
+    const isPrivileged = session.role === 'COURTESY' || session.role === 'ADMIN';
 
-    if (!isPaidActive && !isLegacyOrCourtesy) {
-      // Billing is not active and not an internal/legacy user
+    if (!isPaidActive && !isPrivileged) {
+      // Billing is not active and user is not admin/courtesy
+      // Redirect to unlock screen
       return NextResponse.redirect(new URL('/login?error=inactive', request.url))
     }
   }
