@@ -53,16 +53,17 @@ export async function createTransaction(user: CreateTransactionInput) {
   ).toString('base64')
 
   // ── Build payload ────────────────────────────────────────────────────────
-  const AMOUNT = 1990 // R$19,90 in cents
+  // To change the price back to R$19,90, update this constant to 1990
+  const VYNTA_VIP_PRICE_CENTS = 90 // temporary test price R$0,90 (in cents)
 
   const payload: Record<string, unknown> = {
-    amount: AMOUNT,
+    amount: VYNTA_VIP_PRICE_CENTS,
     paymentMethod: 'pix',
 
     items: [
       {
         title: 'Vynta VIP',
-        unitPrice: AMOUNT,
+        unitPrice: VYNTA_VIP_PRICE_CENTS,
         quantity: 1,
         tangible: false,
         externalRef: user.id,

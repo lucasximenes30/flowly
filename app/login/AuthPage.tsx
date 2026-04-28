@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useApp } from '@/lib/i18n'
 import BrandLogo from '@/components/BrandLogo'
+import { QRCodeSVG } from 'qrcode.react'
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter()
@@ -20,6 +21,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [checkingPayment, setCheckingPayment] = useState(false)
   const [paymentMessage, setPaymentMessage] = useState('')
   
+  const [copied, setCopied] = useState(false)
+
   // Track if user is currently on the inactive screen
   const [isInactive, setIsInactive] = useState(searchParams.get('error') === 'inactive')
 
@@ -136,7 +139,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       }
 
       if (data.status === 'pending') {
-        setPaymentMessage('⏳ Pagamento ainda não confirmado. Tente novamente em alguns instantes.')
+        setPaymentMessage('Pagamento ainda não confirmado. Aguarde alguns segundos e tente novamente.')
         return
       }
 
@@ -170,11 +173,11 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             priority
           />
           <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {hasPixData ? 'Pagamento PIX' : 'Acesso Bloqueado'}
+            {hasPixData ? 'Finalize seu acesso ao Vynta' : 'Acesso Bloqueado'}
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-[1.03rem] leading-relaxed text-surface-200 sm:text-lg">
             {hasPixData
-              ? 'Complete o pagamento via PIX para desbloquear seu acesso'
+              ? 'Após a confirmação do pagamento, seu acesso VIP será liberado automaticamente.'
               : 'Sua conta está inativa. Você precisa de uma assinatura ativa para acessar o sistema.'}
           </p>
 
@@ -185,19 +188,30 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
             {hasPixData ? (
               <div className="space-y-6">
-                {/* Status message */}
-                <div className="px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
-                  <p className="text-sm font-medium text-amber-100">Aguardando pagamento...</p>
+                {/* Status pill */}
+                <div className="mx-auto w-fit px-3 py-1.5 rounded-full bg-primary-500/10 border border-primary-500/20 text-center flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary-500"></span>
+                  </span>
+                  <p className="text-xs font-medium text-primary-300">Aguardando pagamento</p>
                 </div>
 
                 {/* QR Code */}
-                <div>
-                  <p className="text-sm font-medium text-surface-200 mb-3">Escaneie o QR Code:</p>
-                  <div className="flex justify-center">
-                    {typeof paymentData.pix.qrcode === 'string' && paymentData.pix.qrcode.startsWith('data:image') ? (
-                      <img src={paymentData.pix.qrcode} alt="PIX QR Code" className="w-56 h-56 rounded-xl border-2 border-surface-700" />
+                <div className="bg-surface-800/50 rounded-2xl p-6 border border-surface-700/50 flex flex-col items-center">
+                  <p className="text-sm font-medium text-surface-200 mb-4 whitespace-nowrap overflow-hidden text-ellipsis w-full">Escaneie o QR Code ou copie o código Pix abaixo.</p>
+                  <div className="flex justify-center p-3 bg-white rounded-xl shadow-sm">
+                    {paymentData.pix.qrcode || paymentData.pix.copyPaste ? (
+                      <QRCodeSVG 
+                        value={paymentData.pix.qrcode || paymentData.pix.copyPaste} 
+                        size={200}
+                        bgColor={"#ffffff"}
+                        fgColor={"#000000"}
+                        level={"L"}
+                        includeMargin={false}
+                      />
                     ) : (
-                      <div className="w-56 h-56 rounded-xl border-2 border-surface-700 bg-surface-800 flex items-center justify-center text-surface-400 text-sm">
+                      <div className="w-[200px] h-[200px] rounded-xl bg-surface-100 flex items-center justify-center text-surface-500 text-sm">
                         QR Code não disponível
                       </div>
                     )}
@@ -206,18 +220,37 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
                 {/* Copy-paste code */}
                 {paymentData.pix.copyPaste && (
-                  <div>
-                    <p className="text-xs font-medium text-surface-400 mb-2">PIX Copia e Cola:</p>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(paymentData.pix.copyPaste)
-                        alert('Código PIX copiado para a área de transferência!')
-                      }}
-                      className="w-full p-3 bg-surface-800 hover:bg-surface-700 text-surface-100 text-xs rounded-lg font-mono break-all transition-colors text-left"
-                      title="Clique para copiar"
-                    >
-                      {paymentData.pix.copyPaste}
-                    </button>
+                  <div className="space-y-3">
+                    <p className="text-xs font-medium text-surface-400 text-left">PIX Copia e Cola:</p>
+                    <div className="flex flex-col gap-2 relative">
+                      <div className="w-full p-3 bg-surface-950/50 border border-surface-700 text-surface-300 text-xs rounded-lg font-mono break-all text-left">
+                        {paymentData.pix.copyPaste}
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(paymentData.pix.copyPaste)
+                          setCopied(true)
+                          setTimeout(() => setCopied(false), 2000)
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-surface-800 hover:bg-surface-700 text-white p-3 rounded-lg text-sm font-medium transition-colors border border-surface-600 shadow-sm"
+                      >
+                        {copied ? (
+                          <>
+                            <svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="text-emerald-400">Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4 text-surface-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            Copiar código PIX
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -229,32 +262,41 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 )}
 
                 {/* Instructions */}
-                <div className="bg-surface-800/50 rounded-lg p-4 text-left">
-                  <p className="text-xs text-surface-300 leading-relaxed">
-                    ✓ Abra seu aplicativo de banco<br />
-                    ✓ Escolha a opção PIX Copia e Cola ou escaneie o QR Code<br />
-                    ✓ Confirme a transação<br />
-                    ✓ Seu acesso será liberado automaticamente após a confirmação
-                  </p>
+                <div className="bg-surface-800/30 border border-surface-700/50 rounded-xl p-4 text-left">
+                  <ul className="text-xs text-surface-300 space-y-2">
+                    <li className="flex gap-2"><span className="text-primary-400">1.</span> Abra seu aplicativo de banco</li>
+                    <li className="flex gap-2"><span className="text-primary-400">2.</span> Escolha a opção PIX Copia e Cola ou escaneie o QR Code</li>
+                    <li className="flex gap-2"><span className="text-primary-400">3.</span> Confirme a transação</li>
+                  </ul>
                 </div>
 
                 {/* Refresh button */}
-                <button
-                  onClick={handleCheckPaymentStatus}
-                  disabled={checkingPayment}
-                  className="btn-primary h-11 w-full text-sm font-semibold"
-                >
-                  {checkingPayment ? 'Verificando...' : 'Já paguei, verificar acesso'}
-                </button>
+                <div className="pt-2">
+                  <button
+                    onClick={handleCheckPaymentStatus}
+                    disabled={checkingPayment}
+                    className="btn-primary h-12 w-full text-sm font-semibold shadow-lg shadow-primary-500/20 relative overflow-hidden"
+                  >
+                    {checkingPayment ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Verificando...
+                      </span>
+                    ) : (
+                      'Já paguei, verificar acesso'
+                    )}
+                  </button>
+                </div>
 
                 {/* Payment check message */}
                 {paymentMessage && (
-                  <p className={`text-xs text-center p-2 rounded-lg ${
+                  <p className={`text-xs text-center p-3 rounded-lg font-medium border ${
                     paymentMessage.includes('✓') 
-                      ? 'bg-emerald-500/10 text-emerald-300' 
-                      : paymentMessage.includes('⏳')
-                      ? 'bg-amber-500/10 text-amber-300'
-                      : 'bg-red-500/10 text-red-300'
+                      ? 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20' 
+                      : 'bg-primary-500/10 text-primary-300 border-primary-500/20'
                   }`}>
                     {paymentMessage}
                   </p>
@@ -266,12 +308,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               </button>
             )}
 
-            <div className="pt-4 border-t border-surface-700/50">
+            <div className="pt-4 border-t border-surface-700/50 mt-6">
               <button
                 onClick={() => setIsInactive(false)}
                 className="text-sm font-medium text-surface-400 hover:text-white transition-colors w-full text-center"
               >
-                Fazer login com outra conta
+                Entrar com outra conta
               </button>
             </div>
           </div>
