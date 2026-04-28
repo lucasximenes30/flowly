@@ -18,7 +18,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [loading, setLoading] = useState(false)
   const [paymentData, setPaymentData] = useState<any>(null)
   
-  const isInactive = searchParams.get('error') === 'inactive'
+  // Track if user is currently on the inactive screen
+  const [isInactive, setIsInactive] = useState(searchParams.get('error') === 'inactive')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,6 +45,15 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         return
       }
 
+      // ── Check if login returned inactive status ───────────────────────
+      if (data.status === 'inactive') {
+        console.log('[Auth] User is inactive - showing unlock screen')
+        setIsInactive(true)
+        setPaymentData(null) // Reset payment data
+        return
+      }
+
+      // ── User is active - proceed to dashboard ──────────────────────────
       router.push('/dashboard')
       router.refresh()
     } catch {
@@ -63,10 +73,25 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         setError(data.error || 'Erro ao gerar pagamento')
         return
       }
-      setPaymentData(data.data)
-      if (data.data?.paymentLink) {
-        window.location.href = data.data.paymentLink
+
+      // ── Payment response is now normalized ──────────────────────────
+      // Response shape: { ok, provider, status, paymentMethod, transactionId, pix: {...}, redirectUrl }
+      
+      console.log('[Auth/Unlock] Payment created:', {
+        provider: data.provider,
+        status: data.status,
+        hasRedirectUrl: !!data.redirectUrl,
+        hasPixQrcode: !!data.pix?.qrcode,
+      })
+
+      // If BlackPayments returned a redirect URL (non-Pix), redirect user
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl
+        return
       }
+
+      // Otherwise, display Pix payment data
+      setPaymentData(data)
     } catch {
       setError('Erro de rede. Tente novamente.')
     } finally {
@@ -74,7 +99,10 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     }
   }
 
+  // ── Show inactive/unlock screen ──────────────────────────────────────
   if (isInactive) {
+    const hasPixData = paymentData?.pix?.qrcode
+
     return (
       <div className="relative flex min-h-dvh items-center justify-center overflow-y-auto bg-surface-950 px-4 py-8 sm:px-6">
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(66,88,249,0.26),transparent_45%),radial-gradient(circle_at_bottom,rgba(17,31,171,0.2),transparent_36%)]" />
@@ -87,10 +115,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             priority
           />
           <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            Acesso Bloqueado
+            {hasPixData ? 'Pagamento PIX' : 'Acesso Bloqueado'}
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-[1.03rem] leading-relaxed text-surface-200 sm:text-lg">
-            Sua conta está inativa. Você precisa de uma assinatura ativa para acessar o sistema.
+            {hasPixData
+              ? 'Complete o pagamento via PIX para desbloquear seu acesso'
+              : 'Sua conta está inativa. Você precisa de uma assinatura ativa para acessar o sistema.'}
           </p>
 
           <div className="card space-y-5 border-surface-700/70 bg-surface-900/85 px-5 py-6 shadow-elevated backdrop-blur sm:px-8 sm:py-8 mt-6">
@@ -98,29 +128,67 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               <p className="rounded-xl border border-red-900/40 bg-red-900/20 p-3 text-sm text-red-300 mb-4">{error}</p>
             )}
 
-            {paymentData && paymentData.qrCode ? (
-              <div className="space-y-4">
-                <p className="text-sm text-surface-200">Escaneie o QR Code abaixo para pagar via PIX:</p>
-                <img src={paymentData.qrCode} alt="PIX QR Code" className="mx-auto w-48 h-48 rounded-lg" />
-                {paymentData.pixCopyPaste && (
-                  <div className="mt-4">
-                    <p className="text-xs text-surface-400 mb-2">Ou copie o código PIX:</p>
-                    <input 
-                      type="text" 
-                      readOnly 
-                      value={paymentData.pixCopyPaste} 
-                      className="input-field text-xs text-center cursor-pointer"
-                      onClick={(e) => {
-                        (e.target as HTMLInputElement).select();
-                        navigator.clipboard.writeText(paymentData.pixCopyPaste);
-                        alert('Código copiado!');
+            {hasPixData ? (
+              <div className="space-y-6">
+                {/* Status message */}
+                <div className="px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 text-center">
+                  <p className="text-sm font-medium text-amber-100">Aguardando pagamento...</p>
+                </div>
+
+                {/* QR Code */}
+                <div>
+                  <p className="text-sm font-medium text-surface-200 mb-3">Escaneie o QR Code:</p>
+                  <div className="flex justify-center">
+                    {typeof paymentData.pix.qrcode === 'string' && paymentData.pix.qrcode.startsWith('data:image') ? (
+                      <img src={paymentData.pix.qrcode} alt="PIX QR Code" className="w-56 h-56 rounded-xl border-2 border-surface-700" />
+                    ) : (
+                      <div className="w-56 h-56 rounded-xl border-2 border-surface-700 bg-surface-800 flex items-center justify-center text-surface-400 text-sm">
+                        QR Code não disponível
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Copy-paste code */}
+                {paymentData.pix.copyPaste && (
+                  <div>
+                    <p className="text-xs font-medium text-surface-400 mb-2">Ou copie e cole o código PIX:</p>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(paymentData.pix.copyPaste)
+                        alert('Código copiado para a área de transferência!')
                       }}
-                    />
+                      className="w-full p-3 bg-surface-800 hover:bg-surface-700 text-surface-100 text-xs rounded-lg font-mono break-all transition-colors text-left"
+                      title="Clique para copiar"
+                    >
+                      {paymentData.pix.copyPaste}
+                    </button>
                   </div>
                 )}
-                <p className="text-xs text-surface-400 mt-4">Após o pagamento, aguarde alguns instantes e recarregue a página.</p>
-                <button onClick={() => window.location.reload()} className="btn-primary h-11 w-full text-sm font-semibold mt-4">
-                  Já paguei
+
+                {/* Expiration date */}
+                {paymentData.pix.expirationDate && (
+                  <div className="text-xs text-surface-400">
+                    Válido até: <span className="font-medium text-surface-200">{paymentData.pix.expirationDate}</span>
+                  </div>
+                )}
+
+                {/* Instructions */}
+                <div className="bg-surface-800/50 rounded-lg p-4 text-left">
+                  <p className="text-xs text-surface-300 leading-relaxed">
+                    ✓ Abra seu aplicativo de banco<br />
+                    ✓ Escolha a opção PIX Copia e Cola ou escaneie o QR Code<br />
+                    ✓ Confirme a transação<br />
+                    ✓ Seu acesso será liberado automaticamente após a confirmação
+                  </p>
+                </div>
+
+                {/* Refresh button */}
+                <button
+                  onClick={() => window.location.reload()}
+                  className="btn-primary h-11 w-full text-sm font-semibold"
+                >
+                  Já realizei o pagamento
                 </button>
               </div>
             ) : (
@@ -128,11 +196,14 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 {loading ? 'Gerando pagamento...' : 'Desbloquear acesso'}
               </button>
             )}
-            
-            <div className="pt-4 border-t border-surface-700/50 mt-4">
-               <Link href="/login" className="text-sm font-medium text-surface-400 hover:text-white transition-colors">
-                 Fazer login com outra conta
-               </Link>
+
+            <div className="pt-4 border-t border-surface-700/50">
+              <button
+                onClick={() => setIsInactive(false)}
+                className="text-sm font-medium text-surface-400 hover:text-white transition-colors w-full text-center"
+              >
+                Fazer login com outra conta
+              </button>
             </div>
           </div>
         </div>
