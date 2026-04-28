@@ -30,10 +30,24 @@ export async function POST(request: NextRequest) {
       canAccess: isPaidActive || isPrivileged,
     })
     
-    // If user is inactive and not privileged, do NOT set session
-    // They must complete payment to access
+    // ── IMPORTANT: Set session for all registered users (active AND inactive) ──
+    // Inactive users need a valid session to call /api/payments/create
+    // The middleware will block dashboard access based on subscriptionStatus
+    // The frontend will redirect inactive users to the unlock screen
+    console.log(`[Auth/Register] Setting session for new user ${result.user.email}`)
+    await setSession({
+      userId: result.user.id,
+      email: result.user.email,
+      name: result.user.name,
+      subscriptionStatus: result.user.subscriptionStatus,
+      hasWorkoutModule: result.user.hasWorkoutModule,
+      role: result.user.role,
+    })
+
+    // If user is inactive and not privileged, return inactive status
+    // Frontend will redirect them to unlock screen instead of dashboard
     if (!isPaidActive && !isPrivileged) {
-      console.log(`[Auth/Register] New user ${result.user.email} is INACTIVE - redirecting to unlock screen`)
+      console.log(`[Auth/Register] New user ${result.user.email} is INACTIVE - frontend will show unlock screen`)
       return NextResponse.json(
         {
           success: false,
@@ -45,16 +59,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // User has access (ACTIVE or privileged) - set session
-    await setSession({
-      userId: result.user.id,
-      email: result.user.email,
-      name: result.user.name,
-      subscriptionStatus: result.user.subscriptionStatus,
-      hasWorkoutModule: result.user.hasWorkoutModule,
-      role: result.user.role,
-    })
-
+    // User has access (ACTIVE or privileged) - safe to redirect to dashboard
     return NextResponse.json({ success: true, user: result.user })
   } catch (error: any) {
     const message = error instanceof z.ZodError
