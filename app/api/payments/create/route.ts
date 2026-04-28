@@ -14,6 +14,44 @@ function getClientIp(req: NextRequest): string | null {
   )
 }
 
+/** Normalize BlackPayments response to predictable shape */
+function normalizePaymentResponse(rawResponse: any) {
+  const transactionId = rawResponse.id || ''
+  const status = rawResponse.status || 'waiting_payment'
+  const paymentMethod = rawResponse.paymentMethod || 'pix'
+  const redirectUrl = rawResponse.redirectUrl || null
+  
+  // Extract Pix data if present
+  const pixData = rawResponse.data?.pix || {}
+  const qrcode = pixData.qrcode || ''
+  const expirationDate = pixData.expirationDate || ''
+  const copyPaste = pixData.copyPaste || pixData.qrcode || '' // Fallback to qrcode if copyPaste not provided
+  
+  // Log what we extracted
+  console.log('[Payments/Create] Normalized response:', {
+    transactionIdExists: !!transactionId,
+    status,
+    paymentMethod,
+    pixQrcodeExists: !!qrcode,
+    pixExpirationDateExists: !!expirationDate,
+    redirectUrlExists: !!redirectUrl,
+  })
+  
+  return {
+    ok: true,
+    provider: 'blackpayments',
+    status,
+    paymentMethod,
+    transactionId,
+    pix: {
+      qrcode,
+      expirationDate,
+      copyPaste,
+    },
+    redirectUrl,
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession()
@@ -40,7 +78,10 @@ export async function POST(req: NextRequest) {
       ip,
     })
 
-    return NextResponse.json({ success: true, data: paymentData }, { status: 200 })
+    const normalizedResponse = normalizePaymentResponse(paymentData)
+    console.log('[Payments/Create] Returning normalized response to frontend')
+    
+    return NextResponse.json(normalizedResponse, { status: 200 })
   } catch (err: any) {
     // ── Missing document — friendly user-facing message ───────────────────
     if (err?.code === 'MISSING_DOCUMENT') {

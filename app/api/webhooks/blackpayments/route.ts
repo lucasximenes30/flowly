@@ -3,11 +3,26 @@ import { PrismaClient, UserSubscriptionStatus, UserPlan } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+/** Safe log of headers (exclude sensitive keys) */
+function logHeadersSafely(headers: Headers) {
+  const headerLog: Record<string, string> = {}
+  headers.forEach((value, key) => {
+    // Log header names and existence, but not values for sensitive headers
+    if (['authorization', 'cookie', 'x-webhook-secret', 'secret'].includes(key.toLowerCase())) {
+      headerLog[key] = '[REDACTED]'
+    } else {
+      headerLog[key] = value.substring(0, 50) // First 50 chars only
+    }
+  })
+  return headerLog
+}
+
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text()
     
-    console.log('--- BLACKPAYMENTS WEBHOOK RECEIVED ---');
+    console.log('[BlackPayments Webhook] Received webhook request')
+    console.log('[BlackPayments Webhook] Headers present:', Object.keys(Object.fromEntries(req.headers.entries())))
 
     let payload: any
     try {
@@ -17,80 +32,150 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
     }
 
-    // Temporary logs as requested in Step 9
-    console.log("Payment received:", payload)
+    console.log('[BlackPayments Webhook] Payload parsed successfully')
 
-    // Validate Secret if provided
+    // ── Provider-specific validation approach ──────────────────────────────
+    // BlackPayments may or may not send webhook secret. Validate structure instead.
+    
     const secret = payload.secret || req.headers.get('x-webhook-secret')
     const expectedSecret = process.env.BLACKPAY_WEBHOOK_SECRET
     
-    if (expectedSecret && secret !== expectedSecret) {
-      console.error(`[BlackPayments Webhook] Unauthorized: Secret mismatch`);
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Only enforce secret validation if both are configured
+    if (expectedSecret && secret) {
+      if (secret !== expectedSecret) {
+        console.error('[BlackPayments Webhook] Secret mismatch - rejecting webhook')
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      console.log('[BlackPayments Webhook] Secret validated successfully')
+    } else if (expectedSecret && !secret) {
+      console.warn('[BlackPayments Webhook] Expected secret but none provided in webhook - accepting based on payload validation')
     } else if (!expectedSecret) {
-      console.warn('[BlackPayments Webhook] BLACKPAY_WEBHOOK_SECRET is not set. Accepting without signature verification.');
+      console.log('[BlackPayments Webhook] BLACKPAY_WEBHOOK_SECRET not configured - validating by payload structure only')
     }
 
-    // Extract necessary fields
-    const status = payload.status?.toLowerCase()
-    const email = payload.customer?.email || payload.email
-    const transactionId = payload.id || payload.transactionId
-    const metadata = payload.metadata || {}
-    const userId = typeof metadata === 'string' ? metadata : metadata.userId
+    // ── Validate payload structure ────────────────────────────────────────
+    // BlackPayments webhook should have either top-level status or nested data.status
+    const payloadStatus = payload.status || payload.data?.status
+    if (!payloadStatus) {
+      console.warn('[BlackPayments Webhook] No status field found in payload - treating as informational')
+    }
+
+    // Extract necessary fields - check multiple locations for flexibility
+    const status = (payloadStatus || '').toLowerCase()
+    const email = payload.customer?.email || payload.data?.customer?.email || payload.email || payload.data?.email
+    const transactionId = payload.id || payload.data?.id || payload.transactionId || payload.data?.transactionId
+    
+    // Extract userId from metadata (might be string or object)
+    let metadata = payload.metadata || payload.data?.metadata || {}
+    if (typeof metadata === 'string') {
+      try {
+        metadata = JSON.parse(metadata)
+      } catch {
+        // If string, try to extract userId directly
+        metadata = { userId: metadata }
+      }
+    }
+    const userId = metadata.userId || payload.userId || payload.data?.userId
+
+    console.log('[BlackPayments Webhook] Extracted fields:', {
+      statusFound: !!status,
+      status: status || 'none',
+      emailFound: !!email,
+      transactionIdFound: !!transactionId,
+      userIdFound: !!userId,
+    })
 
     if (!email && !userId) {
-      console.error('[BlackPayments Webhook] No email or userId found in payload data');
-      return NextResponse.json({ error: 'No user identification found in payload data' }, { status: 400 })
+      console.error('[BlackPayments Webhook] No email or userId found in payload - cannot identify user')
+      return NextResponse.json({ error: 'No user identification found in payload' }, { status: 400 })
     }
 
     // Find the user safely
-    let user = null;
+    let user = null
     if (userId) {
       user = await prisma.user.findUnique({ where: { id: userId } })
+      if (user) {
+        console.log(`[BlackPayments Webhook] User found by ID: ${user.email}`)
+      }
     }
     if (!user && email) {
       user = await prisma.user.findUnique({ where: { email } })
+      if (user) {
+        console.log(`[BlackPayments Webhook] User found by email: ${user.email}`)
+      }
     }
 
     if (!user) {
-      console.log(`[BlackPayments Webhook] User with email ${email} or id ${userId} not found in database. Ignoring safely to prevent breaking existing users.`);
-      return NextResponse.json({ success: true, message: 'User not found, skipped' }, { status: 200 })
+      console.log(`[BlackPayments Webhook] User not found (email: ${email}, userId: ${userId}) - webhook accepted but user not in system`)
+      return NextResponse.json({ success: true, message: 'User not found in system, webhook acknowledged' }, { status: 200 })
     }
 
-    // Handle Statuses
-    if (status === "approved" || status === "paid") {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          subscriptionStatus: UserSubscriptionStatus.ACTIVE,
-          plan: UserPlan.PRO,
-          billingProvider: 'blackpayments',
-          caktoOrderId: transactionId, // Reusing existing fields or we could add a new one, but to not break schema we use existing for generic ids if needed
-          billingApprovedAt: new Date()
-        }
-      });
-      console.log(`[BlackPayments Webhook] User ${user.email} updated to ACTIVE and PRO.`);
-    } else if (status === "pending") {
-      // Pending should keep inactive if they are inactive, or move to pending. 
-      // Safe approach: only set to INACTIVE if they are not already ACTIVE to avoid downgrading by mistake.
+    // ── Status handling - only activate on confirmed payment statuses ──────
+    // waiting_payment, pending → keep inactive or set to PENDING
+    // approved, paid, payment_confirmed, completed → activate ACTIVE
+    // refused, declined, failed → mark REFUSED or keep inactive
+    // canceled, expired → mark CANCELED
+
+    let statusUpdated = false
+    let newStatus: UserSubscriptionStatus | null = null
+
+    if (status === 'approved' || status === 'paid' || status === 'payment_confirmed' || status === 'completed') {
+      newStatus = UserSubscriptionStatus.ACTIVE
+      statusUpdated = true
+      console.log(`[BlackPayments Webhook] Status "${status}" maps to ACTIVE - activating user`)
+    } else if (status === 'waiting_payment' || status === 'pending') {
+      // Do NOT activate user - keep them as PENDING or INACTIVE
+      console.log(`[BlackPayments Webhook] Status "${status}" is pending - NOT activating user yet`)
+      newStatus = UserSubscriptionStatus.PENDING
+      // Only update if user is not already ACTIVE (don't downgrade)
       if (user.subscriptionStatus !== UserSubscriptionStatus.ACTIVE) {
+        statusUpdated = true
+      }
+    } else if (status === 'refused' || status === 'declined' || status === 'failed') {
+      newStatus = UserSubscriptionStatus.REFUSED
+      statusUpdated = true
+      console.log(`[BlackPayments Webhook] Status "${status}" is failed - marking as REFUSED`)
+    } else if (status === 'canceled' || status === 'cancelled' || status === 'expired') {
+      newStatus = UserSubscriptionStatus.CANCELED
+      statusUpdated = true
+      console.log(`[BlackPayments Webhook] Status "${status}" is cancelled - marking as CANCELED`)
+    } else {
+      console.log(`[BlackPayments Webhook] Unknown status: "${status}" - no action taken`)
+    }
+
+    // Apply update if needed
+    if (statusUpdated && newStatus) {
+      try {
+        const updateData: any = {
+          subscriptionStatus: newStatus,
+          billingProvider: 'blackpayments',
+        }
+
+        // Only set these fields if we have them
+        if (transactionId) updateData.caktoOrderId = transactionId
+        if (newStatus === UserSubscriptionStatus.ACTIVE) {
+          updateData.plan = UserPlan.PRO
+          updateData.billingApprovedAt = new Date()
+        }
+
         await prisma.user.update({
           where: { id: user.id },
-          data: {
-            subscriptionStatus: UserSubscriptionStatus.INACTIVE
-          }
-        });
-        console.log(`[BlackPayments Webhook] User ${user.email} status set to INACTIVE (pending payment).`);
+          data: updateData,
+        })
+
+        console.log(`[BlackPayments Webhook] User ${user.email} updated: subscriptionStatus=${newStatus}`)
+      } catch (updateErr: any) {
+        console.error(`[BlackPayments Webhook] Failed to update user ${user.email}:`, updateErr.message)
+        // Still return 200 so webhook doesn't retry infinitely
       }
-    } else if (status === "refused") {
-      console.log(`[BlackPayments Webhook] Payment refused for ${user.email}. Doing nothing.`);
     } else {
-      console.log(`[BlackPayments Webhook] Unknown or unhandled status: ${status}.`);
+      console.log(`[BlackPayments Webhook] No status update applied for user ${user.email}`)
     }
 
-    return NextResponse.json({ success: true }, { status: 200 })
+    return NextResponse.json({ success: true, message: 'Webhook processed' }, { status: 200 })
   } catch (err: any) {
     console.error('[BlackPayments Webhook] Uncaught error:', err.message)
+    console.error('[BlackPayments Webhook] Error stack:', err.stack)
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
   }
 }

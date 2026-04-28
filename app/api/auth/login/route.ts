@@ -14,6 +14,36 @@ export async function POST(request: NextRequest) {
     const { email, password } = loginSchema.parse(body)
 
     const result = await loginUser({ email, password })
+    
+    // ── Check account status before setting session ──────────────────────
+    const isPaidActive = result.user.subscriptionStatus === 'ACTIVE'
+    const isPrivileged = result.user.role === 'ADMIN' || result.user.role === 'COURTESY' || result.user.role === 'LEGACY'
+    
+    console.log('[Auth/Login] User authentication:', {
+      email: result.user.email,
+      subscriptionStatus: result.user.subscriptionStatus,
+      role: result.user.role,
+      isPaidActive,
+      isPrivileged,
+      canAccess: isPaidActive || isPrivileged,
+    })
+    
+    // Block inactive unpaid users from accessing the app
+    if (!isPaidActive && !isPrivileged) {
+      console.log(`[Auth/Login] User ${result.user.email} is INACTIVE and not privileged - blocking access`)
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Sua conta está inativa. Finalize o pagamento para liberar seu acesso.',
+          status: 'inactive',
+          user: result.user, // Return user info so frontend can show unlock screen
+        },
+        { status: 200 }, // 200 so frontend treats this as expected flow, not network error
+      )
+    }
+
+    // User is active or privileged - set session
+    console.log(`[Auth/Login] User ${result.user.email} granted access (ACTIVE: ${isPaidActive}, Privileged: ${isPrivileged})`)
     await setSession({
       userId: result.user.id,
       email: result.user.email,
