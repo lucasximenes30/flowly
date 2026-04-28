@@ -75,6 +75,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       console.log('[Auth/Unlock] Payment creation response:', {
         ok: data.ok,
         status: data.status,
+        paymentMethod: data.paymentMethod,
         hasRedirectUrl: !!data.redirectUrl,
         hasPixData: !!data.pix,
         pixQrcodeExists: !!data.pix?.qrcode,
@@ -93,8 +94,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         return
       }
 
-      // Check if we have Pix data
-      if (!data.pix || !data.pix.qrcode) {
+      // Check if we have Pix data defensively
+      const isPix = data.paymentMethod === 'pix'
+      const hasQrcode = !!data.pix?.qrcode
+      const hasCopyPaste = !!data.pix?.copyPaste
+      
+      if (!isPix || !data.pix || (!hasQrcode && !hasCopyPaste)) {
         console.error('[Auth/Unlock] Payment created but no Pix data received:', data)
         setError('Erro ao processar pagamento PIX. Tente novamente.')
         return
@@ -151,7 +156,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   // ── Show inactive/unlock screen ──────────────────────────────────────
   if (isInactive) {
-    const hasPixData = paymentData?.pix?.qrcode
+    const hasPixData = paymentData?.paymentMethod === 'pix' && (paymentData?.pix?.qrcode || paymentData?.pix?.copyPaste)
 
     return (
       <div className="relative flex min-h-dvh items-center justify-center overflow-y-auto bg-surface-950 px-4 py-8 sm:px-6">
@@ -202,11 +207,11 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                 {/* Copy-paste code */}
                 {paymentData.pix.copyPaste && (
                   <div>
-                    <p className="text-xs font-medium text-surface-400 mb-2">Ou copie e cole o código PIX:</p>
+                    <p className="text-xs font-medium text-surface-400 mb-2">PIX Copia e Cola:</p>
                     <button
                       onClick={() => {
                         navigator.clipboard.writeText(paymentData.pix.copyPaste)
-                        alert('Código copiado para a área de transferência!')
+                        alert('Código PIX copiado para a área de transferência!')
                       }}
                       className="w-full p-3 bg-surface-800 hover:bg-surface-700 text-surface-100 text-xs rounded-lg font-mono break-all transition-colors text-left"
                       title="Clique para copiar"
@@ -239,7 +244,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   disabled={checkingPayment}
                   className="btn-primary h-11 w-full text-sm font-semibold"
                 >
-                  {checkingPayment ? 'Verificando...' : 'Já realizei o pagamento'}
+                  {checkingPayment ? 'Verificando...' : 'Já paguei, verificar acesso'}
                 </button>
 
                 {/* Payment check message */}
