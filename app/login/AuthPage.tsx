@@ -17,6 +17,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [paymentData, setPaymentData] = useState<any>(null)
+  const [checkingPayment, setCheckingPayment] = useState(false)
+  const [paymentMessage, setPaymentMessage] = useState('')
   
   // Track if user is currently on the inactive screen
   const [isInactive, setIsInactive] = useState(searchParams.get('error') === 'inactive')
@@ -69,33 +71,81 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     try {
       const res = await fetch('/api/payments/create', { method: 'POST' })
       const data = await res.json()
-      if (!res.ok) {
+      
+      console.log('[Auth/Unlock] Payment creation response:', {
+        ok: data.ok,
+        status: data.status,
+        hasRedirectUrl: !!data.redirectUrl,
+        hasPixData: !!data.pix,
+        pixQrcodeExists: !!data.pix?.qrcode,
+        pixCopyPasteExists: !!data.pix?.copyPaste,
+      })
+
+      if (!data.ok || data.error) {
         setError(data.error || 'Erro ao gerar pagamento')
         return
       }
 
-      // ── Payment response is now normalized ──────────────────────────
-      // Response shape: { ok, provider, status, paymentMethod, transactionId, pix: {...}, redirectUrl }
-      
-      console.log('[Auth/Unlock] Payment created:', {
-        provider: data.provider,
-        status: data.status,
-        hasRedirectUrl: !!data.redirectUrl,
-        hasPixQrcode: !!data.pix?.qrcode,
-      })
-
       // If BlackPayments returned a redirect URL (non-Pix), redirect user
       if (data.redirectUrl) {
+        console.log('[Auth/Unlock] Redirecting to payment URL')
         window.location.href = data.redirectUrl
         return
       }
 
-      // Otherwise, display Pix payment data
+      // Check if we have Pix data
+      if (!data.pix || !data.pix.qrcode) {
+        console.error('[Auth/Unlock] Payment created but no Pix data received:', data)
+        setError('Erro ao processar pagamento PIX. Tente novamente.')
+        return
+      }
+
+      // Display Pix payment data
+      console.log('[Auth/Unlock] Displaying Pix data')
       setPaymentData(data)
-    } catch {
+    } catch (err) {
+      console.error('[Auth/Unlock] Error:', err)
       setError('Erro de rede. Tente novamente.')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleCheckPaymentStatus = async () => {
+    setCheckingPayment(true)
+    setPaymentMessage('')
+    try {
+      const res = await fetch('/api/subscription/status', { method: 'POST' })
+      const data = await res.json()
+      
+      console.log('[Auth/CheckPayment] Status response:', data)
+
+      if (data.status === 'approved') {
+        // Payment approved! User should now be ACTIVE
+        setPaymentMessage('✓ Pagamento confirmado! Redirecionando...')
+        setTimeout(() => {
+          router.push('/dashboard')
+          router.refresh()
+        }, 2000)
+        return
+      }
+
+      if (data.status === 'pending') {
+        setPaymentMessage('⏳ Pagamento ainda não confirmado. Tente novamente em alguns instantes.')
+        return
+      }
+
+      if (data.ok === false) {
+        setPaymentMessage(data.message || 'Erro ao verificar pagamento.')
+        return
+      }
+
+      setPaymentMessage(data.message || 'Status desconhecido.')
+    } catch (err) {
+      console.error('[Auth/CheckPayment] Error:', err)
+      setPaymentMessage('Erro ao verificar. Tente novamente.')
+    } finally {
+      setCheckingPayment(false)
     }
   }
 
@@ -185,11 +235,25 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
                 {/* Refresh button */}
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={handleCheckPaymentStatus}
+                  disabled={checkingPayment}
                   className="btn-primary h-11 w-full text-sm font-semibold"
                 >
-                  Já realizei o pagamento
+                  {checkingPayment ? 'Verificando...' : 'Já realizei o pagamento'}
                 </button>
+
+                {/* Payment check message */}
+                {paymentMessage && (
+                  <p className={`text-xs text-center p-2 rounded-lg ${
+                    paymentMessage.includes('✓') 
+                      ? 'bg-emerald-500/10 text-emerald-300' 
+                      : paymentMessage.includes('⏳')
+                      ? 'bg-amber-500/10 text-amber-300'
+                      : 'bg-red-500/10 text-red-300'
+                  }`}>
+                    {paymentMessage}
+                  </p>
+                )}
               </div>
             ) : (
               <button onClick={handleUnlockAccess} disabled={loading} className="btn-primary h-11 w-full text-sm font-semibold">

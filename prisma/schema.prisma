@@ -25,6 +25,8 @@ model User {
   billingProvider       String?                @default("cakto")
   caktoOrderId          String?
   caktoSubscriptionId   String?
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
   hasWorkoutModule      Boolean                @default(false)
   cards                 Card[]
   customCategories      Category[]

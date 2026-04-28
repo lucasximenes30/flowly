@@ -153,9 +153,15 @@ export async function POST(req: Request) {
 
         // Only set these fields if we have them
         if (transactionId) updateData.caktoOrderId = transactionId
+        
+        // If ACTIVE, set subscription dates (30 days from now)
         if (newStatus === UserSubscriptionStatus.ACTIVE) {
+          const now = new Date()
           updateData.plan = UserPlan.PRO
-          updateData.billingApprovedAt = new Date()
+          updateData.billingApprovedAt = now
+          updateData.subscriptionStartDate = now
+          updateData.subscriptionEndDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // +30 days
+          console.log(`[BlackPayments Webhook] Setting subscription dates: ${now.toISOString()} to ${updateData.subscriptionEndDate.toISOString()}`)
         }
 
         await prisma.user.update({

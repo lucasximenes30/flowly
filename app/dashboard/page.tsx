@@ -49,6 +49,31 @@ export default async function DashboardPage() {
   const session = await getSession()
   if (!session) redirect('/login')
 
+  // Check subscription status and expiration
+  const prisma = require('@/lib/prisma').prisma || new (require('@prisma/client').PrismaClient)()
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: {
+      subscriptionStatus: true,
+      subscriptionEndDate: true,
+      role: true,
+    },
+  })
+
+  if (!user) redirect('/login')
+
+  // Check if subscription has expired
+  const isPaidActive = user.subscriptionStatus === 'ACTIVE'
+  const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY' || user.role === 'LEGACY'
+  const isExpired = user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)
+
+  // Redirect if inactive or if VIP access expired
+  if (!isPaidActive || (user.subscriptionStatus === 'ACTIVE' && isExpired)) {
+    if (!isPrivileged) {
+      redirect('/login?error=inactive')
+    }
+  }
+
   const [transactions, balance, monthly, cards] = await Promise.all([
     getTransactionsByUser(session.userId),
     getUserBalance(session.userId),
