@@ -54,7 +54,7 @@ export async function createTransaction(user: CreateTransactionInput) {
 
   // ── Build payload ────────────────────────────────────────────────────────
   // To change the price back to R$19,90, update this constant to 1990
-  const VYNTA_VIP_PRICE_CENTS = 500 // temporary test price R$0,90 (in cents)
+  const VYNTA_VIP_PRICE_CENTS = 1990
 
   const payload: Record<string, unknown> = {
     amount: VYNTA_VIP_PRICE_CENTS,

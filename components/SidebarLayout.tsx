@@ -13,6 +13,27 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   const pathname = usePathname()
   const router = useRouter()
   const [isDrawerOpen, setIsDrawerOpen] = useState(false)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<string | null>(null)
+  const [isBRL, setIsBRL] = useState(true)
+
+  useEffect(() => {
+    setIsBRL(navigator.language.startsWith('pt'))
+    
+    const loadUserData = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store' })
+        if (res.ok) {
+          const data = await res.json()
+          setUserRole(data.user?.role || null)
+          setUserPlan(data.user?.plan || null)
+        }
+      } catch {
+        // Silently fail
+      }
+    }
+    loadUserData()
+  }, [])
 
   const showSidebar = !NO_SIDEBAR_ROUTES.some(
     (r) => pathname === r || pathname.startsWith(`${r}/`)
@@ -88,10 +109,14 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
 
           <div className="mt-auto px-2">
              <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border border-surface-200/60 dark:border-surface-700/40">
-                <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-3">Versão Premium</p>
+                <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-3">
+                  {isBRL ? 'Plano atual' : 'Current plan'}
+                </p>
                 <div className="flex items-center gap-2 text-surface-700 dark:text-surface-200">
-                   <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                   <span className="text-sm font-semibold tracking-tight">Vynta Pro</span>
+                   <div className={`h-2 w-2 rounded-full animate-pulse ${userPlan === 'PRO' || userRole === 'COURTESY' || userRole === 'ADMIN' ? 'bg-emerald-500' : 'bg-surface-400'}`} />
+                   <span className="text-sm font-semibold tracking-tight">
+                     {userRole === 'ADMIN' ? 'Admin' : userRole === 'COURTESY' ? (isBRL ? 'Cortesia' : 'Courtesy') : (userPlan === 'PRO' ? 'VIP' : (isBRL ? 'Gratuito' : 'Free'))}
+                   </span>
                 </div>
              </div>
           </div>
