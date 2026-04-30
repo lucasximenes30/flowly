@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import * as Lucide from 'lucide-react'
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 type DashboardStats = {
   totalUsers: number
@@ -25,29 +26,48 @@ type ExpiringData = {
   in7Days: UserData[]
 }
 
+type GrowthData = {
+  date: string
+  count: number
+}
+
+type DistributionData = {
+  name: string
+  value: number
+  color: string
+}
+
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [expiring, setExpiring] = useState<ExpiringData | null>(null)
+  const [growth, setGrowth] = useState<GrowthData[] | null>(null)
+  const [distribution, setDistribution] = useState<DistributionData[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, expiringRes] = await Promise.all([
+        const [statsRes, expiringRes, growthRes, distRes] = await Promise.all([
           fetch('/api/admin/dashboard/stats'),
           fetch('/api/admin/dashboard/expiring'),
+          fetch('/api/admin/dashboard/users-growth'),
+          fetch('/api/admin/dashboard/distribution'),
         ])
 
-        if (!statsRes.ok || !expiringRes.ok) {
+        if (!statsRes.ok || !expiringRes.ok || !growthRes.ok || !distRes.ok) {
           throw new Error('Erro ao carregar dados do dashboard')
         }
 
         const statsData = await statsRes.json()
         const expiringData = await expiringRes.json()
+        const growthData = await growthRes.json()
+        const distData = await distRes.json()
 
         setStats(statsData)
         setExpiring(expiringData)
+        setGrowth(growthData)
+        setDistribution(distData)
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -69,7 +89,7 @@ export default function AdminDashboardPage() {
     )
   }
 
-  if (error || !stats || !expiring) {
+  if (error || !stats || !expiring || !growth || !distribution) {
     return (
       <div className="flex-1 p-8">
         <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 p-4 rounded-xl">
@@ -192,6 +212,67 @@ export default function AdminDashboardPage() {
                 <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Inativos</p>
                 <p className="text-2xl font-bold text-surface-900 dark:text-white">{stats.inactiveUsers}</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Growth Chart */}
+          <div className="lg:col-span-2 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm p-6">
+            <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-6">Crescimento (Últimos 30 Dias)</h2>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={growth} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" opacity={0.2} />
+                  <XAxis 
+                    dataKey="date" 
+                    tickFormatter={(val) => {
+                      const d = new Date(val);
+                      return `${d.getDate()}/${d.getMonth()+1}`;
+                    }}
+                    stroke="#64748b" 
+                    fontSize={12} 
+                    tickLine={false} 
+                    axisLine={false} 
+                  />
+                  <YAxis stroke="#64748b" fontSize={12} tickLine={false} axisLine={false} />
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                    labelFormatter={(val) => formatDate(val)}
+                  />
+                  <Line type="monotone" dataKey="count" name="Novos Usuários" stroke="#3b82f6" strokeWidth={3} dot={false} activeDot={{ r: 6 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Distribution Chart */}
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 rounded-2xl shadow-sm p-6">
+            <h2 className="text-lg font-bold text-surface-900 dark:text-white mb-6">Distribuição de Acesso</h2>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={distribution}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={80}
+                    paddingAngle={5}
+                    dataKey="value"
+                    stroke="none"
+                  >
+                    {distribution.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip 
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                  <Legend verticalAlign="bottom" height={36} iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>

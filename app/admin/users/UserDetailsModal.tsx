@@ -117,7 +117,7 @@ export default function UserDetailsModal({
             <div className="space-y-1">
               <label className="text-xs font-semibold uppercase tracking-wider text-surface-500 dark:text-surface-400">Tipo de Acesso</label>
               <div className="font-medium text-surface-900 dark:text-surface-100">
-                {user.role === 'ADMIN' ? 'Admin' : user.role === 'COURTESY' ? 'Courtesy' : user.plan === 'PRO' ? 'VIP (Pro)' : 'Free'}
+                {user.role === 'ADMIN' ? 'Admin' : user.role === 'COURTESY' ? 'Courtesy' : user.plan === 'PRO' ? 'VIP' : 'Free'}
               </div>
             </div>
 

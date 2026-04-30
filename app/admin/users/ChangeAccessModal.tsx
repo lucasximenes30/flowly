@@ -97,7 +97,7 @@ export default function ChangeAccessModal({
                 className="mt-1 w-4 h-4 text-brand-600 bg-surface-100 border-surface-300 focus:ring-brand-500 dark:focus:ring-brand-600 dark:ring-offset-surface-800 focus:ring-2 dark:bg-surface-700 dark:border-surface-600"
               />
               <div>
-                <div className="font-bold text-surface-900 dark:text-white">VIP (Pro)</div>
+                <div className="font-bold text-surface-900 dark:text-white">VIP</div>
                 <div className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">Acesso completo pago ao app.</div>
               </div>
             </label>
