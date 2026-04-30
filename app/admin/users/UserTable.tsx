@@ -18,6 +18,16 @@ type UserData = {
 import UserDetailsModal, { UserDetails } from './UserDetailsModal'
 import ChangeAccessModal from './ChangeAccessModal'
 import TemporaryPasswordModal from './TemporaryPasswordModal'
+import CreateUserModal from './CreateUserModal'
+import EditUserModal from './EditUserModal'
+import DeleteUserModal from './DeleteUserModal'
+
+export function getUserAccessTier(user: { role: string; plan: string }) {
+  if (user.role === 'ADMIN') return 'ADMIN'
+  if (user.role === 'COURTESY') return 'COURTESY'
+  if (user.plan === 'PRO') return 'VIP'
+  return 'FREE'
+}
 
 export default function UserTable({
   initialUsers,
@@ -33,7 +43,7 @@ export default function UserTable({
   
   // Modal states
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
-  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | 'mobileActions' | null>(null)
+  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | 'mobileActions' | 'create' | 'edit' | 'delete' | null>(null)
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -83,6 +93,14 @@ export default function UserTable({
           >
             {isPending && <Lucide.Loader2 className="w-4 h-4 animate-spin" />}
             Buscar
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalType('create')}
+            className="w-full sm:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+          >
+            <Lucide.UserPlus className="w-4 h-4" />
+            Criar Usuário
           </button>
         </form>
       </div>
@@ -159,6 +177,14 @@ export default function UserTable({
                           </button>
                           
                           <button
+                            onClick={() => { setSelectedUser(user); setModalType('edit'); }}
+                            title="Editar Usuário"
+                            className="p-1.5 text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                          >
+                            <Lucide.Edit2 className="w-4 h-4" />
+                          </button>
+
+                          <button
                             onClick={() => { setSelectedUser(user); setModalType('access'); }}
                             title="Alterar Acesso"
                             className="p-1.5 text-surface-400 hover:text-brand-600 hover:bg-brand-50 dark:hover:text-brand-400 dark:hover:bg-brand-500/10 rounded-lg transition-colors"
@@ -181,8 +207,8 @@ export default function UserTable({
                               title={isActive ? 'Inativar Conta' : 'Ativar Conta'}
                               className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
                                 isActive 
-                                  ? 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-300 dark:hover:bg-red-500/10' 
-                                  : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10'
+                                  ? 'text-surface-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:text-orange-300 dark:hover:bg-orange-500/10' 
+                                  : 'text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10'
                               }`}
                             >
                               {isLoadingStatus ? (
@@ -192,6 +218,16 @@ export default function UserTable({
                               ) : (
                                 <Lucide.Power className="w-4 h-4" />
                               )}
+                            </button>
+                          )}
+
+                          {user.role !== 'ADMIN' && (
+                            <button
+                              onClick={() => { setSelectedUser(user); setModalType('delete'); }}
+                              title="Excluir Usuário"
+                              className="p-1.5 text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Lucide.Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
@@ -349,6 +385,9 @@ export default function UserTable({
         userName={selectedUser?.name || null}
         onClose={closeModal}
       />
+      {modalType === 'create' && <CreateUserModal onClose={closeModal} />}
+      {modalType === 'edit' && <EditUserModal user={selectedUser} onClose={closeModal} />}
+      {modalType === 'delete' && <DeleteUserModal userId={selectedUser?.id || null} userName={selectedUser?.name || null} onClose={closeModal} />}
     </div>
   )
 }

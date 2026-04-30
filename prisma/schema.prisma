@@ -12,6 +12,7 @@ model User {
   name                  String
   email                 String                 @unique
   password              String
+  forcePasswordChange   Boolean                @default(false)
   role                  UserRole               @default(LEGACY)
   plan                  UserPlan               @default(FREE)
   subscriptionStatus    UserSubscriptionStatus @default(INACTIVE)
@@ -27,6 +28,7 @@ model User {
   caktoSubscriptionId   String?
   subscriptionStartDate DateTime?
   subscriptionEndDate   DateTime?
+  subscriptionExpiresAt DateTime?
   hasWorkoutModule      Boolean                @default(false)
   cards                 Card[]
   customCategories      Category[]

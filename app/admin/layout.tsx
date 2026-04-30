@@ -32,6 +32,18 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         
         <nav className="flex-1 py-6 px-4 flex flex-col gap-2">
           <Link 
+            href="/admin/dashboard" 
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
+              pathname === '/admin/dashboard' 
+                ? 'bg-brand-600 text-white font-medium' 
+                : 'hover:bg-surface-800 hover:text-white'
+            }`}
+          >
+            <Lucide.LayoutDashboard className="h-5 w-5" />
+            <span>Dashboard</span>
+          </Link>
+
+          <Link 
             href="/admin/users" 
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
               pathname.startsWith('/admin/users') 

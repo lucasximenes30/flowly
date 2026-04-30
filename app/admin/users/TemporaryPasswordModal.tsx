@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import * as Lucide from 'lucide-react'
-import { generateTemporaryPassword } from './actions'
+
 
 export default function TemporaryPasswordModal({
   userId,
@@ -37,8 +37,12 @@ export default function TemporaryPasswordModal({
     if (!userId) return
     setLoading(true)
     try {
-      const tempPass = await generateTemporaryPassword(userId)
-      setPassword(tempPass)
+      const res = await fetch(`/api/admin/users/${userId}/reset-password`, {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      setPassword(data.tempPassword)
     } catch (error) {
       console.error('Failed to generate password', error)
       alert('Erro ao gerar senha temporária. Verifique se você tem permissão.')
