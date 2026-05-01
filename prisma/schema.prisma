@@ -11,6 +11,7 @@ model User {
   id                    String                 @id @default(uuid())
   name                  String
   email                 String                 @unique
+  phone                 String?
   password              String
   forcePasswordChange   Boolean                @default(false)
   role                  UserRole               @default(LEGACY)

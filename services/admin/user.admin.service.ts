@@ -3,7 +3,7 @@ import { hash } from 'bcryptjs'
 import { SALT_ROUNDS } from '@/lib/constants'
 
 // Create a new user manually
-export async function createUserAdmin(data: { name: string; email: string }) {
+export async function createUserAdmin(data: { name: string; email: string; phone?: string | null }) {
   const charset = '0123456789'
   let rawPassword = ''
   for (let i = 0; i < 6; i++) {
@@ -22,6 +22,7 @@ export async function createUserAdmin(data: { name: string; email: string }) {
       plan: 'FREE',
       subscriptionStatus: 'ACTIVE',
       forcePasswordChange: true,
+      phone: data.phone,
     },
   })
 
@@ -29,12 +30,13 @@ export async function createUserAdmin(data: { name: string; email: string }) {
 }
 
 // Update user manually
-export async function updateUserAdmin(id: string, data: { name: string; email: string }) {
+export async function updateUserAdmin(id: string, data: { name: string; email: string; phone?: string | null }) {
   const user = await prisma.user.update({
     where: { id },
     data: {
       name: data.name,
       email: data.email.toLowerCase(),
+      phone: data.phone,
     },
   })
   return user

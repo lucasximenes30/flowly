@@ -61,6 +61,9 @@ export default async function AdminUsersPage({
       role: true,
       subscriptionStatus: true,
       createdAt: true,
+      phone: true,
+      subscriptionExpiresAt: true,
+      subscriptionEndDate: true,
     },
   })
 
@@ -68,6 +71,8 @@ export default async function AdminUsersPage({
   const formattedUsers = users.map(user => ({
     ...user,
     createdAt: user.createdAt.toISOString(),
+    subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() || null,
+    subscriptionEndDate: user.subscriptionEndDate?.toISOString() || null,
   }))
 
   return (

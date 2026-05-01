@@ -13,6 +13,9 @@ type UserData = {
   role: string
   subscriptionStatus: string
   createdAt: string
+  phone?: string | null
+  subscriptionExpiresAt?: string | null
+  subscriptionEndDate?: string | null
 }
 
 import UserDetailsModal, { UserDetails } from './UserDetailsModal'
@@ -21,6 +24,7 @@ import TemporaryPasswordModal from './TemporaryPasswordModal'
 import CreateUserModal from './CreateUserModal'
 import EditUserModal from './EditUserModal'
 import DeleteUserModal from './DeleteUserModal'
+import { getWhatsappLink, getWhatsappMessage } from '@/lib/whatsapp'
 
 export function getUserAccessTier(user: { role: string; plan: string }) {
   if (user.role === 'ADMIN') return 'ADMIN'
@@ -211,6 +215,27 @@ export default function UserTable({
                           >
                             <Lucide.Eye className="w-4 h-4" />
                           </button>
+                          
+                          {user.phone ? (
+                            <a
+                              href={getWhatsappLink(user.phone, getWhatsappMessage('generic', user as any)) || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Enviar WhatsApp"
+                              className="p-1.5 text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            >
+                              <Lucide.MessageCircle className="w-4 h-4" />
+                            </a>
+                          ) : (
+                            <div className="group relative">
+                              <button disabled className="p-1.5 text-surface-200 dark:text-surface-700 cursor-not-allowed">
+                                <Lucide.MessageCircle className="w-4 h-4" />
+                              </button>
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-surface-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                Telefone não informado
+                              </span>
+                            </div>
+                          )}
                           
                           <button
                             onClick={() => { setSelectedUser(user); setModalType('edit'); }}

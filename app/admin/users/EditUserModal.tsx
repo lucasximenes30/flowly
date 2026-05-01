@@ -8,12 +8,13 @@ export default function EditUserModal({
   user,
   onClose,
 }: {
-  user: { id: string; name: string; email: string } | null
+  user: { id: string; name: string; email: string; phone?: string | null } | null
   onClose: () => void
 }) {
   const router = useRouter()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,6 +22,7 @@ export default function EditUserModal({
     if (user) {
       setName(user.name)
       setEmail(user.email)
+      setPhone(user.phone || '')
     }
   }, [user])
 
@@ -35,7 +37,7 @@ export default function EditUserModal({
       const res = await fetch(`/api/admin/users/${user.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify({ name, email, phone: phone || null }),
       })
 
       const data = await res.json()
@@ -88,6 +90,20 @@ export default function EditUserModal({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all dark:text-white"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="edit-phone" className="block text-sm font-medium text-surface-700 dark:text-surface-300">
+              Telefone (WhatsApp) <span className="text-surface-400 font-normal">(opcional)</span>
+            </label>
+            <input
+              id="edit-phone"
+              type="text"
+              placeholder="+55 11 99999-9999"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
               className="w-full px-4 py-2 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition-all dark:text-white"
             />
           </div>

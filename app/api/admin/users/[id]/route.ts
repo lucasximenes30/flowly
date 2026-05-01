@@ -6,6 +6,7 @@ import { z } from 'zod'
 const updateUserSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
+  phone: z.string().optional().nullable(),
 })
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -17,9 +18,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     const { id } = await params
     const body = await request.json()
-    const { name, email } = updateUserSchema.parse(body)
+    const { name, email, phone } = updateUserSchema.parse(body)
 
-    const user = await updateUserAdmin(id, { name, email })
+    const user = await updateUserAdmin(id, { name, email, phone })
 
     return NextResponse.json({ success: true, user })
   } catch (error: any) {

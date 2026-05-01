@@ -6,6 +6,7 @@ import { z } from 'zod'
 const createUserSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('Email inválido'),
+  phone: z.string().optional().nullable(),
 })
 
 export async function POST(request: NextRequest) {
@@ -16,9 +17,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { name, email } = createUserSchema.parse(body)
+    const { name, email, phone } = createUserSchema.parse(body)
 
-    const result = await createUserAdmin({ name, email })
+    const result = await createUserAdmin({ name, email, phone })
 
     return NextResponse.json({ success: true, user: result.user, tempPassword: result.rawPassword })
   } catch (error: any) {
