@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import { changeUserAccess, changeUserStatus } from './actions'
@@ -13,34 +13,66 @@ type UserData = {
   role: string
   subscriptionStatus: string
   createdAt: string
+  phone?: string | null
+  subscriptionExpiresAt?: string | null
+  subscriptionEndDate?: string | null
 }
 
 import UserDetailsModal, { UserDetails } from './UserDetailsModal'
 import ChangeAccessModal from './ChangeAccessModal'
 import TemporaryPasswordModal from './TemporaryPasswordModal'
+import CreateUserModal from './CreateUserModal'
+import EditUserModal from './EditUserModal'
+import DeleteUserModal from './DeleteUserModal'
+import { getWhatsappLink, getWhatsappMessage } from '@/lib/whatsapp'
+
+export function getUserAccessTier(user: { role: string; plan: string }) {
+  if (user.role === 'ADMIN') return 'ADMIN'
+  if (user.role === 'COURTESY') return 'COURTESY'
+  if (user.plan === 'PRO') return 'VIP'
+  return 'FREE'
+}
 
 export default function UserTable({
   initialUsers,
   initialSearch,
+  initialPlan = 'all',
+  initialStatus = 'all',
 }: {
   initialUsers: UserData[]
   initialSearch: string
+  initialPlan?: string
+  initialStatus?: string
 }) {
   const router = useRouter()
   const [search, setSearch] = useState(initialSearch)
+  const [plan, setPlan] = useState(initialPlan)
+  const [status, setStatus] = useState(initialStatus)
   const [isPending, startTransition] = useTransition()
   const [loadingAction, setLoadingAction] = useState<string | null>(null)
   
   // Modal states
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null)
-  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | 'mobileActions' | null>(null)
+  const [modalType, setModalType] = useState<'details' | 'access' | 'password' | 'mobileActions' | 'create' | 'edit' | 'delete' | null>(null)
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSearch = (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
     startTransition(() => {
-      router.push(`/admin/users?search=${encodeURIComponent(search)}`)
+      const params = new URLSearchParams()
+      if (search) params.set('search', search)
+      if (plan !== 'all') params.set('plan', plan)
+      if (status !== 'all') params.set('status', status)
+      
+      router.push(`/admin/users?${params.toString()}`)
     })
   }
+
+  // Trigger search when filters change
+  useEffect(() => {
+    if (plan !== initialPlan || status !== initialStatus) {
+      handleSearch()
+    }
+  }, [plan, status])
 
   const handleStatusChange = async (userId: string, active: boolean) => {
     const actionText = active ? 'ATIVAR' : 'INATIVAR'
@@ -76,6 +108,30 @@ export default function UserTable({
               placeholder="Buscar por nome ou e-mail..."
             />
           </div>
+          
+          <select
+            value={plan}
+            onChange={(e) => setPlan(e.target.value)}
+            className="w-full sm:w-auto px-4 py-2.5 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all outline-none text-surface-900 dark:text-white"
+          >
+            <option value="all">Plano: Todos</option>
+            <option value="VIP">VIP</option>
+            <option value="COURTESY">Courtesy</option>
+            <option value="ADMIN">Admin</option>
+            <option value="FREE">Free</option>
+          </select>
+
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="w-full sm:w-auto px-4 py-2.5 bg-surface-50 dark:bg-surface-950 border border-surface-200 dark:border-surface-800 rounded-xl focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-all outline-none text-surface-900 dark:text-white"
+          >
+            <option value="all">Status: Todos</option>
+            <option value="ACTIVE">Ativo</option>
+            <option value="INACTIVE">Inativo</option>
+            <option value="PENDING">Pendente</option>
+          </select>
+
           <button
             type="submit"
             disabled={isPending}
@@ -83,6 +139,14 @@ export default function UserTable({
           >
             {isPending && <Lucide.Loader2 className="w-4 h-4 animate-spin" />}
             Buscar
+          </button>
+          <button
+            type="button"
+            onClick={() => setModalType('create')}
+            className="w-full sm:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+          >
+            <Lucide.UserPlus className="w-4 h-4" />
+            Criar Usuário
           </button>
         </form>
       </div>
@@ -112,12 +176,6 @@ export default function UserTable({
                   const isActive = user.subscriptionStatus === 'ACTIVE'
                   const isLoadingStatus = loadingAction === `status-${user.id}`
                   
-                  // Determine display tier
-                  let displayTier = 'Free'
-                  if (user.role === 'ADMIN') displayTier = 'Admin'
-                  else if (user.role === 'COURTESY') displayTier = 'Courtesy'
-                  else if (user.plan === 'PRO') displayTier = 'VIP (Pro)'
-
                   return (
                     <tr key={user.id} className="hover:bg-surface-50/50 dark:hover:bg-surface-800/20 transition-colors">
                       <td className="px-6 py-4">
@@ -131,7 +189,7 @@ export default function UserTable({
                           user.plan === 'PRO' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' :
                           'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
                         }`}>
-                          {displayTier}
+                          {getUserAccessTier(user)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -158,6 +216,35 @@ export default function UserTable({
                             <Lucide.Eye className="w-4 h-4" />
                           </button>
                           
+                          {user.phone ? (
+                            <a
+                              href={getWhatsappLink(user.phone, getWhatsappMessage('generic', user as any)) || '#'}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              title="Enviar WhatsApp"
+                              className="p-1.5 text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-400 dark:hover:bg-emerald-500/10 rounded-lg transition-colors"
+                            >
+                              <Lucide.MessageCircle className="w-4 h-4" />
+                            </a>
+                          ) : (
+                            <div className="group relative">
+                              <button disabled className="p-1.5 text-surface-200 dark:text-surface-700 cursor-not-allowed">
+                                <Lucide.MessageCircle className="w-4 h-4" />
+                              </button>
+                              <span className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-surface-800 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                                Telefone não informado
+                              </span>
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => { setSelectedUser(user); setModalType('edit'); }}
+                            title="Editar Usuário"
+                            className="p-1.5 text-surface-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:text-blue-400 dark:hover:bg-blue-500/10 rounded-lg transition-colors"
+                          >
+                            <Lucide.Edit2 className="w-4 h-4" />
+                          </button>
+
                           <button
                             onClick={() => { setSelectedUser(user); setModalType('access'); }}
                             title="Alterar Acesso"
@@ -181,8 +268,8 @@ export default function UserTable({
                               title={isActive ? 'Inativar Conta' : 'Ativar Conta'}
                               className={`p-1.5 rounded-lg transition-colors disabled:opacity-50 ${
                                 isActive 
-                                  ? 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-300 dark:hover:bg-red-500/10' 
-                                  : 'text-emerald-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10'
+                                  ? 'text-surface-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:text-orange-300 dark:hover:bg-orange-500/10' 
+                                  : 'text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:text-emerald-300 dark:hover:bg-emerald-500/10'
                               }`}
                             >
                               {isLoadingStatus ? (
@@ -192,6 +279,16 @@ export default function UserTable({
                               ) : (
                                 <Lucide.Power className="w-4 h-4" />
                               )}
+                            </button>
+                          )}
+
+                          {user.role !== 'ADMIN' && (
+                            <button
+                              onClick={() => { setSelectedUser(user); setModalType('delete'); }}
+                              title="Excluir Usuário"
+                              className="p-1.5 text-surface-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                            >
+                              <Lucide.Trash2 className="w-4 h-4" />
                             </button>
                           )}
                         </div>
@@ -216,11 +313,6 @@ export default function UserTable({
             const isActive = user.subscriptionStatus === 'ACTIVE'
             const isLoadingStatus = loadingAction === `status-${user.id}`
             
-            let displayTier = 'Free'
-            if (user.role === 'ADMIN') displayTier = 'Admin'
-            else if (user.role === 'COURTESY') displayTier = 'Courtesy'
-            else if (user.plan === 'PRO') displayTier = 'VIP (Pro)'
-
             return (
               <div key={user.id} className="bg-white dark:bg-surface-900 rounded-2xl p-5 shadow-sm border border-surface-200 dark:border-surface-800 flex flex-col gap-4">
                 <div className="flex items-start justify-between gap-4">
@@ -243,7 +335,7 @@ export default function UserTable({
                     user.plan === 'PRO' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' :
                     'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
                   }`}>
-                    {displayTier}
+                    {getUserAccessTier(user)}
                   </span>
                   
                   <span
@@ -336,6 +428,10 @@ export default function UserTable({
       <UserDetailsModal
         user={modalType === 'details' ? (selectedUser as UserDetails) : null}
         onClose={closeModal}
+        onOpenAccess={() => setModalType('access')}
+        onOpenPassword={() => setModalType('password')}
+        onOpenEdit={() => setModalType('edit')}
+        onOpenDelete={() => setModalType('delete')}
       />
       <ChangeAccessModal
         userId={modalType === 'access' ? selectedUser?.id || null : null}
@@ -349,6 +445,9 @@ export default function UserTable({
         userName={selectedUser?.name || null}
         onClose={closeModal}
       />
+      {modalType === 'create' && <CreateUserModal onClose={closeModal} />}
+      {modalType === 'edit' && <EditUserModal user={selectedUser} onClose={closeModal} />}
+      {modalType === 'delete' && <DeleteUserModal userId={selectedUser?.id || null} userName={selectedUser?.name || null} onClose={closeModal} />}
     </div>
   )
 }

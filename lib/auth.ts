@@ -9,6 +9,7 @@ export interface JWTPayload {
   subscriptionStatus?: string
   hasWorkoutModule?: boolean
   role?: string
+  forcePasswordChange?: boolean
   [key: string]: unknown
 }
 

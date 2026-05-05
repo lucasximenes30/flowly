@@ -1,0 +1,81 @@
+import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+
+export type AdminAction =
+  | 'USER_CREATED'
+  | 'USER_UPDATED'
+  | 'USER_DELETED'
+  | 'PASSWORD_RESET'
+  | 'ACCESS_CHANGED'
+  | 'STATUS_CHANGED'
+  | 'PLAN_CHANGED'
+  | 'WHATSAPP_OPENED'
+  | 'PAYMENT_STATUS_UPDATED'
+
+export interface CreateAdminLogInput {
+  adminId: string
+  action: AdminAction
+  description?: string
+  targetUserId?: string
+  metadata?: Record<string, unknown>
+}
+
+export async function createAdminLog({
+  adminId,
+  action,
+  description,
+  targetUserId,
+  metadata,
+}: CreateAdminLogInput) {
+  try {
+    await prisma.adminActionLog.create({
+      data: {
+        adminId,
+        action,
+        description,
+        targetUserId: targetUserId ?? null,
+        metadata: metadata != null ? (metadata as Prisma.InputJsonValue) : Prisma.JsonNull,
+      },
+    })
+  } catch (err) {
+    // Non-critical — never let log failure break the main action
+    console.error('[AdminLog] Failed to create admin action log:', err)
+  }
+}
+
+export async function getAdminLogs({
+  targetUserId,
+  limit = 50,
+  offset = 0,
+}: {
+  targetUserId?: string
+  limit?: number
+  offset?: number
+} = {}) {
+  const where = targetUserId ? { targetUserId } : undefined
+
+  const [logs, total] = await Promise.all([
+    prisma.adminActionLog.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+      skip: offset,
+      select: {
+        id: true,
+        action: true,
+        description: true,
+        createdAt: true,
+        metadata: true,
+        admin: {
+          select: { id: true, name: true, email: true },
+        },
+        targetUser: {
+          select: { id: true, name: true, email: true },
+        },
+      },
+    }),
+    prisma.adminActionLog.count({ where }),
+  ])
+
+  return { logs, total }
+}

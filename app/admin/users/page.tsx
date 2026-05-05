@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ search?: string }>
+  searchParams: Promise<{ search?: string; plan?: string; status?: string }>
 }) {
   const session = await requireAuth().catch(() => null)
   if (!session || session.role !== 'ADMIN') {
@@ -18,16 +18,40 @@ export default async function AdminUsersPage({
 
   const resolvedSearchParams = await searchParams
   const search = resolvedSearchParams?.search || ''
+  const plan = resolvedSearchParams?.plan || 'all'
+  const status = resolvedSearchParams?.status || 'all'
+
+  const whereClause: any = {}
+
+  if (search) {
+    whereClause.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { email: { contains: search, mode: 'insensitive' } },
+    ]
+  }
+
+  if (status !== 'all') {
+    if (status === 'ACTIVE') whereClause.subscriptionStatus = 'ACTIVE'
+    else if (status === 'INACTIVE') whereClause.subscriptionStatus = 'INACTIVE'
+    else if (status === 'PENDING') whereClause.subscriptionStatus = 'PENDING'
+  }
+
+  if (plan !== 'all') {
+    if (plan === 'VIP') {
+      whereClause.plan = 'PRO'
+      whereClause.role = { notIn: ['ADMIN', 'COURTESY'] }
+    } else if (plan === 'COURTESY') {
+      whereClause.role = 'COURTESY'
+    } else if (plan === 'ADMIN') {
+      whereClause.role = 'ADMIN'
+    } else if (plan === 'FREE') {
+      whereClause.plan = 'FREE'
+      whereClause.role = { notIn: ['ADMIN', 'COURTESY'] }
+    }
+  }
 
   const users = await prisma.user.findMany({
-    where: search
-      ? {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { email: { contains: search, mode: 'insensitive' } },
-          ],
-        }
-      : undefined,
+    where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
     orderBy: { createdAt: 'desc' },
     select: {
       id: true,
@@ -37,6 +61,9 @@ export default async function AdminUsersPage({
       role: true,
       subscriptionStatus: true,
       createdAt: true,
+      phone: true,
+      subscriptionExpiresAt: true,
+      subscriptionEndDate: true,
     },
   })
 
@@ -44,6 +71,8 @@ export default async function AdminUsersPage({
   const formattedUsers = users.map(user => ({
     ...user,
     createdAt: user.createdAt.toISOString(),
+    subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() || null,
+    subscriptionEndDate: user.subscriptionEndDate?.toISOString() || null,
   }))
 
   return (
@@ -65,7 +94,7 @@ export default async function AdminUsersPage({
         </div>
       </div>
 
-      <UserTable initialUsers={formattedUsers} initialSearch={search} />
+      <UserTable initialUsers={formattedUsers} initialSearch={search} initialPlan={plan} initialStatus={status} />
     </div>
   )
 }

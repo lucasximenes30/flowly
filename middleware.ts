@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
 
   const isProtectedRoute = protectedRoutes.some((route) => path.startsWith(route))
   const isAdminRoute = path.startsWith('/admin') && !path.startsWith('/admin/login')
+  const isForcePasswordRoute = path === '/force-password-change'
 
   if (isAdminRoute) {
     if (!sessionToken) {
@@ -23,26 +24,33 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  if (isProtectedRoute) {
+  if (isProtectedRoute || isForcePasswordRoute) {
     if (!sessionToken) {
       return NextResponse.redirect(new URL('/login', request.url))
     }
     
-    // Verify token payload at Edge and check if subscription is ACTIVE or user has privilege
     const session = await verifyToken(sessionToken)
     
     if (!session) {
-      // Invalid session
       return NextResponse.redirect(new URL('/login', request.url))
     }
 
-    const isPaidActive = session.subscriptionStatus === 'ACTIVE';
-    const isPrivileged = session.role === 'COURTESY' || session.role === 'ADMIN';
+    // Handle force password change flow
+    if (session.forcePasswordChange && !isForcePasswordRoute && !isAdminRoute) {
+      return NextResponse.redirect(new URL('/force-password-change', request.url))
+    }
+    
+    if (!session.forcePasswordChange && isForcePasswordRoute) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
 
-    if (!isPaidActive && !isPrivileged) {
-      // Billing is not active and user is not admin/courtesy
-      // Redirect to unlock screen
-      return NextResponse.redirect(new URL('/login?error=inactive', request.url))
+    if (isProtectedRoute) {
+      const isPaidActive = session.subscriptionStatus === 'ACTIVE';
+      const isPrivileged = session.role === 'COURTESY' || session.role === 'ADMIN';
+
+      if (!isPaidActive && !isPrivileged) {
+        return NextResponse.redirect(new URL('/login?error=inactive', request.url))
+      }
     }
   }
 
@@ -50,5 +58,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/habits/:path*', '/reports/:path*', '/cards/:path*', '/workout/:path*', '/admin/:path*'],
+  matcher: ['/dashboard/:path*', '/habits/:path*', '/reports/:path*', '/cards/:path*', '/workout/:path*', '/admin/:path*', '/force-password-change'],
 }
