@@ -70,3 +70,41 @@ export async function resetUserPasswordAdmin(id: string) {
 
   return rawPassword
 }
+
+// Get full user details for admin modal
+export async function getUserDetails(id: string) {
+  return prisma.user.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      role: true,
+      plan: true,
+      subscriptionStatus: true,
+      subscriptionStartDate: true,
+      subscriptionEndDate: true,
+      subscriptionExpiresAt: true,
+      billingApprovedAt: true,
+      billingProvider: true,
+      createdAt: true,
+      paymentTransactions: {
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          provider: true,
+          providerTransactionId: true,
+          amount: true,
+          paymentMethod: true,
+          status: true,
+          paidAt: true,
+          expiresAt: true,
+          createdAt: true,
+        },
+      },
+    },
+  })
+}
+

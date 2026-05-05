@@ -12,6 +12,14 @@ type DashboardStats = {
   inactiveUsers: number
 }
 
+type PaymentStats = {
+  monthlyRevenueCents: number
+  monthlyRevenueFormatted: string
+  isEstimated: boolean
+  pendingCount: number
+  approvedCount: number
+}
+
 type UserData = {
   id: string
   name: string
@@ -41,6 +49,7 @@ type DistributionData = {
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [paymentStats, setPaymentStats] = useState<PaymentStats | null>(null)
   const [expiring, setExpiring] = useState<ExpiringData | null>(null)
   const [growth, setGrowth] = useState<GrowthData[] | null>(null)
   const [distribution, setDistribution] = useState<DistributionData[] | null>(null)
@@ -58,11 +67,12 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, expiringRes, growthRes, distRes] = await Promise.all([
+        const [statsRes, expiringRes, growthRes, distRes, payStatsRes] = await Promise.all([
           fetch('/api/admin/dashboard/stats'),
           fetch('/api/admin/dashboard/expiring'),
           fetch('/api/admin/dashboard/users-growth'),
           fetch('/api/admin/dashboard/distribution'),
+          fetch('/api/admin/payments/stats'),
         ])
 
         if (!statsRes.ok || !expiringRes.ok || !growthRes.ok || !distRes.ok) {
@@ -78,6 +88,11 @@ export default function AdminDashboardPage() {
         setExpiring(expiringData)
         setGrowth(growthData)
         setDistribution(distData)
+
+        // Payment stats are optional — don't fail dashboard if they error
+        if (payStatsRes.ok) {
+          setPaymentStats(await payStatsRes.json())
+        }
       } catch (err: any) {
         setError(err.message)
       } finally {
@@ -203,56 +218,101 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Metric Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-6 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 rounded-xl flex items-center justify-center">
-                <Lucide.Users className="w-6 h-6" />
+        {/* Metric Cards — Row 1 */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-surface-100 dark:bg-surface-800 text-surface-600 dark:text-surface-300 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.Users className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Total de Usuários</p>
-                <p className="text-2xl font-bold text-surface-900 dark:text-white">{stats.totalUsers}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-6 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center">
-                <Lucide.Crown className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-surface-500 dark:text-surface-400">VIPs Ativos</p>
-                <p className="text-2xl font-bold text-surface-900 dark:text-white">{stats.vipUsers}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Total</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.totalUsers}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-6 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center">
-                <Lucide.Clock className="w-6 h-6" />
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.Crown className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Pendentes</p>
-                <p className="text-2xl font-bold text-surface-900 dark:text-white">{stats.pendingUsers}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">VIPs Ativos</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.vipUsers}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-6 rounded-2xl shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center">
-                <Lucide.UserX className="w-6 h-6" />
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.Clock className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Inativos</p>
-                <p className="text-2xl font-bold text-surface-900 dark:text-white">{stats.inactiveUsers}</p>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Pendentes</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.pendingUsers}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.UserX className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Inativos</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.inactiveUsers}</p>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Metric Cards — Row 2: Payment stats */}
+        {paymentStats && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="sm:col-span-2 bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Lucide.TrendingUp className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium text-surface-500 dark:text-surface-400">
+                      Receita do Mês
+                    </p>
+                    {paymentStats.isEstimated && (
+                      <span className="text-[10px] font-bold px-1.5 py-0.5 bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 rounded uppercase tracking-wide">
+                        Estimada
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-2xl font-bold font-mono text-surface-900 dark:text-white">
+                    {paymentStats.monthlyRevenueFormatted}
+                  </p>
+                  <p className="text-xs text-surface-400 mt-0.5">
+                    {paymentStats.isEstimated
+                      ? 'Com base nos VIPs ativos × R$ 47'
+                      : `${paymentStats.approvedCount} pagamento(s) aprovado(s) no mês`}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <Lucide.CreditCard className="w-6 h-6" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-surface-500 dark:text-surface-400">Pgtos. Pendentes</p>
+                  <p className="text-2xl font-bold text-surface-900 dark:text-white">{paymentStats.pendingCount}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

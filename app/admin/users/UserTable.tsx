@@ -428,6 +428,10 @@ export default function UserTable({
       <UserDetailsModal
         user={modalType === 'details' ? (selectedUser as UserDetails) : null}
         onClose={closeModal}
+        onOpenAccess={() => setModalType('access')}
+        onOpenPassword={() => setModalType('password')}
+        onOpenEdit={() => setModalType('edit')}
+        onOpenDelete={() => setModalType('delete')}
       />
       <ChangeAccessModal
         userId={modalType === 'access' ? selectedUser?.id || null : null}

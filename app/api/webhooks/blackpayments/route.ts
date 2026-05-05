@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { PrismaClient, UserSubscriptionStatus, UserPlan } from '@prisma/client'
+import { PrismaClient, UserSubscriptionStatus, UserPlan, PaymentStatus } from '@prisma/client'
 import { activateVipAccess } from '@/services/subscription.service'
 
 const prisma = new PrismaClient()
@@ -8,14 +8,100 @@ const prisma = new PrismaClient()
 function logHeadersSafely(headers: Headers) {
   const headerLog: Record<string, string> = {}
   headers.forEach((value, key) => {
-    // Log header names and existence, but not values for sensitive headers
     if (['authorization', 'cookie', 'x-webhook-secret', 'secret'].includes(key.toLowerCase())) {
       headerLog[key] = '[REDACTED]'
     } else {
-      headerLog[key] = value.substring(0, 50) // First 50 chars only
+      headerLog[key] = value.substring(0, 50)
     }
   })
   return headerLog
+}
+
+/** Map BlackPayments raw status to our PaymentStatus enum */
+function mapToPaymentStatus(status: string): PaymentStatus {
+  const s = status.toLowerCase()
+  if (s === 'approved' || s === 'paid' || s === 'payment_confirmed' || s === 'completed') {
+    return PaymentStatus.ACTIVE
+  }
+  if (s === 'waiting_payment' || s === 'pending') {
+    return PaymentStatus.PENDING
+  }
+  if (s === 'refused' || s === 'declined' || s === 'failed') {
+    return PaymentStatus.FAILED
+  }
+  if (s === 'canceled' || s === 'cancelled') {
+    return PaymentStatus.CANCELED
+  }
+  if (s === 'expired') {
+    return PaymentStatus.EXPIRED
+  }
+  return PaymentStatus.PENDING
+}
+
+/** Save or update a PaymentTransaction record — never throws */
+async function upsertPaymentTransaction({
+  userId,
+  providerTransactionId,
+  rawStatus,
+  paymentStatus,
+  amount,
+  paymentMethod,
+  paidAt,
+  expiresAt,
+}: {
+  userId: string
+  providerTransactionId: string | null
+  rawStatus: string
+  paymentStatus: PaymentStatus
+  amount?: number | null
+  paymentMethod?: string | null
+  paidAt?: Date | null
+  expiresAt?: Date | null
+}) {
+  try {
+    if (providerTransactionId) {
+      await prisma.paymentTransaction.upsert({
+        where: { providerTransactionId },
+        update: {
+          status: paymentStatus,
+          rawStatus,
+          paidAt,
+          expiresAt,
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          provider: 'blackpayments',
+          providerTransactionId,
+          amount: amount != null ? amount : null,
+          paymentMethod: paymentMethod ?? null,
+          status: paymentStatus,
+          rawStatus,
+          paidAt,
+          expiresAt,
+        },
+      })
+    } else {
+      // No transactionId — just create (no dedupe possible)
+      await prisma.paymentTransaction.create({
+        data: {
+          userId,
+          provider: 'blackpayments',
+          providerTransactionId: null,
+          amount: amount != null ? amount : null,
+          paymentMethod: paymentMethod ?? null,
+          status: paymentStatus,
+          rawStatus,
+          paidAt,
+          expiresAt,
+        },
+      })
+    }
+    console.log(`[BlackPayments Webhook] PaymentTransaction saved: status=${paymentStatus}`)
+  } catch (err: any) {
+    console.error('[BlackPayments Webhook] Failed to save PaymentTransaction:', err.message)
+    // Non-critical — do not rethrow
+  }
 }
 
 export async function POST(req: Request) {
@@ -23,7 +109,6 @@ export async function POST(req: Request) {
     const rawBody = await req.text()
     
     console.log('[BlackPayments Webhook] Received webhook request')
-    console.log('[BlackPayments Webhook] Headers present:', Object.keys(Object.fromEntries(req.headers.entries())))
 
     let payload: any
     try {
@@ -35,13 +120,9 @@ export async function POST(req: Request) {
 
     console.log('[BlackPayments Webhook] Payload parsed successfully')
 
-    // ── Provider-specific validation approach ──────────────────────────────
-    // BlackPayments may or may not send webhook secret. Validate structure instead.
-    
     const secret = payload.secret || req.headers.get('x-webhook-secret')
     const expectedSecret = process.env.BLACKPAY_WEBHOOK_SECRET
     
-    // Only enforce secret validation if both are configured
     if (expectedSecret && secret) {
       if (secret !== expectedSecret) {
         console.error('[BlackPayments Webhook] Secret mismatch - rejecting webhook')
@@ -49,30 +130,32 @@ export async function POST(req: Request) {
       }
       console.log('[BlackPayments Webhook] Secret validated successfully')
     } else if (expectedSecret && !secret) {
-      console.warn('[BlackPayments Webhook] Expected secret but none provided in webhook - accepting based on payload validation')
+      console.warn('[BlackPayments Webhook] Expected secret but none provided - accepting based on payload validation')
     } else if (!expectedSecret) {
       console.log('[BlackPayments Webhook] BLACKPAY_WEBHOOK_SECRET not configured - validating by payload structure only')
     }
 
-    // ── Validate payload structure ────────────────────────────────────────
-    // BlackPayments webhook should have either top-level status or nested data.status
     const payloadStatus = payload.status || payload.data?.status
     if (!payloadStatus) {
       console.warn('[BlackPayments Webhook] No status field found in payload - treating as informational')
     }
 
-    // Extract necessary fields - check multiple locations for flexibility
     const status = (payloadStatus || '').toLowerCase()
     const email = payload.customer?.email || payload.data?.customer?.email || payload.email || payload.data?.email
     const transactionId = payload.id || payload.data?.id || payload.transactionId || payload.data?.transactionId
     
-    // Extract userId from metadata (might be string or object)
+    // Amount: may come as cents (integer) or as float
+    const rawAmount = payload.amount || payload.data?.amount || payload.value || payload.data?.value
+    const amount = rawAmount != null ? Number(rawAmount) / 100 : null // convert cents to BRL
+
+    const paymentMethod = payload.paymentMethod || payload.data?.paymentMethod || 
+                          payload.payment_method || payload.data?.payment_method || null
+    
     let metadata = payload.metadata || payload.data?.metadata || {}
     if (typeof metadata === 'string') {
       try {
         metadata = JSON.parse(metadata)
       } catch {
-        // If string, try to extract userId directly
         metadata = { userId: metadata }
       }
     }
@@ -91,44 +174,37 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No user identification found in payload' }, { status: 400 })
     }
 
-    // Find the user safely
+    // Find user
     let user = null
     if (userId) {
       user = await prisma.user.findUnique({ where: { id: userId } })
-      if (user) {
-        console.log(`[BlackPayments Webhook] User found by ID: ${user.email}`)
-      }
+      if (user) console.log(`[BlackPayments Webhook] User found by ID: ${user.email}`)
     }
     if (!user && email) {
       user = await prisma.user.findUnique({ where: { email } })
-      if (user) {
-        console.log(`[BlackPayments Webhook] User found by email: ${user.email}`)
-      }
+      if (user) console.log(`[BlackPayments Webhook] User found by email: ${user.email}`)
     }
 
     if (!user) {
-      console.log(`[BlackPayments Webhook] User not found (email: ${email}, userId: ${userId}) - webhook accepted but user not in system`)
+      console.log(`[BlackPayments Webhook] User not found (email: ${email}, userId: ${userId}) - webhook acknowledged`)
       return NextResponse.json({ success: true, message: 'User not found in system, webhook acknowledged' }, { status: 200 })
     }
 
-    // ── Status handling - only activate on confirmed payment statuses ──────
-    // waiting_payment, pending → keep inactive or set to PENDING
-    // approved, paid, payment_confirmed, completed → activate ACTIVE
-    // refused, declined, failed → mark REFUSED or keep inactive
-    // canceled, expired → mark CANCELED
+    const paymentStatus = mapToPaymentStatus(status)
+    const isApproved = paymentStatus === PaymentStatus.ACTIVE
+    const paidAt = isApproved ? new Date() : null
+    const expiresAt = isApproved ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
 
     let statusUpdated = false
     let newStatus: UserSubscriptionStatus | null = null
 
-    if (status === 'approved' || status === 'paid' || status === 'payment_confirmed' || status === 'completed') {
+    if (isApproved) {
       newStatus = UserSubscriptionStatus.ACTIVE
       statusUpdated = true
       console.log(`[BlackPayments Webhook] Status "${status}" maps to ACTIVE - activating user`)
     } else if (status === 'waiting_payment' || status === 'pending') {
-      // Do NOT activate user - keep them as PENDING or INACTIVE
       console.log(`[BlackPayments Webhook] Status "${status}" is pending - NOT activating user yet`)
       newStatus = UserSubscriptionStatus.PENDING
-      // Only update if user is not already ACTIVE (don't downgrade)
       if (user.subscriptionStatus !== UserSubscriptionStatus.ACTIVE) {
         statusUpdated = true
       }
@@ -144,7 +220,19 @@ export async function POST(req: Request) {
       console.log(`[BlackPayments Webhook] Unknown status: "${status}" - no action taken`)
     }
 
-    // Apply update if needed
+    // Save PaymentTransaction (non-critical, runs regardless of user status change)
+    await upsertPaymentTransaction({
+      userId: user.id,
+      providerTransactionId: transactionId || null,
+      rawStatus: status || payloadStatus || 'unknown',
+      paymentStatus,
+      amount,
+      paymentMethod,
+      paidAt,
+      expiresAt,
+    })
+
+    // Apply user status update if needed
     if (statusUpdated && newStatus) {
       try {
         if (newStatus === UserSubscriptionStatus.ACTIVE) {
@@ -154,12 +242,10 @@ export async function POST(req: Request) {
             transactionId: transactionId || undefined,
           })
         } else {
-          // If not ACTIVE, just update the status (CANCELED, REFUSED, PENDING)
           const updateData: any = {
             subscriptionStatus: newStatus,
             billingProvider: 'blackpayments',
           }
-
           if (transactionId) updateData.caktoOrderId = transactionId
 
           await prisma.user.update({
