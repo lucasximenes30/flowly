@@ -84,6 +84,13 @@ interface WorkoutExecutionExerciseState {
   weightUsed: string
   notes: string
   completed: boolean
+  sets: Array<{
+    id: string
+    setNumber: number
+    actualReps: string
+    weight: string
+    completed: boolean
+  }>
 }
 
 interface WorkoutExerciseLogDTO {
@@ -1705,6 +1712,13 @@ export default function WorkoutClient({
         weightUsed: item.targetWeight ?? '',
         notes: '',
         completed: false,
+        sets: Array.from({ length: item.sets }).map((_, i) => ({
+          id: crypto.randomUUID(),
+          setNumber: i + 1,
+          actualReps: '',
+          weight: item.targetWeight ?? '',
+          completed: false,
+        })),
       }))
     )
 
@@ -1764,6 +1778,13 @@ export default function WorkoutClient({
           weightUsed,
           completed: item.completed,
           notes: notes || undefined,
+          sets: item.sets.map((set) => ({
+            setNumber: set.setNumber,
+            actualReps: parseOptionalSetsDoneInput(set.actualReps),
+            weight: parseOptionalWeightInput(set.weight),
+            completed: set.completed,
+            plannedReps: item.plannedReps,
+          })),
         }
       })
 
@@ -3452,56 +3473,127 @@ export default function WorkoutClient({
                         </button>
                       </div>
 
-                      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                        <div className="space-y-1.5">
-                          <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                            {locale === 'pt-BR' ? 'Series feitas' : 'Sets done'}
-                          </label>
-                          <input
-                            type="number"
-                            min={1}
-                            max={50}
-                            className="input-field"
-                            value={item.setsDone}
-                            onChange={(e) =>
-                              updateWorkoutExecutionExercise(item.workoutDayExerciseId, {
-                                setsDone: e.target.value,
-                              })
-                            }
-                          />
+                      <div className="mt-4 flex flex-col gap-3">
+                        <div className="hidden px-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400 sm:grid sm:grid-cols-[1fr_1fr_auto] sm:gap-3">
+                          <div>{locale === 'pt-BR' ? 'Repetições' : 'Reps'}</div>
+                          <div>{locale === 'pt-BR' ? 'Carga (kg)' : 'Weight (kg)'}</div>
+                          <div className="w-11 text-center">Done</div>
                         </div>
 
-                        <div className="space-y-1.5">
-                          <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                            {locale === 'pt-BR' ? 'Repeticoes feitas' : 'Reps done'}
-                          </label>
-                          <input
-                            type="text"
-                            className="input-field"
-                            value={item.repsDone}
-                            onChange={(e) =>
-                              updateWorkoutExecutionExercise(item.workoutDayExerciseId, {
-                                repsDone: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
+                        {item.sets.map((set, setIndex) => (
+                          <div
+                            key={set.id}
+                            className="flex flex-col gap-3 rounded-xl bg-surface-50/80 p-3.5 shadow-sm dark:bg-surface-800/40 sm:grid sm:grid-cols-[1fr_1fr_auto] sm:items-center sm:gap-3 sm:bg-transparent sm:p-0 sm:shadow-none"
+                          >
+                            <div className="flex items-center justify-between sm:hidden">
+                              <span className="text-xs font-bold uppercase tracking-wider text-surface-500 dark:text-surface-400">
+                                {locale === 'pt-BR' ? `Série ${set.setNumber}` : `Set ${set.setNumber}`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newSets = [...item.sets]
+                                  newSets[setIndex] = { ...set, completed: !set.completed }
+                                  
+                                  const allCompleted = newSets.every((s) => s.completed)
+                                  updateWorkoutExecutionExercise(item.workoutDayExerciseId, { 
+                                    sets: newSets,
+                                    completed: allCompleted ? true : item.completed,
+                                  })
+                                }}
+                                className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-all ${
+                                  set.completed
+                                    ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm dark:border-emerald-600 dark:bg-emerald-600'
+                                    : 'border-surface-300 bg-white text-surface-300 dark:border-surface-600 dark:bg-surface-900'
+                                }`}
+                              >
+                                <Lucide.Check className={`h-5 w-5 transition-transform duration-200 ${set.completed ? 'scale-100' : 'scale-75 opacity-0'}`} />
+                              </button>
+                            </div>
 
-                        <div className="space-y-1.5">
-                          <label className="block text-[11px] font-semibold uppercase tracking-[0.12em] text-surface-500 dark:text-surface-400">
-                            {locale === 'pt-BR' ? 'Carga usada' : 'Weight used'}
-                          </label>
-                          <input
-                            type="text"
-                            className="input-field"
-                            value={item.weightUsed}
-                            onChange={(e) =>
-                              updateWorkoutExecutionExercise(item.workoutDayExerciseId, {
-                                weightUsed: e.target.value,
-                              })
-                            }
-                          />
-                        </div>
+                            <div className="grid grid-cols-2 gap-3 sm:contents">
+                              <div className="relative">
+                                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-surface-500 sm:hidden">
+                                  {locale === 'pt-BR' ? 'Repetições' : 'Reps'}
+                                </label>
+                                <input
+                                  type="text"
+                                  className="input-field text-center font-medium"
+                                  placeholder={item.plannedReps}
+                                  value={set.actualReps}
+                                  onChange={(e) => {
+                                    const newSets = [...item.sets]
+                                    newSets[setIndex] = { ...set, actualReps: e.target.value }
+                                    updateWorkoutExecutionExercise(item.workoutDayExerciseId, { sets: newSets })
+                                  }}
+                                />
+                              </div>
+
+                              <div className="relative">
+                                <label className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-surface-500 sm:hidden">
+                                  {locale === 'pt-BR' ? 'Carga (kg)' : 'Weight'}
+                                </label>
+                                <input
+                                  type="text"
+                                  className="input-field text-center font-medium"
+                                  placeholder={item.plannedTargetWeight || '-'}
+                                  value={set.weight}
+                                  onChange={(e) => {
+                                    const newSets = [...item.sets]
+                                    newSets[setIndex] = { ...set, weight: e.target.value }
+                                    updateWorkoutExecutionExercise(item.workoutDayExerciseId, { sets: newSets })
+                                  }}
+                                />
+                              </div>
+                            </div>
+
+                            <div className="hidden sm:flex sm:justify-center">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const newSets = [...item.sets]
+                                  newSets[setIndex] = { ...set, completed: !set.completed }
+
+                                  const allCompleted = newSets.every((s) => s.completed)
+                                  updateWorkoutExecutionExercise(item.workoutDayExerciseId, {
+                                    sets: newSets,
+                                    completed: allCompleted ? true : item.completed,
+                                  })
+                                }}
+                                className={`flex h-11 w-11 items-center justify-center rounded-lg border transition-all ${
+                                  set.completed
+                                    ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm dark:border-emerald-600 dark:bg-emerald-600'
+                                    : 'border-surface-300 bg-surface-100 text-surface-400 hover:bg-surface-200 dark:border-surface-700 dark:bg-surface-800 dark:hover:bg-surface-700'
+                                }`}
+                              >
+                                <Lucide.Check className={`h-5 w-5 transition-transform duration-200 ${set.completed ? 'scale-100' : 'scale-75 opacity-0'}`} />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newSetNumber =
+                              item.sets.length > 0 ? item.sets[item.sets.length - 1].setNumber + 1 : 1
+                            const newSets = [
+                              ...item.sets,
+                              {
+                                id: crypto.randomUUID(),
+                                setNumber: newSetNumber,
+                                actualReps: '',
+                                weight: item.plannedTargetWeight ?? '',
+                                completed: false,
+                              },
+                            ]
+                            updateWorkoutExecutionExercise(item.workoutDayExerciseId, { sets: newSets })
+                          }}
+                          className="mt-2 flex w-full items-center justify-center rounded-lg border border-dashed border-surface-300 py-2.5 text-sm font-medium text-surface-600 hover:bg-surface-50 dark:border-surface-700 dark:text-surface-400 dark:hover:bg-surface-800/50"
+                        >
+                          <Lucide.Plus className="mr-2 h-4 w-4" />
+                          {locale === 'pt-BR' ? 'Adicionar série' : 'Add set'}
+                        </button>
                       </div>
 
                       <div className="mt-3 space-y-1.5">

@@ -57,6 +57,19 @@ interface WorkoutSessionExerciseRecord {
   notes: string | null
   createdAt: Date
   updatedAt: Date
+  sets?: WorkoutSessionExerciseSetRecord[]
+}
+
+interface WorkoutSessionExerciseSetRecord {
+  id: string
+  workoutSessionExerciseId: string
+  setNumber: number
+  plannedReps: string | null
+  actualReps: number | null
+  weight: unknown
+  completed: boolean
+  createdAt: Date
+  updatedAt: Date
 }
 
 interface WorkoutSessionExerciseDelegate {
@@ -66,6 +79,7 @@ interface WorkoutSessionExerciseDelegate {
   findMany(args: {
     where: Record<string, unknown>
     orderBy?: Record<string, unknown> | Array<Record<string, unknown>>
+    include?: Record<string, unknown>
   }): Promise<WorkoutSessionExerciseRecord[]>
 }
 
@@ -97,6 +111,13 @@ export interface CompleteWorkoutSessionInput {
     weightUsed?: number | null
     completed?: boolean
     notes?: string
+    sets?: Array<{
+      setNumber: number
+      plannedReps?: string | null
+      actualReps?: number | null
+      weight?: number | null
+      completed?: boolean
+    }>
   }>
 }
 
@@ -109,6 +130,19 @@ export interface WorkoutSessionExerciseDTO {
   weightUsed: string | null
   completed: boolean
   notes: string | null
+  createdAt: string
+  updatedAt: string
+  sets: WorkoutSessionExerciseSetDTO[]
+}
+
+export interface WorkoutSessionExerciseSetDTO {
+  id: string
+  workoutSessionExerciseId: string
+  setNumber: number
+  plannedReps: string | null
+  actualReps: number | null
+  weight: string | null
+  completed: boolean
   createdAt: string
   updatedAt: string
 }
@@ -136,6 +170,22 @@ function decimalToString(value: unknown): string | null {
   return null
 }
 
+function toWorkoutSessionExerciseSetDTO(
+  item: WorkoutSessionExerciseSetRecord
+): WorkoutSessionExerciseSetDTO {
+  return {
+    id: item.id,
+    workoutSessionExerciseId: item.workoutSessionExerciseId,
+    setNumber: item.setNumber,
+    plannedReps: item.plannedReps,
+    actualReps: item.actualReps,
+    weight: decimalToString(item.weight),
+    completed: item.completed,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  }
+}
+
 function toWorkoutSessionExerciseDTO(
   item: WorkoutSessionExerciseRecord
 ): WorkoutSessionExerciseDTO {
@@ -150,6 +200,7 @@ function toWorkoutSessionExerciseDTO(
     notes: item.notes,
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
+    sets: item.sets ? item.sets.map(toWorkoutSessionExerciseSetDTO) : [],
   }
 }
 
@@ -320,6 +371,15 @@ export async function completeWorkoutSession(
       weightUsed: normalizeOptionalWeightUsed(item.weightUsed),
       completed: Boolean(item.completed),
       notes: normalizeOptionalExerciseNotes(item.notes),
+      sets: Array.isArray(item.sets)
+        ? item.sets.map((set) => ({
+            setNumber: set.setNumber,
+            plannedReps: normalizeOptionalRepsDone(set.plannedReps),
+            actualReps: normalizeOptionalSetsDone(set.actualReps),
+            weight: normalizeOptionalWeightUsed(set.weight),
+            completed: Boolean(set.completed),
+          }))
+        : [],
     }
   })
 
@@ -336,19 +396,26 @@ export async function completeWorkoutSession(
         date,
         completed: true,
         dayNotes,
+        exercises: {
+          create: normalizedExercises.map((item) => ({
+            exerciseId: item.exerciseId,
+            setsDone: item.setsDone,
+            repsDone: item.repsDone,
+            weightUsed: item.weightUsed,
+            completed: item.completed,
+            notes: item.notes,
+            sets: {
+              create: item.sets?.map((set) => ({
+                setNumber: set.setNumber,
+                plannedReps: set.plannedReps,
+                actualReps: set.actualReps,
+                weight: set.weight,
+                completed: set.completed,
+              })) || [],
+            },
+          })),
+        },
       },
-    })
-
-    await workoutSessionExerciseDelegate(tx).createMany({
-      data: normalizedExercises.map((item) => ({
-        workoutSessionId: createdSession.id,
-        exerciseId: item.exerciseId,
-        setsDone: item.setsDone,
-        repsDone: item.repsDone,
-        weightUsed: item.weightUsed,
-        completed: item.completed,
-        notes: item.notes,
-      })),
     })
 
     await registerWorkoutCompletion(
@@ -366,6 +433,7 @@ export async function completeWorkoutSession(
   const sessionExercises = await workoutSessionExerciseDelegate(prisma).findMany({
     where: { workoutSessionId: session.id },
     orderBy: [{ createdAt: 'asc' }],
+    include: { sets: { orderBy: { setNumber: 'asc' } } },
   })
 
   return toWorkoutSessionDTO(session, sessionExercises)

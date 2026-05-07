@@ -335,12 +335,29 @@ model WorkoutSessionExercise {
   notes            String?
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
-  exercise         Exercise       @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
-  workoutSession   WorkoutSession @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  exercise         Exercise                    @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
+  workoutSession   WorkoutSession              @relation(fields: [workoutSessionId], references: [id], onDelete: Cascade)
+  sets             WorkoutSessionExerciseSet[]
 
   @@index([workoutSessionId])
   @@index([exerciseId])
   @@map("workout_session_exercises")
+}
+
+model WorkoutSessionExerciseSet {
+  id                       String                 @id @default(uuid())
+  workoutSessionExerciseId String
+  setNumber                Int
+  plannedReps              String?
+  actualReps               Int?
+  weight                   Decimal?               @db.Decimal(8, 2)
+  completed                Boolean                @default(false)
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  workoutSessionExercise   WorkoutSessionExercise @relation(fields: [workoutSessionExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([workoutSessionExerciseId])
+  @@map("workout_session_exercise_sets")
 }
 
 model WorkoutDayAssignment {
