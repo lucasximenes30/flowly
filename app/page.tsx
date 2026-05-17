@@ -7,12 +7,19 @@ import MagneticButton from '@/components/landing/MagneticButton'
 import { CAKTO_CONFIG } from '@/lib/cakto'
 
 // Layout Helpers
-function BezelImage({ src, alt, className, priority = false }: { src: string, alt: string, className?: string, priority?: boolean }) {
+function BezelImage({ src, mobileSrc, alt, className, priority = false }: { src: string, mobileSrc?: string, alt: string, className?: string, priority?: boolean }) {
   return (
     <ScrollReveal yOffset={40}>
       <div className={`p-1.5 md:p-2 rounded-[2rem] bg-white/[0.03] border border-white/10 ring-1 ring-black/10 shadow-2xl ${className}`}>
         <div className="relative overflow-hidden rounded-[calc(2rem-0.375rem)] bg-surface-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] flex items-center justify-center border border-white/5">
-          <Image src={src} alt={alt} width={1200} height={800} className="w-full h-auto object-cover" priority={priority} />
+          {mobileSrc ? (
+            <>
+              <Image src={src} alt={alt} width={1200} height={800} className="hidden md:block w-full h-auto object-cover" priority={priority} />
+              <Image src={mobileSrc} alt={alt} width={800} height={1200} className="block md:hidden w-full h-auto object-cover" priority={priority} />
+            </>
+          ) : (
+            <Image src={src} alt={alt} width={1200} height={800} className="w-full h-auto object-cover" priority={priority} />
+          )}
         </div>
       </div>
     </ScrollReveal>
@@ -111,7 +118,7 @@ export default function LandingPage() {
             </ScrollReveal>
           </div>
           <div className="lg:col-span-7 relative w-full mt-12 lg:mt-0">
-            <BezelImage src="/images/dashboard.png" alt="Vynta Dashboard" priority={true} />
+            <BezelImage src="/images/dashboard.png" mobileSrc="/images/dashboardMobile.png" alt="Vynta Dashboard" priority={true} />
           </div>
         </section>
 
@@ -238,14 +245,14 @@ export default function LandingPage() {
               </ScrollReveal>
             </div>
             <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/relatorios.png" alt="Controle Financeiro Vynta" />
+              <BezelImage src="/images/relatorios.png" mobileSrc="/images/relatorioMobile.png" alt="Controle Financeiro Vynta" />
             </div>
           </div>
 
           {/* Hábitos */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
             <div className="relative w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/habitos.png" alt="Gestão de Hábitos Vynta" />
+              <BezelImage src="/images/habitos.png" mobileSrc="/images/habitosMobile.png" alt="Gestão de Hábitos Vynta" />
             </div>
             <div className="space-y-6">
               <SectionHeading 
@@ -290,7 +297,7 @@ export default function LandingPage() {
               </ScrollReveal>
             </div>
             <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/treino.png" alt="Módulo de Treino Vynta" />
+              <BezelImage src="/images/treino.png" mobileSrc="/images/treinoMobile.png" alt="Módulo de Treino Vynta" />
             </div>
           </div>
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
-import { createTransaction } from '@/services/blackpayments.service'
+import { createTransaction } from '@/services/abacatepay.service'
 
 const prisma = new PrismaClient()
 
@@ -12,53 +12,6 @@ function getClientIp(req: NextRequest): string | null {
     req.headers.get('x-real-ip') ??
     null
   )
-}
-
-/** Normalize BlackPayments response to predictable shape */
-function normalizePaymentResponse(rawResponse: any) {
-  const transactionId = rawResponse.id || ''
-  const status = rawResponse.status || 'waiting_payment'
-  const paymentMethod = rawResponse.paymentMethod || 'pix'
-  const redirectUrl = rawResponse.redirectUrl || null
-  
-  // Defensively extract Pix data from possible locations
-  const pixData = rawResponse.pix || rawResponse.data?.pix || rawResponse.data || {}
-  
-  // Try to find QR Code and Copy-Paste from common field names
-  const rawQrcode = pixData.qrcode || pixData.qrCode || pixData.qr_code || pixData.code || ''
-  const rawCopyPaste = pixData.copyPaste || pixData.copiaECola || pixData.payload || pixData.pix_link || ''
-  
-  // Combine them: if we only got one, use it for both so frontend doesn't break
-  const qrcode = rawQrcode || rawCopyPaste
-  const copyPaste = rawCopyPaste || rawQrcode
-  
-  // Extract expiration date
-  const expirationDate = pixData.expirationDate || pixData.expires_at || pixData.expiration_date || ''
-  
-  // Log what we extracted
-  console.log('[Payments/Create] Normalized response:', {
-    transactionIdExists: !!transactionId,
-    status,
-    paymentMethod,
-    pixFieldsFound: Object.keys(pixData),
-    pixQrcodeExists: !!qrcode,
-    pixCopyPasteExists: !!copyPaste,
-    redirectUrlExists: !!redirectUrl,
-  })
-  
-  return {
-    ok: true,
-    provider: 'blackpayments',
-    status,
-    paymentMethod,
-    transactionId,
-    pix: {
-      qrcode,
-      expirationDate,
-      copyPaste,
-    },
-    redirectUrl,
-  }
 }
 
 export async function POST(req: NextRequest) {
@@ -98,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     const ip = getClientIp(req)
 
-    console.log('[Payments/Create] Calling BlackPayments API...')
+    console.log('[Payments/Create] Calling AbacatePay API...')
     const paymentData = await createTransaction({
       id: user.id,
       email: user.email,
@@ -108,10 +61,14 @@ export async function POST(req: NextRequest) {
       ip,
     })
 
-    const normalizedResponse = normalizePaymentResponse(paymentData)
-    console.log('[Payments/Create] ✓ Payment created successfully, returning normalized response')
+    console.log('[Payments/Create] ✓ Payment created successfully, returning redirect URL')
     
-    return NextResponse.json(normalizedResponse, { status: 200 })
+    return NextResponse.json({
+      ok: true,
+      provider: 'abacatepay',
+      status: paymentData.status,
+      redirectUrl: paymentData.url,
+    }, { status: 200 })
   } catch (err: any) {
     // ── Missing document — friendly user-facing message ───────────────────
     if (err?.code === 'MISSING_DOCUMENT') {
@@ -126,10 +83,9 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // ── BlackPayments provider validation error ───────────────────────────
+    // ── AbacatePay provider validation error ───────────────────────────
     if (err?.isProviderError) {
       console.error('[Payments/Create] 5xx - Provider error:', {
-        status: err.status,
         details: err.details,
       })
       return NextResponse.json(
@@ -138,7 +94,7 @@ export async function POST(req: NextRequest) {
             'Não foi possível gerar o pagamento agora. Tente novamente em alguns instantes.',
           details: process.env.NODE_ENV !== 'production' ? err.details : undefined,
         },
-        { status: err.status || 502 },
+        { status: 502 },
       )
     }
 

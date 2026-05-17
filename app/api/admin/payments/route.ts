@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { getPaymentTransactions } from '@/services/admin/payment.admin.service'
-import { PaymentStatus } from '@prisma/client'
+type PaymentStatus = 'PENDING' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'CANCELED'
 
 export const dynamic = 'force-dynamic'
 
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     const { transactions, total } = await getPaymentTransactions({ userId, status, limit, offset })
 
     // Serialize Decimal fields
-    const serialized = transactions.map((tx) => ({
+    const serialized = transactions.map((tx: any) => ({
       ...tx,
       amount: tx.amount != null ? Number(tx.amount) : null,
       paidAt: tx.paidAt?.toISOString() ?? null,

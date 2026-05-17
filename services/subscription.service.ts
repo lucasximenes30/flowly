@@ -18,7 +18,7 @@ export async function activateVipAccess({ userId, transactionId }: ActivateVipIn
   const updateData: any = {
     subscriptionStatus: UserSubscriptionStatus.ACTIVE,
     plan: UserPlan.PRO,
-    billingProvider: 'blackpayments',
+    billingProvider: 'abacatepay',
     billingApprovedAt: now,
     subscriptionStartDate: now,
     subscriptionEndDate: endDate,

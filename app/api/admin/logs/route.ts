@@ -19,7 +19,7 @@ export async function GET(req: Request) {
 
     const { logs, total } = await getAdminLogs({ targetUserId, limit, offset })
 
-    const serialized = logs.map((log) => ({
+    const serialized = logs.map((log: any) => ({
       ...log,
       createdAt: log.createdAt.toISOString(),
     }))

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { PrismaClient } from '@prisma/client'
-import { BLACKPAY_CONFIG } from '@/services/blackpayments.service'
+
 import { activateVipAccess } from '@/services/subscription.service'
 
 const prisma = new PrismaClient()
@@ -114,37 +114,24 @@ export async function POST() {
       })
     }
 
-    // Check transaction status with BlackPayments API
-    console.log(`[Subscription/Check] Checking transaction status: ${user.caktoOrderId}`)
+    // Check transaction status from our DB instead of API since Hosted Checkout handles the state 
+    // and webhook updates our DB.
+    console.log(`[Subscription/Check] Checking transaction status in DB: ${user.caktoOrderId}`)
 
-    const authString = Buffer.from(
-      `${BLACKPAY_CONFIG.publicKey}:${BLACKPAY_CONFIG.secretKey}`,
-    ).toString('base64')
+    const tx = await prisma.paymentTransaction.findFirst({
+      where: { providerTransactionId: user.caktoOrderId },
+      orderBy: { createdAt: 'desc' }
+    })
 
-    // Find sale/transaction by ID (BlackPayments docs: /sales/:id or /transactions/:id are sometimes identical, prioritizing /sales)
-    const checkResponse = await fetch(
-      `${BLACKPAY_CONFIG.apiUrl}/sales/${user.caktoOrderId}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Basic ${authString}`,
-        },
-      },
-    )
-
-    if (!checkResponse.ok) {
-      console.error(`[Subscription/Check] BlackPayments API error: ${checkResponse.status}`)
+    if (!tx) {
       return NextResponse.json({
         ok: false,
-        error: 'Não foi possível verificar o pagamento',
-        status: 'api_error',
+        error: 'Nenhuma transação pendente encontrada',
+        status: 'no_pending_transaction',
       })
     }
 
-    const transactionData = await checkResponse.json()
-    // Sometimes the status is inside data.status in BlackPayments responses
-    const transactionStatus = (transactionData.status || transactionData.data?.status || 'unknown').toLowerCase()
+    const transactionStatus = tx.status.toLowerCase()
 
     console.log(`[Subscription/Check] Transaction status: ${transactionStatus}`)
 
