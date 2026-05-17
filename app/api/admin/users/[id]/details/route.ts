@@ -29,7 +29,7 @@ export async function GET(
       subscriptionStartDate: user.subscriptionStartDate?.toISOString() ?? null,
       subscriptionEndDate: user.subscriptionEndDate?.toISOString() ?? null,
       subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() ?? null,
-      paymentTransactions: user.paymentTransactions.map((tx) => ({
+      paymentTransactions: (user as any).paymentTransactions?.map((tx: any) => ({
         ...tx,
         amount: tx.amount != null ? Number(tx.amount) : null,
         paidAt: tx.paidAt?.toISOString() ?? null,

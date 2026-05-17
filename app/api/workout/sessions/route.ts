@@ -17,6 +17,18 @@ const completeWorkoutSessionSchema = z.object({
         weightUsed: z.number().min(0).nullable().optional(),
         completed: z.boolean().optional(),
         notes: z.string().max(600).optional(),
+        sets: z
+          .array(
+            z.object({
+              setNumber: z.number().int().min(1),
+              plannedReps: z.string().trim().max(30).nullable().optional(),
+              actualReps: z.number().int().min(0).max(1000).nullable().optional(),
+              weight: z.number().min(0).nullable().optional(),
+              completed: z.boolean().optional(),
+            })
+          )
+          .max(50, 'Muitas séries')
+          .optional(),
       })
     )
     .min(1, 'Informe os exercicios realizados')

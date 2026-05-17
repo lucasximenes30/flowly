@@ -1,5 +1,12 @@
 import { prisma } from '@/lib/prisma'
-import { PaymentStatus } from '@prisma/client'
+type PaymentStatus = 'PENDING' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'CANCELED'
+const PaymentStatus = {
+  PENDING: 'PENDING' as PaymentStatus,
+  ACTIVE: 'ACTIVE' as PaymentStatus,
+  FAILED: 'FAILED' as PaymentStatus,
+  EXPIRED: 'EXPIRED' as PaymentStatus,
+  CANCELED: 'CANCELED' as PaymentStatus,
+}
 import { startOfMonth, endOfMonth } from 'date-fns'
 
 // Price per VIP slot used as fallback for estimated revenue when payment history is sparse

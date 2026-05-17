@@ -177,28 +177,43 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                     {editingId === cat.id ? (
                       <>
                         {/* Edit mode */}
-                        <div className="flex-1 grid gap-3 sm:grid-cols-2 w-full">
-                          <input
-                            type="text"
-                            value={editName}
-                            onChange={(e) => setEditName(e.target.value)}
-                            maxLength={30}
-                            className="input-field text-sm sm:col-span-2"
-                            placeholder={isBRL ? 'Nome' : 'Name'}
-                          />
-                          {/* Icon picker button */}
-                          <button
-                            type="button"
-                            onClick={() => setShowEditIcons(!showEditIcons)}
-                            className="sm:col-span-2 flex items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
-                          >
-                            {editIcon ? <CatIcon name={editIcon} className="w-5 h-5" /> : <Lucide.Smile className="w-5 h-5" />}
-                            <span className="font-medium">{isBRL ? 'Selecionar Ícone' : 'Select Icon'}</span>
-                            <Lucide.ChevronDown className={`ml-auto w-4 h-4 text-surface-400 transition-transform ${showEditIcons ? 'rotate-180' : ''}`} />
-                          </button>
+                        <div className="flex-1 flex flex-col gap-4 w-full relative">
+                          <div className="grid gap-4 sm:grid-cols-2">
+                            {/* Nome */}
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
+                                {isBRL ? 'Nome' : 'Name'}
+                              </label>
+                              <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                maxLength={30}
+                                className="input-field text-base sm:text-sm w-full h-12 sm:h-10"
+                                placeholder={isBRL ? 'Nome da categoria' : 'Category name'}
+                              />
+                            </div>
+                            
+                            {/* Ícone */}
+                            <div className="sm:col-span-2">
+                              <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
+                                {isBRL ? 'Ícone' : 'Icon'}
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setShowEditIcons(!showEditIcons)}
+                                className="w-full flex items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 h-12 sm:h-10 text-base sm:text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                              >
+                                {editIcon ? <CatIcon name={editIcon} className="w-5 h-5" /> : <Lucide.Smile className="w-5 h-5" />}
+                                <span className="font-medium">{isBRL ? 'Selecionar Ícone' : 'Select Icon'}</span>
+                                <Lucide.ChevronDown className={`ml-auto w-4 h-4 text-surface-400 transition-transform ${showEditIcons ? 'rotate-180' : ''}`} />
+                              </button>
+                            </div>
+                          </div>
+
                           {/* Icon picker grid */}
                           {showEditIcons && (
-                            <div className="sm:col-span-2 grid grid-cols-7 sm:grid-cols-10 gap-1.5 max-h-48 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700/60 p-3 bg-surface-50 dark:bg-surface-800/50">
+                            <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5 max-h-48 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700/60 p-3 bg-surface-50 dark:bg-surface-800/50">
                               {ALL_ICONS.map((iconName) => (
                                 <button
                                   key={iconName}
@@ -216,42 +231,51 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                               ))}
                             </div>
                           )}
-                          {/* Color picker inline */}
-                          <div className="flex items-center gap-3 sm:col-span-2 pt-1 border-t border-surface-100 dark:border-surface-800/50 pt-3">
-                            <input
-                              type="color"
-                              value={editColor}
-                              onChange={(e) => setEditColor(e.target.value)}
-                              className="h-10 w-10 rounded-lg cursor-pointer border-0 shrink-0"
-                            />
-                            <div className="flex flex-wrap gap-2">
-                              {COLOR_PRESETS.map((c) => (
-                                <button
-                                  key={c}
-                                  type="button"
-                                  onClick={() => setEditColor(c)}
-                                  className={`h-7 w-7 sm:h-6 sm:w-6 rounded-md transition-transform ${editColor === c ? 'ring-2 ring-offset-2 ring-surface-900 dark:ring-surface-100 dark:ring-offset-surface-900 scale-110' : 'hover:scale-110'}`}
-                                  style={{ backgroundColor: c }}
-                                />
-                              ))}
+
+                          {/* Color picker */}
+                          <div>
+                            <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2 block">
+                              {isBRL ? 'Cor' : 'Color'}
+                            </label>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <input
+                                type="color"
+                                value={editColor}
+                                onChange={(e) => setEditColor(e.target.value)}
+                                className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg cursor-pointer border-0 shrink-0 shadow-sm"
+                              />
+                              <div className="flex flex-wrap gap-2 flex-1">
+                                {COLOR_PRESETS.map((c) => (
+                                  <button
+                                    key={c}
+                                    type="button"
+                                    onClick={() => setEditColor(c)}
+                                    className={`h-8 w-8 sm:h-6 sm:w-6 rounded-md transition-transform ${editColor === c ? 'ring-2 ring-offset-2 ring-surface-900 dark:ring-surface-100 dark:ring-offset-surface-900 scale-110 shadow-sm' : 'hover:scale-110'}`}
+                                    style={{ backgroundColor: c }}
+                                  />
+                                ))}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex sm:flex-col gap-2 justify-end sm:justify-center border-t sm:border-t-0 sm:border-l border-surface-200 dark:border-surface-700/60 pt-3 sm:pt-0 sm:pl-3 w-full sm:w-auto">
-                          <button type="button"
-                            onClick={cancelEdit}
-                            disabled={saving}
-                            className="flex-1 sm:flex-none p-2 rounded-lg bg-surface-100 hover:bg-surface-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-surface-600 dark:text-surface-300 transition-colors flex items-center justify-center"
-                          >
-                            <Lucide.X className="w-4 h-4" />
-                          </button>
-                          <button type="button"
-                            onClick={() => saveEdit(cat.id)}
-                            disabled={saving || !editName.trim() || !editIcon}
-                            className="flex-1 sm:flex-none p-2 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 dark:text-emerald-400 transition-colors disabled:opacity-50 flex items-center justify-center"
-                          >
-                            <Lucide.Check className="w-4 h-4" />
-                          </button>
+
+                          {/* Actions - Sticky on Mobile */}
+                          <div className="flex gap-3 pt-4 border-t border-surface-200 dark:border-surface-700/60 sticky bottom-0 bg-white dark:bg-surface-900 z-10 py-3 -mx-3 px-3 sm:static sm:bg-transparent sm:py-0 sm:mx-0 sm:px-0 mt-2">
+                            <button type="button"
+                              onClick={cancelEdit}
+                              disabled={saving}
+                              className="flex-1 btn-secondary py-3 sm:py-2 text-base sm:text-sm font-semibold"
+                            >
+                              {isBRL ? 'Cancelar' : 'Cancel'}
+                            </button>
+                            <button type="button"
+                              onClick={() => saveEdit(cat.id)}
+                              disabled={saving || !editName.trim() || !editIcon}
+                              className="flex-1 btn-primary py-3 sm:py-2 text-base sm:text-sm font-semibold flex items-center justify-center gap-2"
+                            >
+                              {saving ? <Lucide.Loader2 className="w-4 h-4 animate-spin" /> : <Lucide.Check className="w-4 h-4" />}
+                              {isBRL ? 'Salvar' : 'Save'}
+                            </button>
+                          </div>
                         </div>
                       </>
                     ) : (
@@ -307,32 +331,44 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                   <h3 className="text-sm font-semibold text-brand-800 dark:text-brand-300 uppercase tracking-wider">
                     {isBRL ? 'Nova Categoria' : 'New Category'}
                   </h3>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      maxLength={30}
-                      className="input-field text-sm"
-                      placeholder={isBRL ? 'Nome da categoria' : 'Category name'}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowNewIcons(!showNewIcons)}
-                      className="flex w-full items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 py-3 text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
-                    >
-                      {newIcon ? <CatIcon name={newIcon} className="w-4 h-4" /> : <Lucide.Smile className="w-4 h-4" />}
-                      <span>{isBRL ? 'Ícones' : 'Icons'}</span>
-                      <Lucide.ChevronDown className={`ml-auto w-3.5 h-3.5 text-surface-400 transition-transform ${showNewIcons ? 'rotate-180' : ''}`} />
-                    </button>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
+                        {isBRL ? 'Nome' : 'Name'}
+                      </label>
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        maxLength={30}
+                        className="input-field text-base sm:text-sm w-full h-12 sm:h-10"
+                        placeholder={isBRL ? 'Nome da categoria' : 'Category name'}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
+                        {isBRL ? 'Ícone' : 'Icon'}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setShowNewIcons(!showNewIcons)}
+                        className="flex w-full items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 h-12 sm:h-10 text-base sm:text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
+                      >
+                        {newIcon ? <CatIcon name={newIcon} className="w-5 h-5" /> : <Lucide.Smile className="w-5 h-5" />}
+                        <span>{isBRL ? 'Selecionar Ícone' : 'Select Icon'}</span>
+                        <Lucide.ChevronDown className={`ml-auto w-4 h-4 text-surface-400 transition-transform ${showNewIcons ? 'rotate-180' : ''}`} />
+                      </button>
+                    </div>
+                    
                     {createError && (
-                      <p className="text-xs text-red-500 flex items-center gap-1">
+                      <p className="text-xs text-red-500 flex items-center gap-1 mt-1">
                         <Lucide.AlertCircle className="w-3 h-3" />
                         {createError}
                       </p>
                     )}
                     {showNewIcons && (
-                      <div className="grid grid-cols-7 sm:grid-cols-10 gap-1.5 max-h-48 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700/60 p-3 bg-surface-50 dark:bg-surface-800/50">
+                      <div className="grid grid-cols-6 sm:grid-cols-10 gap-1.5 max-h-48 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700/60 p-3 bg-surface-50 dark:bg-surface-800/50">
                         {ALL_ICONS.map((iconName) => (
                           <button
                             key={iconName}
@@ -350,26 +386,33 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                         ))}
                       </div>
                     )}
-                    <div className="flex items-center gap-3 pt-2">
-                      <input
-                        type="color"
-                        value={newColor}
-                        onChange={(e) => setNewColor(e.target.value)}
-                        className="h-10 w-10 rounded-lg cursor-pointer border-0 shrink-0"
-                      />
-                      <div className="flex flex-wrap gap-2">
-                        {COLOR_PRESETS.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setNewColor(c)}
-                            className={`h-7 w-7 sm:h-6 sm:w-6 rounded-md transition-transform ${newColor === c ? 'ring-2 ring-offset-2 ring-surface-900 dark:ring-surface-100 dark:ring-offset-surface-900 scale-110' : 'hover:scale-110'}`}
-                            style={{ backgroundColor: c }}
-                          />
-                        ))}
+                    
+                    <div>
+                      <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2 block">
+                        {isBRL ? 'Cor' : 'Color'}
+                      </label>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <input
+                          type="color"
+                          value={newColor}
+                          onChange={(e) => setNewColor(e.target.value)}
+                          className="h-10 w-10 sm:h-8 sm:w-8 rounded-lg cursor-pointer border-0 shrink-0 shadow-sm"
+                        />
+                        <div className="flex flex-wrap gap-2 flex-1">
+                          {COLOR_PRESETS.map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => setNewColor(c)}
+                              className={`h-8 w-8 sm:h-6 sm:w-6 rounded-md transition-transform ${newColor === c ? 'ring-2 ring-offset-2 ring-surface-900 dark:ring-surface-100 dark:ring-offset-surface-900 scale-110 shadow-sm' : 'hover:scale-110'}`}
+                              style={{ backgroundColor: c }}
+                            />
+                          ))}
+                        </div>
                       </div>
                     </div>
                   </div>
+
                   {newName && newIcon && (
                     <div className="flex items-center gap-3 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 p-3 mt-4">
                       <div className="flex items-center justify-center w-8 h-8 rounded-full" style={{ backgroundColor: `${newColor}20`, color: newColor }}>
@@ -378,15 +421,18 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                       <span className="text-sm font-semibold text-surface-900 dark:text-surface-100 truncate">{newName}</span>
                     </div>
                   )}
-                  <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2">
-                    <button type="button" onClick={() => { setShowCreate(false); setNewName(''); setNewIcon(''); setCreateError(''); }} className="btn-secondary w-full sm:flex-1 py-3 text-sm">
+
+                  {/* Actions - Sticky on Mobile */}
+                  <div className="flex gap-3 pt-4 mt-4 border-t border-brand-200/50 dark:border-brand-700/30 sticky bottom-0 bg-brand-50 dark:bg-brand-900/10 z-10 py-3 -mx-4 px-4 sm:static sm:bg-transparent sm:py-0 sm:mx-0 sm:px-0">
+                    <button type="button" onClick={() => { setShowCreate(false); setNewName(''); setNewIcon(''); setCreateError(''); }} className="flex-1 btn-secondary py-3 sm:py-2 text-base sm:text-sm font-semibold bg-white dark:bg-surface-800">
                       {t('common.cancel')}
                     </button>
                     <button type="button"
                       onClick={createCategory}
                       disabled={creating || !newName.trim()}
-                      className="btn-primary w-full sm:flex-1 py-3 text-sm"
+                      className="flex-1 btn-primary py-3 sm:py-2 text-base sm:text-sm font-semibold flex items-center justify-center gap-2"
                     >
+                      {creating && <Lucide.Loader2 className="w-4 h-4 animate-spin" />}
                       {creating ? (isBRL ? 'Criando...' : 'Creating...') : (isBRL ? 'Criar Categoria' : 'Create Category')}
                     </button>
                   </div>
