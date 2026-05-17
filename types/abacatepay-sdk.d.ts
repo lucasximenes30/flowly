@@ -34,18 +34,9 @@ declare module '@abacatepay/sdk' {
       get(params: { id: string }): Promise<{ id: string; [key: string]: unknown }>
       delete(params: { id: string }): Promise<unknown>
     }
-    webhooks: {
-      verify(
-        rawBody: string,
-        signature: string,
-      ): {
-        event: 'billing.paid' | 'payout.done' | 'payout.failed'
-        data: unknown
-      }
-    }
   }
 
-  export function AbacatePay(apiKey: string): AbacatePayClient
+  export function AbacatePay(options: { secret: string }): AbacatePayClient
   export const version: string
   export const API_BASE_URL: string
   export const API_VERSION: string

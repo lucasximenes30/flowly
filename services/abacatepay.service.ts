@@ -11,7 +11,7 @@ const getAbacate = () => {
   if (!process.env.ABACATEPAY_API_KEY) {
     throw new Error('ABACATEPAY_API_KEY is not set')
   }
-  return AbacatePay(process.env.ABACATEPAY_API_KEY)
+  return AbacatePay({ secret: process.env.ABACATEPAY_API_KEY })
 }
 
 export interface CreateTransactionInput {
