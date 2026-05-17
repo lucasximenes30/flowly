@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import { AbacatePay } from '@abacatepay/sdk'
 import { PrismaClient, UserSubscriptionStatus } from '@prisma/client'
 import { activateVipAccess } from '@/services/subscription.service'
+import crypto from 'crypto'
 
 const prisma = new PrismaClient()
 
@@ -9,21 +9,46 @@ export async function POST(req: Request) {
   const signature = req.headers.get('x-webhook-signature')
   
   if (!signature) {
+    console.error('[AbacatePay Webhook] Missing x-webhook-signature header')
     return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
   }
 
   const rawBody = await req.text()
+  const secret = process.env.ABACATEPAY_WEBHOOK_SECRET
 
-  let abacate
-  try {
-    abacate = AbacatePay(process.env.ABACATEPAY_API_KEY!)
-  } catch (err: any) {
-    console.error('[AbacatePay Webhook] Failed to initialize SDK:', err.message)
-    return NextResponse.json({ error: 'SDK Initialization Failed' }, { status: 500 })
+  // Signature verification using native Node.js crypto
+  if (secret) {
+    try {
+      const hmac = crypto.createHmac('sha256', secret)
+      hmac.update(rawBody)
+      const expectedSignature = hmac.digest('base64')
+
+      const isBufferMatch = crypto.timingSafeEqual(
+        Buffer.from(signature, 'base64'),
+        Buffer.from(expectedSignature, 'base64')
+      )
+
+      if (!isBufferMatch) {
+        console.error('[AbacatePay Webhook] Invalid signature verification')
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      console.log('[AbacatePay Webhook] Signature verified successfully.')
+    } catch (err: any) {
+      console.error('[AbacatePay Webhook] Signature validation error:', err.message)
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+  } else {
+    // If no secret is configured in development, we allow bypassing verification
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[AbacatePay Webhook] [DEV-ONLY] Webhook secret not configured in .env. Bypassing signature verification.')
+    } else {
+      console.error('[AbacatePay Webhook] ABACATEPAY_WEBHOOK_SECRET is not configured. Rejecting request.')
+      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+    }
   }
 
   try {
-    const event = abacate.webhooks.verify(rawBody, signature)
+    const event = JSON.parse(rawBody)
     console.log('[AbacatePay Webhook] Event received:', event.event)
 
     if (event.event === 'billing.paid') {
