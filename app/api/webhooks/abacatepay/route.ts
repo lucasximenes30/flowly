@@ -21,11 +21,11 @@ export async function POST(req: Request) {
     try {
       const hmac = crypto.createHmac('sha256', secret)
       hmac.update(rawBody)
-      const expectedSignature = hmac.digest('base64')
+      const expectedSignature = hmac.digest('hex')
 
       const isBufferMatch = crypto.timingSafeEqual(
-        Buffer.from(signature, 'base64'),
-        Buffer.from(expectedSignature, 'base64')
+        Buffer.from(signature, 'utf8'),
+        Buffer.from(expectedSignature, 'utf8')
       )
 
       if (!isBufferMatch) {
@@ -51,12 +51,18 @@ export async function POST(req: Request) {
     const event = JSON.parse(rawBody)
     console.log('[AbacatePay Webhook] Event received:', event.event)
 
-    if (event.event === 'billing.paid') {
-      const billing = event.data as any
-      // The customer externalId is where we stored user.id in the checkout
-      const userId = billing.customer?.metadata?.userId || billing.metadata?.userId || billing.externalId
-      const transactionId = billing.id
-      const amountCents = billing.amount || 0
+    if (event.event === 'checkout.completed') {
+      const checkout = event.data?.checkout
+      
+      if (!checkout) {
+        console.error('[AbacatePay Webhook] No checkout data found in payload')
+        return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
+      }
+
+      // The externalId is where we stored user.id in the checkout
+      const userId = checkout.externalId
+      const transactionId = checkout.id
+      const amountCents = checkout.amount || 0
       
       console.log(`[AbacatePay Webhook] Payment confirmed for user: ${userId}, transaction: ${transactionId}`)
 
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
           where: { providerTransactionId: transactionId },
           update: {
             status: 'ACTIVE',
-            rawStatus: 'billing.paid',
+            rawStatus: 'checkout.completed',
             paidAt: new Date(),
             updatedAt: new Date(),
           },
@@ -76,7 +82,7 @@ export async function POST(req: Request) {
             providerTransactionId: transactionId,
             amount: amountCents / 100,
             status: 'ACTIVE',
-            rawStatus: 'billing.paid',
+            rawStatus: 'checkout.completed',
             paidAt: new Date(),
           },
         })
@@ -98,9 +104,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // We can also handle other events like billing.cancelled if AbacatePay has them, 
-    // but the task specifies billing.paid
-
+    // We can also handle other events like checkout.cancelled if AbacatePay has them
     return NextResponse.json({ success: true, message: 'Webhook processed' }, { status: 200 })
   } catch (err: any) {
     console.error('[AbacatePay Webhook] Signature verification failed or error processing:', err.message)
