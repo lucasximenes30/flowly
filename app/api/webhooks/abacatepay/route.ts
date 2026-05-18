@@ -6,33 +6,55 @@ import crypto from 'crypto'
 const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
-  const signature = req.headers.get('x-webhook-signature')
+  const signature = req.headers.get('x-webhook-signature')?.trim() || ''
   
   if (!signature) {
     console.error('[AbacatePay Webhook] Missing x-webhook-signature header')
-    return NextResponse.json({ error: 'Missing signature' }, { status: 401 })
+    // We will not return 401 immediately, we will check if there is a query secret fallback first
   }
 
   const rawBody = await req.text()
   const secret = process.env.ABACATEPAY_WEBHOOK_SECRET
 
+  // Fallback: check query parameter ?webhookSecret=...
+  const url = new URL(req.url)
+  const querySecret = url.searchParams.get('webhookSecret')
+  let isQuerySecretMatch = false
+  if (querySecret && secret && querySecret === secret) {
+    isQuerySecretMatch = true
+    console.log('[AbacatePay Webhook] Query param webhookSecret matched successfully.')
+  }
+
   // Signature verification using native Node.js crypto
   if (secret) {
     try {
-      const hmac = crypto.createHmac('sha256', secret)
-      hmac.update(rawBody)
-      const expectedSignature = hmac.digest('hex')
+      let isBufferMatch = false
+      
+      if (signature) {
+        const expectedSignatureHex = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
+        const expectedSignatureB64 = crypto.createHmac('sha256', secret).update(rawBody).digest('base64')
 
-      const isBufferMatch = crypto.timingSafeEqual(
-        Buffer.from(signature, 'utf8'),
-        Buffer.from(expectedSignature, 'utf8')
-      )
+        if (signature.length === expectedSignatureHex.length) {
+          isBufferMatch = crypto.timingSafeEqual(
+            Buffer.from(signature, 'utf8'),
+            Buffer.from(expectedSignatureHex, 'utf8')
+          )
+        } else if (signature.length === expectedSignatureB64.length) {
+          isBufferMatch = crypto.timingSafeEqual(
+            Buffer.from(signature, 'utf8'),
+            Buffer.from(expectedSignatureB64, 'utf8')
+          )
+        } else {
+          console.error(`[AbacatePay Webhook] Signature length mismatch. Got ${signature.length} chars. Header value starts with: ${signature.substring(0, 15)}...`)
+        }
+      }
 
-      if (!isBufferMatch) {
-        console.error('[AbacatePay Webhook] Invalid signature verification')
+      if (!isBufferMatch && !isQuerySecretMatch) {
+        console.error('[AbacatePay Webhook] Invalid signature verification and query secret did not match.')
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
       }
-      console.log('[AbacatePay Webhook] Signature verified successfully.')
+      
+      console.log('[AbacatePay Webhook] Authorization verified successfully.')
     } catch (err: any) {
       console.error('[AbacatePay Webhook] Signature validation error:', err.message)
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
