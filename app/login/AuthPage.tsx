@@ -180,7 +180,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
         try {
           const res = await fetch('/api/subscription/status', { method: 'POST' })
           const data = await res.json()
-          if (data.status === 'approved' || data.status === 'paid') {
+          if (data.status === 'approved' || data.status === 'paid' || data.status === 'already_active') {
             setPaymentMessage('Pagamento confirmado! Liberando seu acesso...')
             clearInterval(intervalId)
             setTimeout(() => {
@@ -198,6 +198,28 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       if (intervalId) clearInterval(intervalId)
     }
   }, [hasPixData, checkingPayment, router])
+
+  // ── Under the hood check for inactive users ────────────────────────────
+  useEffect(() => {
+    // If user arrived at login with error=inactive, silently check if they paid
+    if (searchParams.get('error') === 'inactive') {
+      const checkUnderTheHood = async () => {
+        try {
+          const res = await fetch('/api/subscription/status', { method: 'POST' })
+          const data = await res.json()
+          // If the backend updated the session and returned already_active or approved
+          if (data.status === 'approved' || data.status === 'already_active' || data.canAccess) {
+             console.log('[Auth] User is actually active! Redirecting to dashboard...')
+             router.push('/dashboard')
+             router.refresh()
+          }
+        } catch (e) {
+          console.error('[Auth] Under the hood check failed', e)
+        }
+      }
+      checkUnderTheHood()
+    }
+  }, [searchParams, router])
 
   // ── Show inactive/unlock screen ──────────────────────────────────────
   if (isInactive) {
