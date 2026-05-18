@@ -96,7 +96,7 @@ export async function createTransaction(user: CreateTransactionInput) {
       customer,
       externalId: user.id, // Using user ID as external ID for tracking
       returnUrl: `${appUrl}/payment/return`,
-      completionUrl: `${appUrl}/dashboard`, // Where to go after success
+      completionUrl: `${appUrl}/payment/return`, // Where to go after success
     })
 
     console.log('[AbacatePay] Checkout created:', checkout.url)

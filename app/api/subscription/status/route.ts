@@ -98,9 +98,17 @@ export async function POST() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // If user already ACTIVE, no need to check
+    // If user already ACTIVE, no need to check BlackPayments/AbacatePay
     if (user.subscriptionStatus === 'ACTIVE') {
       console.log(`[Subscription/Check] User ${user.email} is already ACTIVE`)
+      
+      // Fix session if it's out of sync
+      if (session.subscriptionStatus !== 'ACTIVE') {
+        const { setSession } = await import('@/lib/auth')
+        session.subscriptionStatus = 'ACTIVE'
+        await setSession(session)
+      }
+      
       return NextResponse.json({ ok: true, status: 'already_active' })
     }
 
@@ -141,6 +149,11 @@ export async function POST() {
         userId: user.id,
         transactionId: user.caktoOrderId,
       })
+
+      // Update session cookie!
+      const { setSession } = await import('@/lib/auth')
+      session.subscriptionStatus = 'ACTIVE'
+      await setSession(session)
 
       console.log(`[Subscription/Check] User ${user.email} ACTIVATED`)
 
