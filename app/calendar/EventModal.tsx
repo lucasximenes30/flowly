@@ -45,10 +45,20 @@ export default function EventModal({
 
   useEffect(() => {
     if (event) {
+      let parsedDate = format(selectedDate, 'yyyy-MM-dd');
+      if (event.date) {
+        if (typeof event.date === 'string') {
+          parsedDate = event.date.split('T')[0];
+        } else if (event.date instanceof Date) {
+          parsedDate = event.date.toISOString().split('T')[0];
+        } else {
+          parsedDate = new Date(event.date).toISOString().split('T')[0];
+        }
+      }
       setFormData({
         title: event.title,
         description: event.description || '',
-        date: event.date ? format(new Date(event.date), 'yyyy-MM-dd') : format(selectedDate, 'yyyy-MM-dd'),
+        date: parsedDate,
         startTime: event.startTime || '',
         endTime: event.endTime || '',
         isAllDay: event.isAllDay,

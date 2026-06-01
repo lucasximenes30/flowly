@@ -273,11 +273,14 @@ STRICT OUTPUT FORMAT:
 - No markdown, no code block, no extra text.
 
 INSIGHT RULES:
-- Prioritize only the 4 most relevant insights.
+- IMPORTANT: Analyze actual user financial behavior deeply. Avoid superficial observations.
+- GENERATE SPECIFIC ALERTS: Warn about spending concentration, unusual expense behavior, dangerous debt, or category spikes based on the data.
+- GENERATE ACTIONABLE RECOMMENDATIONS: Provide realistic saving suggestions and budgeting rules based on the provided numbers.
+- BAN GENERIC FLUFF: Do not write meaningless motivational sentences (e.g., "Keep it up!", "Save for the future"). Give concrete, data-driven advice only.
+- Prioritize only the 4 most critical insights.
 - Keep each insight short and practical (single short paragraph, up to 180 characters).
 - Use the category names exactly as listed in "Top Categories".
 - Do not invent numbers.
-- Avoid repetitive sentences.
 
 FINANCIAL DATA:
 - Monthly income: R$ ${input.monthlyIncome.toFixed(2)} (${incomeChange >= 0 ? '+' : ''}${incomeChange.toFixed(1)}% vs previous month)
