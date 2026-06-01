@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useApp } from '@/lib/i18n'
+
 import * as Lucide from 'lucide-react'
 import { LUCIDE_MAP, CatIcon } from './CategorySelect'
 
@@ -40,9 +40,28 @@ const ALL_ICONS = [
   'MoreHorizontal',
 ]
 
+// Translation helper
+const categoryTranslations: Record<string, string> = {
+  'category.Food': 'Alimentação',
+  'category.Transport': 'Transporte',
+  'category.Entertainment': 'Lazer',
+  'category.Shopping': 'Compras',
+  'category.Bills': 'Contas',
+  'category.Health': 'Saúde',
+  'category.General': 'Geral',
+  'category.Salary': 'Salário',
+  'category.Freelance': 'Freelance',
+  'category.Investment': 'Investimento',
+  'category.Other': 'Outro',
+}
+
+const t = (key: string): string => {
+  return categoryTranslations[key] || key.replace(/^(category)\./, '');
+}
+
 export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCategoriesModalProps) {
-  const { t, locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [visible, setVisible] = useState(false)
@@ -121,7 +140,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
   const createCategory = async () => {
     if (!newName.trim()) return
     if (!newIcon) {
-      setCreateError(isBRL ? 'Por favor, selecione um ícone visual' : 'Please select a visual icon')
+      setCreateError('Por favor, selecione um ícone visual')
       return
     }
     setCreateError('')
@@ -142,32 +161,36 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 transition-all duration-300 ${
-        visible ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'
-      }`}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
-    >
-      <div
-        className={`w-full max-w-2xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${
-          visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 sm:translate-y-8 opacity-0 scale-95'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-surface-200 dark:border-surface-700/60">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
-            {isBRL ? 'Gerenciar Categorias' : 'Manage Categories'}
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 md:inset-0 flex flex-col justify-end md:items-center md:justify-center pointer-events-none p-0 md:p-4">
+        <div 
+          className={`pointer-events-auto w-full md:max-w-2xl bg-white shadow-2xl dark:bg-surface-900 md:dark:border dark:border-surface-700/60 rounded-t-[2rem] md:rounded-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out ${
+            visible ? 'translate-y-0 md:scale-100 opacity-100' : 'translate-y-full md:translate-y-0 md:scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Mobile Drag Pill */}
+          <div className="md:hidden flex justify-center pt-4 pb-2 shrink-0">
+            <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+          </div>
+
+        <div className="flex items-center justify-between px-6 py-4 pt-0 md:pt-4 border-b border-surface-200 dark:border-surface-700/60">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100 tracking-tight">
+            {'Gerenciar Categorias'}
           </h2>
-          <button type="button" onClick={handleClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
-            <Lucide.X className="h-5 w-5" />
+          <button type="button" onClick={handleClose} className="rounded-full p-1.5 text-surface-400 bg-surface-100 dark:bg-surface-800 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
+            <Lucide.X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 pb-safe">
           {loading ? (
-            <div className="py-12 text-center text-sm text-surface-400">{isBRL ? 'Carregando...' : 'Loading...'}</div>
+            <div className="py-12 text-center text-sm text-surface-400">{'Carregando...'}</div>
           ) : (
             <>
               {/* Category list */}
@@ -182,7 +205,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                             {/* Nome */}
                             <div className="sm:col-span-2">
                               <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
-                                {isBRL ? 'Nome' : 'Name'}
+                                {'Nome'}
                               </label>
                               <input
                                 type="text"
@@ -190,14 +213,14 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                                 onChange={(e) => setEditName(e.target.value)}
                                 maxLength={30}
                                 className="input-field text-base sm:text-sm w-full h-12 sm:h-10"
-                                placeholder={isBRL ? 'Nome da categoria' : 'Category name'}
+                                placeholder={'Nome da categoria'}
                               />
                             </div>
                             
                             {/* Ícone */}
                             <div className="sm:col-span-2">
                               <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
-                                {isBRL ? 'Ícone' : 'Icon'}
+                                {'Ícone'}
                               </label>
                               <button
                                 type="button"
@@ -205,7 +228,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                                 className="w-full flex items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 h-12 sm:h-10 text-base sm:text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
                               >
                                 {editIcon ? <CatIcon name={editIcon} className="w-5 h-5" /> : <Lucide.Smile className="w-5 h-5" />}
-                                <span className="font-medium">{isBRL ? 'Selecionar Ícone' : 'Select Icon'}</span>
+                                <span className="font-medium">{'Selecionar Ícone'}</span>
                                 <Lucide.ChevronDown className={`ml-auto w-4 h-4 text-surface-400 transition-transform ${showEditIcons ? 'rotate-180' : ''}`} />
                               </button>
                             </div>
@@ -235,7 +258,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                           {/* Color picker */}
                           <div>
                             <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2 block">
-                              {isBRL ? 'Cor' : 'Color'}
+                              {'Cor'}
                             </label>
                             <div className="flex flex-wrap items-center gap-3">
                               <input
@@ -265,7 +288,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                               disabled={saving}
                               className="flex-1 btn-secondary py-3 sm:py-2 text-base sm:text-sm font-semibold"
                             >
-                              {isBRL ? 'Cancelar' : 'Cancel'}
+                              {'Cancelar'}
                             </button>
                             <button type="button"
                               onClick={() => saveEdit(cat.id)}
@@ -273,7 +296,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                               className="flex-1 btn-primary py-3 sm:py-2 text-base sm:text-sm font-semibold flex items-center justify-center gap-2"
                             >
                               {saving ? <Lucide.Loader2 className="w-4 h-4 animate-spin" /> : <Lucide.Check className="w-4 h-4" />}
-                              {isBRL ? 'Salvar' : 'Save'}
+                              {'Salvar'}
                             </button>
                           </div>
                         </div>
@@ -293,7 +316,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                               {t(`category.${cat.name}`) || cat.name}
                             </span>
                             <span className="text-[10px] uppercase tracking-wider text-surface-500 dark:text-surface-400">
-                              {cat.userId === null ? (isBRL ? 'Padrão' : 'Default') : (isBRL ? 'Pessoal' : 'Custom')}
+                              {cat.userId === null ? ('Padrão') : ('Pessoal')}
                             </span>
                           </div>
                         </div>
@@ -302,7 +325,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                           <button type="button"
                             onClick={() => startEdit(cat)}
                             className="p-2 text-surface-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors rounded-lg hover:bg-brand-50 dark:hover:bg-brand-900/20"
-                            title={isBRL ? 'Editar' : 'Edit'}
+                            title={'Editar'}
                           >
                             <Lucide.Pencil className="w-4 h-4" />
                           </button>
@@ -310,7 +333,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                             onClick={() => deleteCategory(cat.id)}
                             disabled={deletingId === cat.id}
                             className="p-2 text-surface-400 hover:text-red-600 dark:hover:text-red-400 transition-colors rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 disabled:opacity-50"
-                            title={isBRL ? 'Remover' : 'Delete'}
+                            title={'Remover'}
                           >
                             {deletingId === cat.id ? (
                               <Lucide.Loader2 className="w-4 h-4 animate-spin" />
@@ -329,12 +352,12 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
               {showCreate ? (
                 <div className="mt-4 rounded-xl border border-brand-200 dark:border-brand-700/50 bg-brand-50 dark:bg-brand-900/10 p-4 sm:p-5 space-y-4">
                   <h3 className="text-sm font-semibold text-brand-800 dark:text-brand-300 uppercase tracking-wider">
-                    {isBRL ? 'Nova Categoria' : 'New Category'}
+                    {'Nova Categoria'}
                   </h3>
                   <div className="space-y-4">
                     <div>
                       <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
-                        {isBRL ? 'Nome' : 'Name'}
+                        {'Nome'}
                       </label>
                       <input
                         type="text"
@@ -342,13 +365,13 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                         onChange={(e) => setNewName(e.target.value)}
                         maxLength={30}
                         className="input-field text-base sm:text-sm w-full h-12 sm:h-10"
-                        placeholder={isBRL ? 'Nome da categoria' : 'Category name'}
+                        placeholder={'Nome da categoria'}
                       />
                     </div>
                     
                     <div>
                       <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-1.5 block">
-                        {isBRL ? 'Ícone' : 'Icon'}
+                        {'Ícone'}
                       </label>
                       <button
                         type="button"
@@ -356,7 +379,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                         className="flex w-full items-center gap-2 rounded-xl border border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 px-4 h-12 sm:h-10 text-base sm:text-sm text-surface-600 dark:text-surface-300 hover:bg-surface-50 dark:hover:bg-surface-700 transition-colors"
                       >
                         {newIcon ? <CatIcon name={newIcon} className="w-5 h-5" /> : <Lucide.Smile className="w-5 h-5" />}
-                        <span>{isBRL ? 'Selecionar Ícone' : 'Select Icon'}</span>
+                        <span>{'Selecionar Ícone'}</span>
                         <Lucide.ChevronDown className={`ml-auto w-4 h-4 text-surface-400 transition-transform ${showNewIcons ? 'rotate-180' : ''}`} />
                       </button>
                     </div>
@@ -389,7 +412,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                     
                     <div>
                       <label className="text-[10px] font-semibold text-surface-500 uppercase tracking-wider mb-2 block">
-                        {isBRL ? 'Cor' : 'Color'}
+                        {'Cor'}
                       </label>
                       <div className="flex flex-wrap items-center gap-3">
                         <input
@@ -425,7 +448,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                   {/* Actions - Sticky on Mobile */}
                   <div className="flex gap-3 pt-4 mt-4 border-t border-brand-200/50 dark:border-brand-700/30 sticky bottom-0 bg-brand-50 dark:bg-brand-900/10 z-10 py-3 -mx-4 px-4 sm:static sm:bg-transparent sm:py-0 sm:mx-0 sm:px-0">
                     <button type="button" onClick={() => { setShowCreate(false); setNewName(''); setNewIcon(''); setCreateError(''); }} className="flex-1 btn-secondary py-3 sm:py-2 text-base sm:text-sm font-semibold bg-white dark:bg-surface-800">
-                      {t('common.cancel')}
+                      {"Cancelar"}
                     </button>
                     <button type="button"
                       onClick={createCategory}
@@ -433,7 +456,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                       className="flex-1 btn-primary py-3 sm:py-2 text-base sm:text-sm font-semibold flex items-center justify-center gap-2"
                     >
                       {creating && <Lucide.Loader2 className="w-4 h-4 animate-spin" />}
-                      {creating ? (isBRL ? 'Criando...' : 'Creating...') : (isBRL ? 'Criar Categoria' : 'Create Category')}
+                      {creating ? ('Criando...') : ('Criar Categoria')}
                     </button>
                   </div>
                 </div>
@@ -443,11 +466,12 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
                   className="mt-6 w-full flex items-center justify-center gap-2 py-4 rounded-xl border-2 border-dashed border-surface-300 dark:border-surface-600 text-sm font-semibold text-surface-500 dark:text-surface-400 hover:border-brand-400 hover:text-brand-600 dark:hover:border-brand-500 dark:hover:text-brand-400 hover:bg-brand-50 dark:hover:bg-brand-900/10 transition-all duration-200"
                 >
                   <Lucide.Plus className="w-5 h-5" />
-                  {isBRL ? 'Adicionar Nova Categoria' : 'Add New Category'}
+                  {'Adicionar Nova Categoria'}
                 </button>
               )}
             </>
           )}
+          </div>
         </div>
       </div>
     </div>

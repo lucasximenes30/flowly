@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import * as Lucide from 'lucide-react'
-import { useApp } from '@/lib/i18n'
+
 
 interface CreateCategoryModalProps {
   type: 'INCOME' | 'EXPENSE'
@@ -96,8 +96,8 @@ function LucideIcon({ name, className = 'w-5 h-5' }: { name: string; className?:
 }
 
 export default function CreateCategoryModal({ type, onClose, onCreated }: CreateCategoryModalProps) {
-  const { t, locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const [name, setName] = useState('')
   const [selectedIcon, setSelectedIcon] = useState('')
   const [selectedColor, setSelectedColor] = useState('#6366f1')
@@ -114,7 +114,7 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!name.trim() || !selectedIcon) {
-      setError(isBRL ? 'Preencha nome e selecione um ícone' : 'Fill in name and select an icon')
+      setError('Preencha nome e selecione um ícone')
       return
     }
     setError('')
@@ -125,39 +125,51 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: name.trim(), icon: selectedIcon, color: selectedColor }),
       })
-      if (!res.ok) { setError(isBRL ? 'Erro ao criar categoria' : 'Failed to create category'); return }
+      if (!res.ok) { setError('Erro ao criar categoria'); return }
       onCreated(name.trim(), selectedIcon, selectedColor)
     } catch { setError('Erro de rede') } finally { setSubmitting(false) }
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
-    >
-      <div className={`w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-200 ${visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-        {/* Header */}
-        <div className="mb-5 flex items-center justify-between px-6 pt-5">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
-            {isBRL ? 'Nova Categoria' : 'New Category'}
-          </h2>
-          <button onClick={handleClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
-            <Lucide.X className="h-5 w-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 md:inset-0 flex flex-col justify-end md:items-center md:justify-center pointer-events-none p-0 md:p-4">
+        <div 
+          className={`pointer-events-auto w-full md:max-w-md bg-white shadow-2xl dark:bg-surface-900 md:dark:border dark:border-surface-700/60 rounded-t-[2rem] md:rounded-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out ${
+            visible ? 'translate-y-0 md:scale-100 opacity-100' : 'translate-y-full md:translate-y-0 md:scale-95 opacity-0'
+          }`}
+        >
+          {/* Mobile Drag Pill */}
+          <div className="md:hidden flex justify-center pt-4 pb-2 shrink-0">
+            <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+          </div>
+
+          <div className="overflow-y-auto pb-safe flex-1" style={{ scrollbarWidth: 'none' }}>
+            {/* Header */}
+            <div className="mb-5 flex items-center justify-between px-6 pt-2 md:pt-6">
+              <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100 tracking-tight">
+                {'Nova Categoria'}
+              </h2>
+              <button onClick={handleClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors bg-surface-100 dark:bg-surface-800 p-1.5 rounded-full">
+                <Lucide.X className="h-4 w-4" />
+              </button>
+            </div>
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
           {/* Name */}
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-              {isBRL ? 'Nome' : 'Name'}
+              {'Nome'}
             </label>
             <input
               type="text"
               required
               maxLength={30}
               className="input-field"
-              placeholder={isBRL ? 'Ex: Streaming' : 'e.g., Streaming'}
+              placeholder={'Ex: Streaming'}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -166,7 +178,7 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
           {/* Icon Picker */}
           <div className="space-y-1.5">
             <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-              {isBRL ? 'Ícone' : 'Icon'}
+              {'Ícone'}
             </label>
             <div className="grid grid-cols-6 gap-1.5 max-h-44 overflow-y-auto rounded-xl border border-surface-200 dark:border-surface-700/60 p-2.5 bg-surface-50 dark:bg-surface-800/50">
               {icons.map((iconName) => {
@@ -190,7 +202,7 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
             </div>
             {selectedIcon && (
               <p className="text-xs text-surface-400 dark:text-surface-500">
-                {isBRL ? 'Selecionado' : 'Selected'}: {selectedIcon}
+                {'Selecionado'}: {selectedIcon}
               </p>
             )}
           </div>
@@ -198,7 +210,7 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
           {/* Color Picker */}
           <div className="space-y-2">
             <label className="block text-xs font-medium text-surface-600 dark:text-surface-300">
-              {isBRL ? 'Cor' : 'Color'}
+              {'Cor'}
             </label>
             <div className="grid grid-cols-10 gap-1.5">
               {COLOR_PRESETS.map((color) => {
@@ -232,15 +244,17 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={handleClose} className="btn-secondary flex-1" disabled={submitting}>
-              {t('common.cancel')}
+          <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-surface-900 pb-2">
+            <button type="button" onClick={handleClose} className="btn-secondary flex-1 h-12" disabled={submitting}>
+              {"Cancelar"}
             </button>
-            <button type="submit" className="btn-primary flex-1" disabled={submitting}>
-              {submitting ? (isBRL ? 'Criando...' : 'Creating...') : (isBRL ? 'Criar Categoria' : 'Create Category')}
+            <button type="submit" className="btn-primary flex-1 h-12 active:scale-[0.98]" disabled={submitting}>
+              {submitting ? ('Criando...') : ('Criar Categoria')}
             </button>
           </div>
         </form>
+          </div>
+        </div>
       </div>
     </div>
   )

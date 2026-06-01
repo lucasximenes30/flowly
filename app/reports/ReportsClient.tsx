@@ -2,9 +2,43 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { useApp } from '@/lib/i18n'
+
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import AdvancedReports from '@/components/AdvancedReports'
+
+
+// Translation helper for category & month
+const categoryTranslations: Record<string, string> = {
+  'category.Food': 'Alimentação',
+  'category.Transport': 'Transporte',
+  'category.Entertainment': 'Lazer',
+  'category.Shopping': 'Compras',
+  'category.Bills': 'Contas',
+  'category.Health': 'Saúde',
+  'category.General': 'Geral',
+  'category.Salary': 'Salário',
+  'category.Freelance': 'Freelance',
+  'category.Investment': 'Investimento',
+  'category.Other': 'Outro',
+  'month.january': 'Janeiro',
+  'month.february': 'Fevereiro',
+  'month.march': 'Março',
+  'month.april': 'Abril',
+  'month.may': 'Maio',
+  'month.june': 'Junho',
+  'month.july': 'Julho',
+  'month.august': 'Agosto',
+  'month.september': 'Setembro',
+  'month.october': 'Outubro',
+  'month.november': 'Novembro',
+  'month.december': 'Dezembro',
+}
+
+const t = (key: string): string => {
+  return categoryTranslations[key] || key.replace(/^(category|month)\./, '');
+}
+
+const locale = 'pt-BR';
 
 interface Session { userId: string; email: string; name: string }
 interface Balance { income: number; expense: number; balance: number }
@@ -108,9 +142,7 @@ function generateStaticFallbackInsights(
     const pct = total > 0 ? ((top.amount / total) * 100).toFixed(0) : '0'
     const topLabel = localizeCategoryLabel(top.category)
     insights.push({
-      text: isBRL
-        ? `${topLabel} concentra ${pct}% dos seus gastos. Revise essa categoria primeiro.`
-        : `${topLabel} accounts for ${pct}% of your spending. Review this category first.`,
+      text: `${topLabel} concentra ${pct}% dos seus gastos. Revise essa categoria primeiro.`,
       type: 'tip',
     })
   }
@@ -118,41 +150,31 @@ function generateStaticFallbackInsights(
   const balChange = comparison.comparison.balanceChange
   if (balChange >= 0) {
     insights.push({
-      text: isBRL
-        ? `Seu saldo subiu ${formatCurrency(Math.abs(balChange))} vs o mês anterior.`
-        : `Your balance improved by ${formatCurrency(Math.abs(balChange))} vs last month.`,
+      text: `Seu saldo subiu ${formatCurrency(Math.abs(balChange))} vs o mês anterior.`,
       type: 'positive',
     })
   } else {
     insights.push({
-      text: isBRL
-        ? `Seu saldo caiu ${formatCurrency(Math.abs(balChange))} vs o mês anterior.`
-        : `Your balance dropped by ${formatCurrency(Math.abs(balChange))} vs last month.`,
+      text: `Seu saldo caiu ${formatCurrency(Math.abs(balChange))} vs o mês anterior.`,
       type: 'negative',
     })
   }
 
   if (comparison.comparison.expenseChange > 0) {
     insights.push({
-      text: isBRL
-        ? `As despesas subiram ${formatCurrency(comparison.comparison.expenseChange)}. Defina um teto por categoria.`
-        : `Expenses increased by ${formatCurrency(comparison.comparison.expenseChange)}. Set a spending cap by category.`,
+      text: `As despesas subiram ${formatCurrency(comparison.comparison.expenseChange)}. Defina um teto por categoria.`,
       type: 'negative',
     })
   } else if (comparison.comparison.expenseChange < 0) {
     insights.push({
-      text: isBRL
-        ? `Você reduziu ${formatCurrency(Math.abs(comparison.comparison.expenseChange))} em despesas. Bom controle.`
-        : `You reduced expenses by ${formatCurrency(Math.abs(comparison.comparison.expenseChange))}. Great control.`,
+      text: `Você reduziu ${formatCurrency(Math.abs(comparison.comparison.expenseChange))} em despesas. Bom controle.`,
       type: 'positive',
     })
   }
 
   if (comparison.comparison.incomeChange > 0) {
     insights.push({
-      text: isBRL
-        ? `Sua receita aumentou ${formatCurrency(comparison.comparison.incomeChange)}. Direcione parte para reserva.`
-        : `Income increased by ${formatCurrency(comparison.comparison.incomeChange)}. Allocate part to savings.`,
+      text: `Sua receita aumentou ${formatCurrency(comparison.comparison.incomeChange)}. Direcione parte para reserva.`,
       type: 'positive',
     })
   }
@@ -169,9 +191,9 @@ export default function ReportsClient({
   comparison: Comparison
 }) {
   const router = useRouter()
-  const { t, locale } = useApp()
+  
 
-  const isBRL = locale === 'pt-BR'
+  const isBRL = true;
   const localizeCategoryLabel = useCallback(
     (category: string) => t(`category.${category}`),
     [t]
@@ -196,7 +218,7 @@ export default function ReportsClient({
   }, [isBRL, rate])
 
   const formatDate = (dateStr: string) => {
-    const loc = isBRL ? 'pt-BR' : 'en-US'
+    const loc = 'pt-BR'
     return new Date(dateStr).toLocaleDateString(loc, { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
@@ -319,7 +341,7 @@ export default function ReportsClient({
             <button
               onClick={() => router.push('/dashboard')}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-all duration-200"
-              title={isBRL ? 'Voltar ao Dashboard' : 'Back to Dashboard'}
+              title={'Voltar ao Dashboard'}
             >
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -327,22 +349,22 @@ export default function ReportsClient({
             </button>
             <div className="min-w-0">
               <h1 className="truncate text-base font-semibold tracking-tight text-surface-900 dark:text-surface-100">
-                {isBRL ? 'Relatórios' : 'Reports'}
+                {'Relatórios'}
               </h1>
               <p className="hidden text-xs text-surface-500 dark:text-surface-400 sm:block">
-                {isBRL ? 'Visão mensal e tendências' : 'Monthly overview and trends'}
+                {'Visão mensal e tendências'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
-              {isBRL ? `Olá` : `Hi`}, {session.name}
+              {`Olá`}, {session.name}
             </span>
             <button
               onClick={() => router.push('/dashboard')}
               className="text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors font-medium"
             >
-              {isBRL ? 'Dashboard' : 'Dashboard'}
+              {'Dashboard'}
             </button>
           </div>
         </div>
@@ -353,10 +375,10 @@ export default function ReportsClient({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-surface-900 dark:text-surface-100 tracking-tight">
-              {isBRL ? 'Relatórios Financeiros' : 'Financial Reports'}
+              {'Relatórios Financeiros'}
             </h1>
             <p className="text-sm text-surface-500 dark:text-surface-400 mt-1">
-              {isBRL ? 'Análise mensal dos seus gastos' : 'Monthly analysis of your expenses'}
+              {'Análise mensal dos seus gastos'}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -381,7 +403,7 @@ export default function ReportsClient({
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
               <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
-                {isBRL ? 'Receita' : 'Income'}
+                {'Receita'}
               </p>
               <p className="text-2xl font-semibold text-emerald-600 dark:text-emerald-400">
                 +{formatCurrency(displaySummary.income)}
@@ -392,7 +414,7 @@ export default function ReportsClient({
             <div className="absolute inset-0 bg-gradient-to-br from-rose-50/50 to-transparent dark:from-rose-900/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
             <div className="relative">
               <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
-                {isBRL ? 'Despesas' : 'Expenses'}
+                {'Despesas'}
               </p>
               <p className="text-2xl font-semibold text-rose-600 dark:text-rose-400">
                 -{formatCurrency(displaySummary.expense)}
@@ -403,7 +425,7 @@ export default function ReportsClient({
             <div className={`absolute inset-0 bg-gradient-to-br transition-opacity pointer-events-none opacity-0 group-hover:opacity-100 ${displaySummary.balance >= 0 ? 'from-brand-50/50 to-transparent dark:from-brand-900/10' : 'from-rose-50/50 to-transparent dark:from-rose-900/10'}`} />
             <div className="relative">
               <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-2">
-                {isBRL ? 'Saldo' : 'Balance'}
+                {'Saldo'}
               </p>
               <p className={`text-2xl font-semibold ${displaySummary.balance >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
                 {formatCurrency(displaySummary.balance)}
@@ -418,7 +440,7 @@ export default function ReportsClient({
             <svg className="w-5 h-5 text-violet-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
-            <span>{isBRL ? 'Insights com IA' : 'AI Insights'}</span>
+            <span>{'Insights com IA'}</span>
             {insightsLoading && (
               <svg className="w-4 h-4 text-surface-400 animate-spin ml-auto shrink-0" fill="none" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
@@ -428,7 +450,7 @@ export default function ReportsClient({
           </h2>
           {aiInsights.length === 0 && !insightsLoading ? (
             <div className="py-8 text-center text-sm text-surface-400 dark:text-surface-500">
-              {isBRL ? 'Adicione transações para receber insights' : 'Add transactions to receive insights'}
+              {'Adicione transações para receber insights'}
             </div>
           ) : (
             <div className="grid gap-2.5 sm:grid-cols-2">
@@ -493,11 +515,11 @@ export default function ReportsClient({
               {/* Category Donut */}
               <div className="card relative overflow-hidden transition-all duration-200">
                 <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4">
-                  {isBRL ? 'Despesas por Categoria' : 'Expenses by Category'}
+                  {'Despesas por Categoria'}
                 </h2>
                 {categoryData.length === 0 ? (
                   <div className="py-14 text-center text-sm text-surface-400 dark:text-surface-500">
-                    {isBRL ? 'Nenhuma despesa neste mês' : 'No expenses this month'}
+                    {'Nenhuma despesa neste mês'}
                   </div>
                 ) : (
                   <>
@@ -522,10 +544,10 @@ export default function ReportsClient({
                           <RechartsTooltip
                             formatter={(value, name) => [formatCurrency(Number(value)), t(`category.${name}`) ?? name]}
                             contentStyle={{
-                              backgroundColor: isBRL ? '#16171d' : '#fff',
+                              backgroundColor: '#16171d',
                               border: 'none',
                               borderRadius: '12px',
-                              color: isBRL ? '#f1f3f7' : '#16171d',
+                              color: '#f1f3f7',
                               fontSize: '13px',
                             }}
                             wrapperStyle={{ outline: 'none' }}
@@ -563,11 +585,11 @@ export default function ReportsClient({
               {/* Trend Bar Chart */}
               <div className="card relative overflow-hidden transition-all duration-200">
                 <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4">
-                  {isBRL ? 'Receitas vs Despesas' : 'Income vs Expenses'}
+                  {'Receitas vs Despesas'}
                 </h2>
                 {trendData.length === 0 || trendData.every(d => d.income === 0 && d.expense === 0) ? (
                   <div className="py-14 text-center text-sm text-surface-400 dark:text-surface-500">
-                    {isBRL ? 'Sem dados suficientes' : 'Not enough data'}
+                    {'Sem dados suficientes'}
                   </div>
                 ) : (
                   <div style={{ width: '100%', height: 280 }} className="opacity-100 animate-fade-in">
@@ -576,12 +598,12 @@ export default function ReportsClient({
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-surface-200 dark:text-surface-700/60" />
                         <XAxis
                           dataKey="month"
-                          tick={{ fontSize: 12, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
+                          tick={{ fontSize: 12, fill: '#8f93a1' }}
                           axisLine={false}
                           tickLine={false}
                         />
                         <YAxis
-                          tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
+                          tick={{ fontSize: 11, fill: '#8f93a1' }}
                           axisLine={false}
                           tickLine={false}
                           tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
@@ -589,10 +611,10 @@ export default function ReportsClient({
                         <RechartsTooltip
                           formatter={(value) => formatCurrency(Number(value))}
                           contentStyle={{
-                            backgroundColor: isBRL ? '#16171d' : '#fff',
+                            backgroundColor: '#16171d',
                             border: 'none',
                             borderRadius: '12px',
-                            color: isBRL ? '#f1f3f7' : '#16171d',
+                            color: '#f1f3f7',
                             fontSize: '13px',
                             boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
                           }}
@@ -600,13 +622,13 @@ export default function ReportsClient({
                         />
                         <Bar
                           dataKey="income"
-                          name={isBRL ? 'Receita' : 'Income'}
+                          name={'Receita'}
                           fill="#22c55e"
                           radius={[6, 6, 0, 0]}
                         />
                         <Bar
                           dataKey="expense"
-                          name={isBRL ? 'Despesa' : 'Expense'}
+                          name={'Despesa'}
                           fill="#f43f5e"
                           radius={[6, 6, 0, 0]}
                         />
@@ -622,13 +644,13 @@ export default function ReportsClient({
               <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent dark:from-white/5 pointer-events-none" />
               <div className="relative">
                 <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-5">
-                  {isBRL ? 'Comparação Mensal' : 'Monthly Comparison'}
+                  {'Comparação Mensal'}
                 </p>
                 <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                   {/* Income Change */}
                   <div className="group flex flex-col rounded-xl bg-white/70 dark:bg-surface-900/40 p-4 transition-all duration-200 hover:bg-white dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">
-                      {isBRL ? 'Variação de Receita' : 'Income Change'}
+                      {'Variação de Receita'}
                     </p>
                     <p className={`text-lg font-semibold ${
                       comparison.comparison.incomeChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
@@ -639,7 +661,7 @@ export default function ReportsClient({
                   {/* Expense Change */}
                   <div className="group flex flex-col rounded-xl bg-white/70 dark:bg-surface-900/40 p-4 transition-all duration-200 hover:bg-white dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">
-                      {isBRL ? 'Variação de Despesa' : 'Expense Change'}
+                      {'Variação de Despesa'}
                     </p>
                     <p className={`text-lg font-semibold ${
                       comparison.comparison.expenseChange <= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
@@ -650,7 +672,7 @@ export default function ReportsClient({
                   {/* Balance Change */}
                   <div className="group flex flex-col rounded-xl bg-white/70 dark:bg-surface-900/40 p-4 transition-all duration-200 hover:bg-white dark:hover:bg-surface-800/50 ring-1 ring-transparent hover:ring-emerald-200/50 dark:hover:ring-emerald-800/20">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-2">
-                      {isBRL ? 'Variação de Saldo' : 'Balance Change'}
+                      {'Variação de Saldo'}
                     </p>
                     <p className={`text-lg font-semibold ${
                       comparison.comparison.balanceChange >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'

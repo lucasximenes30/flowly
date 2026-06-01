@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useApp } from '@/lib/i18n'
+
 import CategorySelect from './CategorySelect'
 import * as Lucide from 'lucide-react'
 
@@ -35,8 +35,8 @@ interface EditTransactionModalProps {
 
 
 export default function EditTransactionModal({ transaction, onClose, onSave, formatCurrency, cards = [] }: EditTransactionModalProps) {
-  const { t, locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const [title, setTitle] = useState(transaction.title)
   const [amount, setAmount] = useState(transaction.amount)
   const [type, setType] = useState<'INCOME' | 'EXPENSE'>(transaction.type)
@@ -119,14 +119,14 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
 
       if (!res.ok) {
         const data = await res.json()
-        setError(data.error ?? t('transaction.failed'))
+        setError(data.error ?? "Falha ao criar transação")
         return
       }
 
       handleClose()
       onSave()
     } catch {
-      setError(t('transaction.networkError'))
+      setError("Erro de rede")
     } finally {
       setSubmitting(false)
     }
@@ -137,27 +137,33 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 transition-all duration-300 ${
-        visible ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'
-      }`}
-      onClick={handleBackdropClick}
-    >
-      <div
-        className={`w-full max-w-lg max-h-[90vh] flex flex-col rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 sm:translate-y-8 opacity-0 scale-95'
-        }`}
-      >
-        <div className="flex-shrink-0 flex items-center justify-between border-b border-surface-100 p-4 sm:p-6 dark:border-surface-800/50">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
-            {t('dashboard.editTransaction')}
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 md:inset-0 flex flex-col justify-end md:items-center md:justify-center pointer-events-none p-0 md:p-4">
+        <div 
+          className={`pointer-events-auto w-full md:max-w-lg bg-white shadow-2xl dark:bg-surface-900 md:dark:border dark:border-surface-700/60 rounded-t-[2rem] md:rounded-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out ${
+            visible ? 'translate-y-0 md:scale-100 opacity-100' : 'translate-y-full md:translate-y-0 md:scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Mobile Drag Pill */}
+          <div className="md:hidden flex justify-center pt-4 pb-2 shrink-0">
+            <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+          </div>
+
+        <div className="flex-shrink-0 flex items-center justify-between border-b border-surface-100 p-4 pt-0 md:pt-4 sm:p-6 dark:border-surface-800/50">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100 tracking-tight">
+            {"Editar Transação"}
           </h2>
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-full p-2 -mr-2 text-surface-400 hover:bg-surface-100 hover:text-surface-600 dark:hover:bg-surface-800 dark:hover:text-surface-300 transition-colors"
+            className="rounded-full p-1.5 text-surface-400 bg-surface-100 dark:bg-surface-800 hover:text-surface-600 dark:hover:text-surface-300 transition-colors"
           >
-            <Lucide.X className="h-5 w-5" />
+            <Lucide.X className="h-4 w-4" />
           </button>
         </div>
 
@@ -166,20 +172,20 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             <div className="grid gap-5 sm:gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                {t('transaction.title')}
+                {"Título"}
               </label>
               <input
                 type="text"
                 required
                 className="input-field"
-                placeholder={t('transaction.titlePlaceholder')}
+                placeholder={"Nome da transação"}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                {t('transaction.amount')}
+                {"Valor"}
               </label>
               <input
                 type="number"
@@ -194,26 +200,26 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                {t('transaction.type')}
+                {"Tipo"}
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value as 'INCOME' | 'EXPENSE')}
                 className="input-field"
               >
-                <option value="EXPENSE">{t('dashboard.expense')}</option>
-                <option value="INCOME">{t('dashboard.income')}</option>
+                <option value="EXPENSE">{"Despesa"}</option>
+                <option value="INCOME">{"Receita"}</option>
               </select>
             </div>
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                {t('transaction.category')}
+                {"Categoria"}
               </label>
               <CategorySelect value={category} onChange={setCategory} type={type} />
             </div>
             <div className="space-y-2 sm:col-span-2 min-w-0 w-full">
               <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                {t('transaction.date')}
+                {"Data"}
               </label>
               <input
                 type="date"
@@ -238,7 +244,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 <div className="flex items-center gap-2">
                   <Lucide.ReceiptText className={`w-4 h-4 ${isInstallment ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400'}`} />
                   <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
-                    {isBRL ? 'É parcelado?' : 'Installment?'}
+                    {'É parcelado?'}
                   </span>
                 </div>
                 <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
@@ -254,7 +260,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
               <>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                    {isBRL ? 'Quantas parcelas?' : 'How many installments?'}
+                    {'Quantas parcelas?'}
                   </label>
                   <input
                     type="number"
@@ -268,7 +274,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                    {isBRL ? 'Dia do vencimento' : 'Payment day'}
+                    {'Dia do vencimento'}
                   </label>
                   <input
                     type="number"
@@ -280,12 +286,12 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                     onChange={(e) => setDueDay(e.target.value)}
                   />
                   <p className="text-xs text-surface-400 mt-1">
-                    {isBRL ? 'Ex: Se paga dia 12 todo mês, selecione 12' : 'e.g., if you pay on the 12th every month, select 12'}
+                    {'Ex: Se paga dia 12 todo mês, selecione 12'}
                   </p>
                 </div>
                 <div className="space-y-2 sm:col-span-2 min-w-0 w-full">
                   <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                    {isBRL ? 'Data da compra' : 'Purchase date'}
+                    {'Data da compra'}
                   </label>
                   <input
                     type="date"
@@ -311,7 +317,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 <div className="flex items-center gap-2">
                   <Lucide.Repeat className={`w-4 h-4 ${isRecurring ? 'text-emerald-600 dark:text-emerald-400' : 'text-surface-400'}`} />
                   <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
-                    {isBRL ? 'Pagamento recorrente?' : 'Recurring payment?'}
+                    {'Pagamento recorrente?'}
                   </span>
                 </div>
                 <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
@@ -326,7 +332,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
             {isRecurring && (
               <div className="sm:col-span-2 space-y-2 min-w-0 w-full">
                 <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                  {isBRL ? 'Dia da recorrência' : 'Recurring day'}
+                  {'Dia da recorrência'}
                 </label>
                 <input
                   type="number"
@@ -338,9 +344,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                   onChange={(e) => setRecurringDay(e.target.value)}
                 />
                 <p className="text-xs text-surface-400 mt-1">
-                  {isBRL
-                    ? 'Ex: Se esse pagamento acontece todo dia 10, selecione 10'
-                    : 'e.g., if this payment happens every day 10, select 10'}
+                  {'Ex: Se esse pagamento acontece todo dia 10, selecione 10'}
                 </p>
               </div>
             )}
@@ -350,7 +354,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
               <div className="sm:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-surface-100 dark:border-surface-800/50 mt-2">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                    {isBRL ? 'Forma de pagamento' : 'Payment Method'}
+                    {'Forma de pagamento'}
                   </label>
                   <select
                     value={paymentMethod}
@@ -365,9 +369,9 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                     }}
                     className="input-field"
                   >
-                    <option value="none">{isBRL ? 'Nenhum' : 'None'}</option>
-                    <option value="credit_card">{isBRL ? 'Cartão de Crédito' : 'Credit Card'}</option>
-                    <option value="debit_card">{isBRL ? 'Débito' : 'Debit'}</option>
+                    <option value="none">{'Nenhum'}</option>
+                    <option value="credit_card">{'Cartão de Crédito'}</option>
+                    <option value="debit_card">{'Débito'}</option>
                     <option value="pix">Pix</option>
                   </select>
                 </div>
@@ -375,11 +379,11 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                 {paymentMethod === 'credit_card' && (
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-surface-700 dark:text-surface-200 uppercase tracking-wider">
-                      {isBRL ? 'Cartão' : 'Card'}
+                      {'Cartão'}
                     </label>
                     {cards.length === 0 ? (
                       <div className="flex h-[42px] items-center justify-between rounded-xl border border-dashed border-surface-300 px-4 text-[13px] dark:border-surface-700">
-                        <span className="text-surface-500">{isBRL ? 'Nenhum cartão.' : 'No cards.'}</span>
+                        <span className="text-surface-500">{'Nenhum cartão.'}</span>
                       </div>
                     ) : (
                       <select
@@ -387,7 +391,7 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
                         onChange={(e) => setSelectedCardId(e.target.value)}
                         className="input-field"
                       >
-                        <option value="">{isBRL ? 'Selecionar...' : 'Select...'}</option>
+                        <option value="">{'Selecionar...'}</option>
                         {cards.map(c => (
                           <option key={c.id} value={c.id}>
                             **** {c.lastFourDigits} — {c.name}
@@ -408,24 +412,25 @@ export default function EditTransactionModal({ transaction, onClose, onSave, for
           )}
           </div>
 
-          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row gap-3 border-t border-surface-100 p-4 sm:p-6 bg-surface-50/50 dark:bg-surface-900/50 dark:border-surface-800/50 rounded-b-2xl">
+          <div className="flex-shrink-0 flex flex-col-reverse sm:flex-row gap-3 border-t border-surface-100 p-4 sm:p-6 bg-white dark:bg-surface-900 dark:border-surface-800/50 rounded-b-2xl pb-safe">
             <button
               type="button"
               onClick={handleClose}
-              className="btn-secondary w-full sm:flex-1 py-3"
+              className="btn-secondary w-full sm:flex-1 h-12"
               disabled={submitting}
             >
-              {t('common.cancel')}
+              {"Cancelar"}
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="btn-primary w-full sm:flex-1 py-3"
+              className="btn-primary w-full sm:flex-1 h-12 active:scale-[0.98]"
             >
-              {submitting ? t('transaction.saving') : t('transaction.saveChanges')}
+              {submitting ? "Salvando..." : "Salvar Alterações"}
             </button>
           </div>
         </form>
+        </div>
       </div>
     </div>
   )

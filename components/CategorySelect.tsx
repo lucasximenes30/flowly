@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useApp } from '@/lib/i18n'
+
 import * as Lucide from 'lucide-react'
 import ManageCategoriesModal from './ManageCategoriesModal'
 
@@ -66,9 +66,28 @@ function CatIcon({ name, className = 'w-4 h-4' }: { name: string; className?: st
 // Re-export for use in other components
 export { LUCIDE_MAP, CatIcon }
 
+// Translation helper
+const categoryTranslations: Record<string, string> = {
+  'category.Food': 'Alimentação',
+  'category.Transport': 'Transporte',
+  'category.Entertainment': 'Lazer',
+  'category.Shopping': 'Compras',
+  'category.Bills': 'Contas',
+  'category.Health': 'Saúde',
+  'category.General': 'Geral',
+  'category.Salary': 'Salário',
+  'category.Freelance': 'Freelance',
+  'category.Investment': 'Investimento',
+  'category.Other': 'Outro',
+}
+
+const t = (key: string): string => {
+  return categoryTranslations[key] || key.replace(/^(category)\./, '');
+}
+
 export default function CategorySelect({ value, onChange, type }: CategorySelectProps) {
-  const { t, locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const [categories, setCategories] = useState<Category[]>([])
   const [open, setOpen] = useState(false)
   const [showManage, setShowManage] = useState(false)
@@ -104,7 +123,7 @@ export default function CategorySelect({ value, onChange, type }: CategorySelect
       >
         <CatIcon name={defaults.icon} className="w-4 h-4 text-surface-600 dark:text-surface-300" />
         <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: defaults.color }} />
-        <span className="flex-1 text-left text-sm">{t(`category.${value}`) || value || (isBRL ? 'Selecione...' : 'Select...')}</span>
+        <span className="flex-1 text-left text-sm">{t(`category.${value}`) || value || ('Selecione...')}</span>
         <Lucide.ChevronDown className={`w-4 h-4 text-surface-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
 
@@ -112,7 +131,7 @@ export default function CategorySelect({ value, onChange, type }: CategorySelect
         <div className="absolute z-50 mt-2 w-full rounded-xl border border-surface-200 bg-white shadow-xl dark:border-surface-700/60 dark:bg-surface-800 overflow-hidden">
           <div className="max-h-64 overflow-y-auto py-1">
             {categories.length === 0 && (
-              <div className="px-4 py-6 text-center text-sm text-surface-400">{isBRL ? 'Carregando categorias...' : 'Loading categories...'}</div>
+              <div className="px-4 py-6 text-center text-sm text-surface-400">{'Carregando categorias...'}</div>
             )}
             {categories.map((cat) => (
               <button
@@ -141,7 +160,7 @@ export default function CategorySelect({ value, onChange, type }: CategorySelect
               onClick={() => { setOpen(false); setShowManage(true) }}
             >
               <Lucide.Settings2 className="w-4 h-4" />
-              {isBRL ? 'Gerenciar Categorias' : 'Manage Categories'}
+              {'Gerenciar Categorias'}
             </button>
           </div>
         </div>

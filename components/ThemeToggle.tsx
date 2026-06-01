@@ -1,6 +1,8 @@
 'use client'
 
-import { useApp } from '@/lib/i18n'
+
+
+import { useTheme } from '@/lib/theme'
 
 const themes = [
   { value: 'light' as const, icon: '🌤️', label: 'Claro' },
@@ -9,7 +11,7 @@ const themes = [
 ]
 
 export default function ThemeToggle() {
-  const { theme, setTheme, resolvedTheme, t } = useApp()
+  const { theme, setTheme } = useTheme()
 
   return (
     <div className="flex gap-2">

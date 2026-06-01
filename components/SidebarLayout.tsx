@@ -1,133 +1,130 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import Sidebar, { NAV_ITEMS } from './Sidebar'
-import BrandLogo from './BrandLogo'
+import Sidebar from './Sidebar'
 import * as Lucide from 'lucide-react'
 
-// Routes where the sidebar should NOT appear
+// Routes where the sidebar/bottom nav should NOT appear
 const NO_SIDEBAR_ROUTES = ['/', '/login', '/register', '/admin']
 
 export default function SidebarLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false)
-  const [userRole, setUserRole] = useState<string | null>(null)
-  const [userPlan, setUserPlan] = useState<string | null>(null)
-  const [isBRL, setIsBRL] = useState(true)
 
-  useEffect(() => {
-    setIsBRL(navigator.language.startsWith('pt'))
-    
-    const loadUserData = async () => {
-      try {
-        const res = await fetch('/api/auth/me', { cache: 'no-store' })
-        if (res.ok) {
-          const data = await res.json()
-          setUserRole(data.user?.role || null)
-          setUserPlan(data.user?.plan || null)
-        }
-      } catch {
-        // Silently fail
-      }
-    }
-    loadUserData()
-  }, [])
+  const [showQuickActions, setShowQuickActions] = useState(false)
 
   const showSidebar = !NO_SIDEBAR_ROUTES.some(
     (r) => pathname === r || pathname.startsWith(`${r}/`)
   )
 
-  // Close drawer when route changes
-  useEffect(() => {
-    setIsDrawerOpen(false)
-  }, [pathname])
-
   if (!showSidebar) return <>{children}</>
 
+  const MOBILE_NAV_ITEMS = [
+    { Icon: Lucide.Home, label: 'Painel', href: '/dashboard' },
+    { Icon: Lucide.CalendarDays, label: 'Agenda', href: '/calendar' },
+    { isAction: true },
+    { Icon: Lucide.BarChart3, label: 'Relatórios', href: '/reports' },
+    { Icon: Lucide.Settings, label: 'Ajustes', href: '/settings' },
+  ]
+
+  const handleQuickActionClick = (href: string) => {
+    setShowQuickActions(false)
+    router.push(href)
+  }
+
   return (
-    <div className="flex min-h-screen relative">
-      {/* Mobile Navbar - only visible on small screens */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 flex h-16 items-center border-b border-surface-200/80 bg-white px-4 transition-colors dark:border-surface-800 dark:bg-surface-900">
-        <button
-          onClick={() => setIsDrawerOpen(true)}
-          className="p-2 rounded-xl text-surface-500 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-          aria-label="Open menu"
-        >
-          <Lucide.Menu className="h-6 w-6" />
-        </button>
-        <span className="ml-2 font-display text-base font-semibold tracking-tight text-surface-900 dark:text-surface-100">
-          Vynta
-        </span>
-      </div>
-
-      {/* Mobile Drawer Overlay */}
-      {isDrawerOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] transition-opacity duration-300"
-          onClick={() => setIsDrawerOpen(false)}
-        />
-      )}
-
-      {/* Mobile Drawer Side Panel */}
-      <aside 
-        className={`md:hidden fixed left-0 top-0 h-full w-[84%] max-w-xs bg-white dark:bg-surface-900 z-[70] transition-transform duration-300 ease-out shadow-2xl border-r border-surface-200/80 dark:border-surface-800 ${
-          isDrawerOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="flex flex-col h-full pt-6 pb-8 px-4">
-          <div className="flex items-center justify-between mb-8 px-2">
-            <BrandLogo size="lg" textClassName="font-display" priority />
-            <button 
-              onClick={() => setIsDrawerOpen(false)}
-              className="p-2 rounded-lg text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-            >
-              <Lucide.X className="h-5 w-5" />
-            </button>
-          </div>
-
-          <nav className="flex flex-col gap-2">
-            {NAV_ITEMS.map(({ Icon, label, href, match }) => {
-              const isActive = match(pathname)
-              return (
-                <button
-                  key={href}
-                  onClick={() => router.push(href)}
-                  className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${
-                    isActive
-                      ? 'bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 font-semibold shadow-sm'
-                      : 'text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800/50 hover:text-surface-900 dark:hover:text-surface-200'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="text-sm">{label}</span>
-                </button>
-              )
-            })}
-          </nav>
-
-          <div className="mt-auto px-2">
-             <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border border-surface-200/60 dark:border-surface-700/40">
-                <p className="text-xs font-medium text-surface-400 dark:text-surface-500 uppercase tracking-wider mb-3">
-                  {isBRL ? 'Plano atual' : 'Current plan'}
-                </p>
-                <div className="flex items-center gap-2 text-surface-700 dark:text-surface-200">
-                   <div className={`h-2 w-2 rounded-full animate-pulse ${userPlan === 'PRO' || userRole === 'COURTESY' || userRole === 'ADMIN' ? 'bg-emerald-500' : 'bg-surface-400'}`} />
-                   <span className="text-sm font-semibold tracking-tight">
-                     {userRole === 'ADMIN' ? 'Admin' : userRole === 'COURTESY' ? (isBRL ? 'Cortesia' : 'Courtesy') : (userPlan === 'PRO' ? 'VIP' : (isBRL ? 'Gratuito' : 'Free'))}
-                   </span>
-                </div>
-             </div>
-          </div>
-        </div>
-      </aside>
-
+    <div className="flex min-h-screen relative pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
+      {/* Desktop Sidebar */}
       <Sidebar />
-      {/* Offset content on desktop (pl-16), and add top padding on mobile (pt-16) for the fixed navbar */}
-      <div className="flex-1 min-w-0 md:pl-16 pt-16 md:pt-0">
+      
+      {/* Main Content Area */}
+      {/* Offset content on desktop (pl-20 for collapsed sidebar) */}
+      <div className="flex-1 min-w-0 md:pl-20">
         {children}
       </div>
+
+      {/* Quick Actions Overlay (Mobile) */}
+      {showQuickActions && (
+        <div className="md:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          <div 
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity"
+            onClick={() => setShowQuickActions(false)}
+          />
+          <div className="relative bg-white dark:bg-surface-900 rounded-t-[2.5rem] p-6 pb-24 shadow-2xl animate-in slide-in-from-bottom duration-300 border-t border-surface-200 dark:border-surface-800/80">
+            {/* Drawer Indicator */}
+            <div className="mx-auto w-12 h-1.5 rounded-full bg-surface-200 dark:bg-surface-800 mb-6" />
+            
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="font-display text-lg font-bold text-surface-900 dark:text-white">Navegação Rápida</h3>
+              <button 
+                onClick={() => setShowQuickActions(false)}
+                className="p-2 rounded-xl bg-surface-50 dark:bg-surface-800 text-surface-500 hover:bg-surface-150 transition-colors"
+              >
+                <Lucide.X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: 'Finanças', icon: Lucide.Wallet, color: 'text-brand-500', bg: 'bg-brand-50 dark:bg-brand-500/10', href: '/finances' },
+                { label: 'Hábito', icon: Lucide.CheckSquare, color: 'text-emerald-500', bg: 'bg-emerald-50 dark:bg-emerald-500/10', href: '/habits' },
+                { label: 'Treino', icon: Lucide.Dumbbell, color: 'text-orange-500', bg: 'bg-orange-50 dark:bg-orange-500/10', href: '/workout' },
+                { label: 'Meta', icon: Lucide.Target, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-500/10', href: '/goals' },
+                { label: 'Agenda', icon: Lucide.CalendarDays, color: 'text-pink-500', bg: 'bg-pink-50 dark:bg-pink-500/10', href: '/calendar' },
+                { label: 'Nota', icon: Lucide.StickyNote, color: 'text-yellow-500', bg: 'bg-yellow-50 dark:bg-yellow-500/10', href: '/notes' },
+              ].map((action, i) => (
+                <button
+                  key={i} 
+                  onClick={() => handleQuickActionClick(action.href)}
+                  className="flex flex-col items-center gap-2 group transition-all"
+                >
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${action.bg} transition-all active:scale-95 group-hover:scale-105 shadow-sm`}>
+                    <action.icon className={`w-6 h-6 ${action.color}`} />
+                  </div>
+                  <span className="text-xs font-semibold text-surface-700 dark:text-surface-300">{action.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Bottom Navigation */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/80 dark:bg-surface-900/80 backdrop-blur-lg border-t border-surface-200/80 dark:border-surface-800/80 pb-safe">
+        <div className="flex items-center justify-around h-16 px-2">
+          {MOBILE_NAV_ITEMS.map((item, idx) => {
+            if (item.isAction) {
+              return (
+                <div key="action" className="relative -top-5 flex justify-center w-16">
+                  <button
+                    onClick={() => setShowQuickActions(true)}
+                    className="flex items-center justify-center w-14 h-14 rounded-full bg-brand-600 text-white shadow-lg shadow-brand-500/30 transition-transform active:scale-90 hover:scale-105 border border-brand-500/20"
+                  >
+                    <Lucide.Plus className="w-7 h-7" />
+                  </button>
+                </div>
+              )
+            }
+
+            const isActive = pathname === item.href
+            const Icon = item.Icon!
+
+            return (
+              <button
+                key={item.href}
+                onClick={() => router.push(item.href as string)}
+                className="flex flex-col items-center justify-center w-16 h-full gap-0.5 transition-colors group"
+              >
+                <Icon className={`w-5 h-5 transition-transform group-active:scale-90 ${isActive ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400 dark:text-surface-500'}`} />
+                <span className={`text-[9px] font-semibold transition-colors uppercase tracking-wider ${isActive ? 'text-brand-600 dark:text-brand-400 font-bold' : 'text-surface-400 dark:text-surface-500'}`}>
+                  {item.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </nav>
     </div>
   )
 }

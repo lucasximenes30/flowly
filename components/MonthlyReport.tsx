@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useApp } from '@/lib/i18n'
+
 
 interface MonthData {
   income: number
@@ -25,8 +25,28 @@ interface MonthlyReportProps {
   formatConverted?: (value: number) => string | null
 }
 
+// Translation helper
+const categoryTranslations: Record<string, string> = {
+  'month.january': 'Janeiro',
+  'month.february': 'Fevereiro',
+  'month.march': 'Março',
+  'month.april': 'Abril',
+  'month.may': 'Maio',
+  'month.june': 'Junho',
+  'month.july': 'Julho',
+  'month.august': 'Agosto',
+  'month.september': 'Setembro',
+  'month.october': 'Outubro',
+  'month.november': 'Novembro',
+  'month.december': 'Dezembro',
+}
+
+const t = (key: string): string => {
+  return categoryTranslations[key] || key.replace(/^(month)\./, '');
+}
+
 export default function MonthlyReport({ formatCurrency, formatConverted }: MonthlyReportProps) {
-  const { t } = useApp()
+  
   const [selectedYearMonth, setSelectedYearMonth] = useState<string>('')
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
   const [comparison, setComparison] = useState<MonthComparison | null>(null)
@@ -117,7 +137,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
       <div className="card">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <label className="block text-sm font-medium text-surface-700 dark:text-surface-300">
-            {t('monthly.selectMonth')}
+            {"Selecione um mês"}
           </label>
           <select
             value={selectedYearMonth}
@@ -153,7 +173,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               <div className="relative space-y-4">
                 <div>
                   <p className="text-xs font-semibold text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">
-                    {selectedYearMonth === getCurrentMonth() ? t('monthly.currentMonth') : t('monthly.selectedMonth') ?? 'Mês Selecionado'}
+                    {selectedYearMonth === getCurrentMonth() ? "Mês Atual" : "Mês Selecionado"}
                   </p>
                   <p className="text-sm text-surface-500 dark:text-surface-400">
                     {getMonthNames(comparison.current.month)} {comparison.current.year}
@@ -162,7 +182,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-surface-600 dark:text-surface-400">
-                      {t('dashboard.monthlyIncome')}
+                      {"Receita do Mês"}
                     </span>
                     <span className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(comparison.current.income)}
@@ -170,7 +190,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-surface-600 dark:text-surface-400">
-                      {t('dashboard.monthlyExpenses')}
+                      {"Despesas do Mês"}
                     </span>
                     <span className="text-base font-semibold text-rose-600 dark:text-rose-400">
                       {formatCurrency(comparison.current.expense)}
@@ -178,7 +198,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   </div>
                   <div className="border-t border-surface-150 dark:border-surface-700/60 pt-3 flex items-center justify-between">
                     <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                      {t('dashboard.currentBalance')}
+                      {"Saldo Atual"}
                     </span>
                     <span className="text-base font-bold text-brand-600 dark:text-brand-400">
                       {formatCurrency(comparison.current.balance)}
@@ -194,7 +214,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
               <div className="relative space-y-4">
                 <div>
                   <p className="text-xs font-medium text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-1">
-                    {t('monthly.previousMonth')}
+                    {"Mês Anterior"}
                   </p>
                   <p className="text-sm text-surface-400 dark:text-surface-500">
                     {getMonthNames(comparison.previous.month)} {comparison.previous.year}
@@ -203,7 +223,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-surface-600 dark:text-surface-400">
-                      {t('dashboard.monthlyIncome')}
+                      {"Receita do Mês"}
                     </span>
                     <span className="text-base font-semibold text-emerald-600 dark:text-emerald-400">
                       {formatCurrency(comparison.previous.income)}
@@ -211,7 +231,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-surface-600 dark:text-surface-400">
-                      {t('dashboard.monthlyExpenses')}
+                      {"Despesas do Mês"}
                     </span>
                     <span className="text-base font-semibold text-rose-600 dark:text-rose-400">
                       {formatCurrency(comparison.previous.expense)}
@@ -219,7 +239,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   </div>
                   <div className="border-t border-surface-150 dark:border-surface-700/60 pt-3 flex items-center justify-between">
                     <span className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                      {t('dashboard.currentBalance')}
+                      {"Saldo Atual"}
                     </span>
                     <span className="text-base font-bold text-brand-600 dark:text-brand-400">
                       {formatCurrency(comparison.previous.balance)}
@@ -235,7 +255,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
             <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent dark:from-white/5 pointer-events-none" />
             <div className="relative">
               <p className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-5">
-                {t('monthly.comparison')}
+                {"Comparação"}
               </p>
               <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
                 {/* Income Change */}
@@ -243,7 +263,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   <div className="mt-0.5 shrink-0">{getComparisonIcon(comparison.comparison.incomeChange)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-1.5">
-                      {t('monthly.incomeChange')}
+                      {"Variação de Receita"}
                     </p>
                     <p className={`text-sm font-semibold ${
                       comparison.comparison.incomeChange >= 0
@@ -261,7 +281,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   <div className="mt-0.5 shrink-0">{getComparisonIcon(-comparison.comparison.expenseChange)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-1.5">
-                      {t('monthly.expenseChange')}
+                      {"Variação de Despesa"}
                     </p>
                     <p className={`text-sm font-semibold ${
                       comparison.comparison.expenseChange <= 0
@@ -279,7 +299,7 @@ export default function MonthlyReport({ formatCurrency, formatConverted }: Month
                   <div className="mt-0.5 shrink-0">{getComparisonIcon(comparison.comparison.balanceChange)}</div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-surface-500 dark:text-surface-400 mb-1.5">
-                      {t('monthly.balanceChange')}
+                      {"Variação de Saldo"}
                     </p>
                     <p className={`text-sm font-semibold ${
                       comparison.comparison.balanceChange >= 0
