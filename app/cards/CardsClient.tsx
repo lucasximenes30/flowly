@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
-import { useApp } from '@/lib/i18n'
+
 import NotificationDropdown from '@/components/NotificationDropdown'
 
 const PRESET_COLORS = [
@@ -46,8 +46,8 @@ interface Props {
 
 export default function CardsClient({ session, initialCards, transactions = [] }: Props) {
   const router = useRouter()
-  const { locale, t } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const [cards, setCards] = useState<Card[]>(initialCards)
   const [showModal, setShowModal] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; cardId?: string }>({ isOpen: false, mode: 'create' })
   const [submitting, setSubmitting] = useState(false)
@@ -227,16 +227,16 @@ export default function CardsClient({ session, initialCards, transactions = [] }
             </button>
             <div className="min-w-0">
               <h1 className="truncate text-base font-semibold tracking-tight text-surface-900 dark:text-surface-100">
-                {isBRL ? 'Cartões' : 'Cards'}
+                {'Cartões'}
               </h1>
               <p className="hidden text-xs text-surface-500 dark:text-surface-400 sm:block">
-                {isBRL ? 'Gestão de cartões e limites' : 'Card and limit management'}
+                {'Gestão de cartões e limites'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
-              {isBRL ? `Olá` : `Hi`}, {session.name}
+              {`Olá`}, {session.name}
             </span>
 
             {/* Notification bell */}
@@ -246,12 +246,12 @@ export default function CardsClient({ session, initialCards, transactions = [] }
               onClick={handleLogout}
               className="hidden text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200 sm:inline"
             >
-              {t('common.signOut')}
+              {"Sair"}
             </button>
             <button
               onClick={handleLogout}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 sm:hidden"
-              aria-label={t('common.signOut')}
+              aria-label={"Sair"}
             >
               <Lucide.LogOut className="h-4 w-4" />
             </button>
@@ -352,7 +352,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                 <div className="space-y-1.5">
                   <label className="text-sm font-medium text-surface-700 dark:text-surface-300">Limite do Cartão</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-sm">{isBRL ? 'R$' : '$'}</span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-sm">{'R$'}</span>
                     <input
                       type="number"
                       required
@@ -463,8 +463,8 @@ export default function CardsClient({ session, initialCards, transactions = [] }
             <div className="lg:col-span-2 card p-6 flex flex-col gap-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">{isBRL ? 'Fatura Atual por Cartão' : 'Current Invoice per Card'}</h3>
-                  <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">{isBRL ? 'Visão geral do fechamento atual' : 'Overview of current billing cycle'}</p>
+                  <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">{'Fatura Atual por Cartão'}</h3>
+                  <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">{'Visão geral do fechamento atual'}</p>
                 </div>
                 <div className="p-2 rounded-xl bg-brand-50 dark:bg-brand-900/20 text-brand-500">
                   <Lucide.BarChart3 className="h-5 w-5" />
@@ -485,7 +485,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                       axisLine={false} 
                       tickLine={false} 
                       tick={{ fontSize: 11, fill: '#9ca3af' }}
-                      tickFormatter={(val) => `${isBRL ? 'R$' : '$'}${val}`}
+                      tickFormatter={(val) => `${'R$'}${val}`}
                       dx={-5}
                     />
                     <Tooltip 
@@ -501,7 +501,7 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                       }}
                       itemStyle={{ color: '#e5e7eb', fontWeight: 'bold' }}
                       labelStyle={{ color: '#9ca3af', marginBottom: '4px' }}
-                      formatter={(val: any) => [`${isBRL ? 'R$' : '$'}${parseFloat(val).toLocaleString(isBRL?'pt-BR':'en-US')}`, isBRL ? 'Fatura' : 'Invoice']}
+                      formatter={(val: any) => [`${'R$'}${parseFloat(val).toLocaleString('pt-BR')}`, 'Fatura']}
                     />
                     <Bar dataKey="fatura" radius={[6, 6, 0, 0]} maxBarSize={48} barSize={36}>
                       {chartData.map((entry, index) => (
@@ -519,21 +519,21 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                   <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-500 shadow-sm">
                     <Lucide.ShieldCheck className="h-5 w-5" />
                   </div>
-                  <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">{isBRL ? 'Limite Total' : 'Total Limit'}</h3>
+                  <h3 className="text-base font-semibold text-surface-900 dark:text-surface-100">{'Limite Total'}</h3>
                 </div>
                 <div className="space-y-1">
                   <p className="text-3xl font-bold tracking-tight text-surface-900 dark:text-white">
-                    {isBRL ? 'R$' : '$'}{cardCalculations.reduce((acc, c) => acc + c.totalLimit, 0).toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
+                    {'R$'}{cardCalculations.reduce((acc, c) => acc + c.totalLimit, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </p>
-                  <p className="text-sm font-medium text-surface-500 dark:text-surface-400">{isBRL ? 'Somando todos os cartões' : 'Sum of all cards'}</p>
+                  <p className="text-sm font-medium text-surface-500 dark:text-surface-400">{'Somando todos os cartões'}</p>
                 </div>
               </div>
               
               <div className="mt-8 pt-6 border-t border-surface-200 dark:border-surface-700/50">
                  <div className="flex justify-between text-sm mb-2.5">
-                    <span className="font-medium text-surface-500 dark:text-surface-400">{isBRL ? 'Utilizado' : 'Used'}</span>
+                    <span className="font-medium text-surface-500 dark:text-surface-400">{'Utilizado'}</span>
                     <span className="font-bold text-surface-900 dark:text-surface-100">
-                      {isBRL ? 'R$' : '$'}{cardCalculations.reduce((acc, c) => acc + c.usedLimit, 0).toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
+                      {'R$'}{cardCalculations.reduce((acc, c) => acc + c.usedLimit, 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                  </div>
                  <div className="h-2.5 w-full bg-surface-200 dark:bg-surface-700/80 rounded-full overflow-hidden shadow-inner">
@@ -630,12 +630,12 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                         
                         <div className="flex justify-between text-[11px] font-medium text-white/75 pt-3 border-t border-white/15">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-white/60 uppercase tracking-widest text-[9px]">{isBRL ? 'Fechamento' : 'Closing'}</span>
-                            <span>{isBRL ? 'Dia' : 'Day'} {card.closingDay}</span>
+                            <span className="text-white/60 uppercase tracking-widest text-[9px]">{'Fechamento'}</span>
+                            <span>{'Dia'} {card.closingDay}</span>
                           </div>
                           <div className="flex flex-col gap-0.5 text-right">
-                            <span className="text-white/60 uppercase tracking-widest text-[9px]">{isBRL ? 'Vencimento' : 'Due'}</span>
-                            <span>{isBRL ? 'Dia' : 'Day'} {card.dueDay}</span>
+                            <span className="text-white/60 uppercase tracking-widest text-[9px]">{'Vencimento'}</span>
+                            <span>{'Dia'} {card.dueDay}</span>
                           </div>
                         </div>
                       </div>
@@ -644,17 +644,17 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                     {/* Card Stats Below */}
                     <div className="p-5 flex-1 flex flex-col justify-end space-y-4">
                       <div className="flex items-center justify-between pb-3 border-b border-surface-100 dark:border-surface-800/60">
-                        <span className="text-xs text-surface-500 dark:text-surface-400 font-bold uppercase tracking-wider">{isBRL ? 'Fatura Atual' : 'Current Invoice'}</span>
+                        <span className="text-xs text-surface-500 dark:text-surface-400 font-bold uppercase tracking-wider">{'Fatura Atual'}</span>
                         <span className="text-lg font-bold text-surface-900 dark:text-white">
-                          {isBRL ? 'R$' : '$'}{card.currentInvoiceAmount.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
+                          {'R$'}{card.currentInvoiceAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
 
                       <div className="space-y-3">
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400">{isBRL ? 'Limite Utilizado' : 'Used Limit'}</span>
+                          <span className="text-xs font-semibold text-surface-500 dark:text-surface-400">{'Limite Utilizado'}</span>
                           <span className="text-xs font-bold text-surface-800 dark:text-surface-200">
-                            {isBRL ? 'R$' : '$'}{card.usedLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}
+                            {'R$'}{card.usedLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                         <div className="h-2 w-full bg-surface-100 dark:bg-surface-800/80 rounded-full overflow-hidden shadow-inner flex">
@@ -664,8 +664,8 @@ export default function CardsClient({ session, initialCards, transactions = [] }
                           />
                         </div>
                         <div className="flex justify-between items-center text-[11px]">
-                          <span className="text-surface-400 dark:text-surface-500">{isBRL ? 'Disponível' : 'Available'}: <strong className="font-semibold text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.availableLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</strong></span>
-                          <span className="text-surface-400 dark:text-surface-500">{isBRL ? 'Total' : 'Total'}: <strong className="font-semibold text-surface-600 dark:text-surface-300">{isBRL ? 'R$' : '$'}{card.totalLimit.toLocaleString(isBRL?'pt-BR':'en-US', { minimumFractionDigits: 2 })}</strong></span>
+                          <span className="text-surface-400 dark:text-surface-500">{'Disponível'}: <strong className="font-semibold text-surface-600 dark:text-surface-300">{'R$'}{card.availableLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
+                          <span className="text-surface-400 dark:text-surface-500">{'Total'}: <strong className="font-semibold text-surface-600 dark:text-surface-300">{'R$'}{card.totalLimit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
                         </div>
                       </div>
                     </div>

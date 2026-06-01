@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Manrope, Sora } from 'next/font/google'
-import { AppProvider } from '@/lib/i18n'
+import { ThemeProvider } from '@/lib/theme'
+import Script from 'next/script'
 import SidebarLayout from '@/components/SidebarLayout'
 import './globals.css'
 
@@ -48,20 +49,19 @@ export default function RootLayout({
             } catch(e) {}
           })();
         `}} />
-        <script
+      </head>
+      <body className={`${manrope.variable} ${sora.variable} min-h-screen font-sans`}>
+        <Script
           src="https://cdn.utmify.com.br/scripts/utms/latest.js"
           data-utmify-prevent-xcod-sck
           data-utmify-prevent-subids
-          async
-          defer
-        ></script>
-      </head>
-      <body className={`${manrope.variable} ${sora.variable} min-h-screen font-sans`}>
-        <AppProvider>
+          strategy="lazyOnload"
+        />
+        <ThemeProvider>
           <SidebarLayout>
             {children}
           </SidebarLayout>
-        </AppProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

@@ -3,9 +3,31 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
-import { useApp } from '@/lib/i18n'
+
+import { useTheme } from '@/lib/theme'
+
 import SettingsSection from './SettingsSection'
 import ManageCategoriesModal from './ManageCategoriesModal'
+
+// Translation helper
+const categoryTranslations: Record<string, string> = {
+  'category.Food': 'Alimentação',
+  'category.Transport': 'Transporte',
+  'category.Entertainment': 'Lazer',
+  'category.Shopping': 'Compras',
+  'category.Bills': 'Contas',
+  'category.Health': 'Saúde',
+  'category.General': 'Geral',
+  'category.Salary': 'Salário',
+  'category.Freelance': 'Freelance',
+  'category.Investment': 'Investimento',
+  'category.Other': 'Outro',
+}
+
+const t = (key: string): string => {
+  return categoryTranslations[key] || key.replace(/^(category)\./, '');
+}
+
 
 interface Session { userId: string; email: string; name: string }
 
@@ -17,8 +39,8 @@ interface SettingsPanelProps {
 
 export default function SettingsPanel({ open, onClose, session }: SettingsPanelProps) {
   const router = useRouter()
-  const { t, locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const [visible, setVisible] = useState(open)
   const [mounted, setMounted] = useState(false)
 
@@ -99,15 +121,15 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
       const data = await res.json()
       
       if (!res.ok) {
-        setSexMessage(data.error ?? (isBRL ? 'Erro ao atualizar' : 'Error updating'))
+        setSexMessage(data.error ?? ('Erro ao atualizar'))
         return
       }
       
       setUserSex(newSex)
-      setSexMessage(isBRL ? 'Atualizado com sucesso!' : 'Updated successfully!')
+      setSexMessage('Atualizado com sucesso!')
       window.setTimeout(() => setSexMessage(''), 3000)
     } catch {
-      setSexMessage(isBRL ? 'Erro de rede' : 'Network error')
+      setSexMessage('Erro de rede')
     } finally {
       setIsUpdatingSex(false)
     }
@@ -116,7 +138,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
   const handleUpdateName = async () => {
     setShowNameConfirm(false)
     if (newName.trim() === session.name) {
-      setNameMessage(t('settings.nameSame'))
+      setNameMessage("O novo nome deve ser diferente do atual.")
       return
     }
     setIsUpdatingName(true)
@@ -131,7 +153,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
         setNameMessage(data.error ?? 'Erro ao atualizar nome')
         return
       }
-      setNameMessage(t('settings.nameUpdated'))
+      setNameMessage("Nome atualizado com sucesso!")
       setNewName('')
       window.dispatchEvent(new CustomEvent('vynta:nameUpdated', { detail: newName.trim() }))
       router.refresh()
@@ -145,11 +167,11 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
   const handleChangePassword = async () => {
     setPasswordMessage('')
     if (newPassword !== confirmPassword) {
-      setPasswordMessage(t('settings.passwordMismatch'))
+      setPasswordMessage("As senhas não coincidem.")
       return
     }
     if (newPassword === currentPassword) {
-      setPasswordMessage(t('settings.passwordSame'))
+      setPasswordMessage("A nova senha deve ser diferente da atual.")
       return
     }
     setIsChangingPassword(true)
@@ -161,13 +183,13 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
       })
       const data = await res.json()
       if (!res.ok) {
-        setPasswordMessage(data.error ?? (isBRL ? 'Erro ao alterar senha' : 'Error changing password'))
+        setPasswordMessage(data.error ?? ('Erro ao alterar senha'))
         return
       }
-      setPasswordMessage(t('settings.passwordUpdated'))
+      setPasswordMessage("Senha atualizada com sucesso!")
       setCurrentPassword(''); setNewPassword(''); setConfirmPassword('')
     } catch {
-      setPasswordMessage(isBRL ? 'Erro de rede' : 'Network error')
+      setPasswordMessage('Erro de rede')
     } finally {
       setIsChangingPassword(false)
     }
@@ -197,10 +219,10 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
         <header className="flex shrink-0 items-center justify-between px-4 py-4 sm:px-6 sm:py-5 border-b border-surface-200/80 dark:border-surface-800">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-surface-900 dark:text-surface-100">
-              {t('settings.title')}
+              {"Configurações"}
             </h2>
             <p className="text-sm text-surface-500 dark:text-surface-400 mt-0.5">
-              {isBRL ? 'Ol\xe1,' : 'Hi,'} <span className="font-semibold text-surface-700 dark:text-surface-200">{session.name}</span>
+              {'Ol\xe1,'} <span className="font-semibold text-surface-700 dark:text-surface-200">{session.name}</span>
             </p>
           </div>
           <button
@@ -218,32 +240,32 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
             {/* ════════ GERAL ════════ */}
             <SettingsSection
               icon={<Lucide.Settings2 className="h-5 w-5" />}
-              title={t('settings.general')}
+              title={"Geral"}
             >
               <div className="space-y-6">
                 {/* Theme */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.theme')}</label>
+                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">{"Tema"}</label>
                   <ThemeSelector />
                 </div>
 
                 {/* Language */}
                 <div className="space-y-3">
-                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">{t('settings.language')}</label>
+                  <label className="text-sm font-medium text-surface-700 dark:text-surface-300">{"Idioma"}</label>
                   <LanguageSelector isBRL={isBRL} />
                 </div>
 
                 {/* Categories */}
                 <div className="space-y-3">
                   <label className="text-sm font-medium text-surface-700 dark:text-surface-300">
-                    {isBRL ? 'Categorias' : 'Categories'}
+                    {'Categorias'}
                   </label>
                   <button
                     onClick={() => setShowManageCategories(true)}
                     className="group flex w-full items-center justify-between rounded-xl border border-surface-200 dark:border-surface-700/60 bg-surface-50 dark:bg-surface-900 px-4 py-3.5 text-sm text-surface-700 dark:text-surface-200 hover:border-brand-300 dark:hover:border-brand-700 transition-all duration-200 active:scale-[0.99]"
                   >
                     <span className="font-medium">
-                      {isBRL ? 'Gerenciar Categorias' : 'Manage Categories'}
+                      {'Gerenciar Categorias'}
                     </span>
                     <Lucide.ChevronRight className="h-4 w-4 text-surface-400 transition-transform duration-200 group-hover:translate-x-0.5" />
                   </button>
@@ -257,7 +279,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
             {/* ════════ PERFIL ════════ */}
             <SettingsSection
               icon={<Lucide.User className="h-5 w-5" />}
-              title={t('settings.profile')}
+              title={"Perfil"}
             >
               <div className="space-y-4">
                 {/* User Plan & Expiration Card */}
@@ -267,38 +289,38 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-sm font-semibold text-surface-900 dark:text-white">
-                        {isBRL ? 'Plano atual:' : 'Current plan:'} <span className="text-brand-600 dark:text-brand-400">
-                          {userRole === 'ADMIN' ? 'Admin' : userRole === 'COURTESY' ? (isBRL ? 'Cortesia' : 'Courtesy') : (userPlan === 'PRO' ? 'VIP' : (isBRL ? 'Gratuito' : 'Free'))}
+                        {'Plano atual:'} <span className="text-brand-600 dark:text-brand-400">
+                          {userRole === 'ADMIN' ? 'Admin' : userRole === 'COURTESY' ? ('Cortesia') : (userPlan === 'PRO' ? 'VIP' : ('Gratuito'))}
                         </span>
                       </h4>
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
-                        {isBRL ? 'Vence em:' : 'Expires:'} <span className="font-medium text-surface-700 dark:text-surface-300">
+                        {'Vence em:'} <span className="font-medium text-surface-700 dark:text-surface-300">
                           {subscriptionEndDate 
-                            ? new Date(subscriptionEndDate).toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { timeZone: 'UTC' }) 
-                            : (userRole === 'ADMIN' || userRole === 'COURTESY' ? (isBRL ? 'Sem vencimento' : 'No expiration') : (isBRL ? 'Não informado' : 'Not informed'))}
+                            ? new Date(subscriptionEndDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) 
+                            : (userRole === 'ADMIN' || userRole === 'COURTESY' ? ('Sem vencimento') : ('Não informado'))}
                         </span>
                       </p>
                     </div>
                     
                     <div className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                      {isBRL ? 'Ativo' : 'Active'}
+                      {'Ativo'}
                     </div>
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                    {t('settings.profileName')}
+                    {"Nome"}
                   </label>
                   <input
                     type="text"
                     className="input-field h-12 rounded-xl bg-white dark:bg-surface-900"
-                    placeholder={t('settings.namePlaceholder')}
+                    placeholder={"Seu nome"}
                     value={newName}
                     onChange={(e) => setNewName(e.target.value)}
                   />
                   <p className="mt-2 text-xs text-surface-400 dark:text-surface-500">
-                    {isBRL ? 'Atual:' : 'Current:'}{' '}
+                    {'Atual:'}{' '}
                     <span className="font-semibold text-surface-600 dark:text-surface-300">{session.name}</span>
                   </p>
                 </div>
@@ -312,12 +334,12 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
                   disabled={nameDisabled}
                   className="btn-primary w-full h-12 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
                 >
-                  {isBRL ? 'Atualizar Nome' : 'Update Name'}
+                  {'Atualizar Nome'}
                 </button>
 
                 <div>
                   <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                    {isBRL ? 'Sexo (Opcional)' : 'Sex (Optional)'}
+                    {'Sexo (Opcional)'}
                   </label>
                   <select
                     value={userSex || ''}
@@ -325,13 +347,13 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
                     disabled={isUpdatingSex}
                     className="input-field h-12 rounded-xl bg-white dark:bg-surface-900 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="">{isBRL ? 'Não informado' : 'Not specified'}</option>
-                    <option value="MALE">{isBRL ? 'Masculino' : 'Male'}</option>
-                    <option value="FEMALE">{isBRL ? 'Feminino' : 'Female'}</option>
-                    <option value="PREFER_NOT_SAY">{isBRL ? 'Prefiro não informar' : 'Prefer not to say'}</option>
+                    <option value="">{'Não informado'}</option>
+                    <option value="MALE">{'Masculino'}</option>
+                    <option value="FEMALE">{'Feminino'}</option>
+                    <option value="PREFER_NOT_SAY">{'Prefiro não informar'}</option>
                   </select>
                   <p className="mt-2 text-xs text-surface-400 dark:text-surface-500">
-                    {isBRL ? 'Será usado como contexto ao gerar planos de treino.' : 'Will be used as context when generating workout plans.'}
+                    {'Será usado como contexto ao gerar planos de treino.'}
                   </p>
                 </div>
 
@@ -347,12 +369,12 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
             {/* ════════ SEGURANÇA ════════ */}
             <SettingsSection
               icon={<Lucide.Shield className="h-5 w-5" />}
-              title={t('settings.changePassword')}
+              title={"Alterar Senha"}
             >
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                    {t('settings.currentPassword')}
+                    {"Senha Atual"}
                   </label>
                   <PasswordInput
                     value={currentPassword}
@@ -362,17 +384,17 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                    {t('settings.newPassword')}
+                    {"Nova Senha"}
                   </label>
                   <PasswordInput
                     value={newPassword}
                     onChange={setNewPassword}
-                    placeholder={isBRL ? 'Minimo 6 caracteres' : 'Minimum 6 characters'}
+                    placeholder={'Minimo 6 caracteres'}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-surface-700 dark:text-surface-300 mb-2">
-                    {t('settings.confirmPassword')}
+                    {"Confirmar Nova Senha"}
                   </label>
                   <PasswordInput
                     value={confirmPassword}
@@ -398,10 +420,10 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
                   {isChangingPassword ? (
                     <span className="flex items-center justify-center gap-2">
                       <Lucide.Loader2 className="h-4 w-4 animate-spin" />
-                      {t('settings.changingPassword')}
+                      {"Alterando senha..."}
                     </span>
                   ) : (
-                    t('settings.update')
+                    "Alterar Senha"
                   )}
                 </button>
               </div>
@@ -420,7 +442,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
       {/* ── Name confirmation modal ── */}
       {showNameConfirm && (
         <ConfirmModal
-          title={t('settings.confirmNameChange')}
+          title={"Tem certeza que deseja alterar seu nome?"}
           description={
             <span>
               <span className="font-medium text-surface-700 dark:text-surface-300">{session.name}</span>
@@ -448,7 +470,7 @@ export default function SettingsPanel({ open, onClose, session }: SettingsPanelP
 /* ───────────────────── Sub-components ───────────────────── */
 
 function ThemeSelector() {
-  const { theme, setTheme } = useApp()
+  const { theme, setTheme } = useTheme()
 
   const options = [
     { value: 'light' as const, icon: '☀️', label: 'Claro' },
@@ -480,7 +502,8 @@ function ThemeSelector() {
 }
 
 function LanguageSelector({ isBRL }: { isBRL: boolean }) {
-  const { locale, setLocale } = useApp()
+  const locale = 'pt-BR'
+  const setLocale = (lang: string) => {}
 
   const options = [
     { value: 'pt-BR' as const, flag: '🇧🇷', label: 'PT-BR' },
@@ -588,10 +611,10 @@ function DangerZoneCard({
         </div>
         <div>
           <p className="text-sm font-semibold text-red-800 dark:text-red-300">
-            {t('settings.dangerZone')}
+            {"Zona de Perigo"}
           </p>
           <p className="text-xs text-red-500 dark:text-red-400/70 mt-0.5">
-            {isBRL ? 'Ações irreversíveis na sua conta' : 'Irreversible account actions'}
+            {'Ações irreversíveis na sua conta'}
           </p>
         </div>
       </div>
@@ -602,7 +625,7 @@ function DangerZoneCard({
           window.dispatchEvent(new CustomEvent('vynta:deleteAccount'))
         }}
       >
-        {t('settings.deleteAccount')}
+        {"Excluir Conta"}
       </button>
     </div>
   )
@@ -621,8 +644,8 @@ function ConfirmModal({
   onConfirm: () => void
   loading: boolean
 }) {
-  const { t, locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={onCancel}>
@@ -637,7 +660,7 @@ function ConfirmModal({
         <p className="text-sm text-center text-surface-500 dark:text-surface-400 mt-2">{description}</p>
         <div className="mt-6 flex gap-3">
           <button onClick={onCancel} className="btn-secondary h-12 flex-1 disabled:opacity-40" disabled={loading}>
-            {t('settings.cancel')}
+            {"Cancelar"}
           </button>
           <button
             onClick={onConfirm}
@@ -647,10 +670,10 @@ function ConfirmModal({
             {loading ? (
               <span className="flex items-center justify-center gap-2">
                 <Lucide.Loader2 className="h-4 w-4 animate-spin" />
-                {isBRL ? 'Atualizando...' : 'Updating...'}
+                {'Atualizando...'}
               </span>
             ) : (
-              t('settings.confirm')
+              "Confirmar"
             )}
           </button>
         </div>

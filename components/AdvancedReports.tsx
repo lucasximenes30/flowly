@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useApp } from '@/lib/i18n'
+
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, Legend, PieChart, Pie, Cell, LineChart, Line,
@@ -50,8 +50,40 @@ const SCORE_COLORS: Record<string, string> = {
   'Excellent': '#22c55e'
 }
 
+
+// Translation helper for category & month
+const categoryTranslations: Record<string, string> = {
+  'category.Food': 'Alimentação',
+  'category.Transport': 'Transporte',
+  'category.Entertainment': 'Lazer',
+  'category.Shopping': 'Compras',
+  'category.Bills': 'Contas',
+  'category.Health': 'Saúde',
+  'category.General': 'Geral',
+  'category.Salary': 'Salário',
+  'category.Freelance': 'Freelance',
+  'category.Investment': 'Investimento',
+  'category.Other': 'Outro',
+  'month.january': 'Janeiro',
+  'month.february': 'Fevereiro',
+  'month.march': 'Março',
+  'month.april': 'Abril',
+  'month.may': 'Maio',
+  'month.june': 'Junho',
+  'month.july': 'Julho',
+  'month.august': 'Agosto',
+  'month.september': 'Setembro',
+  'month.october': 'Outubro',
+  'month.november': 'Novembro',
+  'month.december': 'Dezembro',
+}
+
+const t = (key: string): string => {
+  return categoryTranslations[key] || key.replace(/^(category|month)\./, '');
+}
+
 export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedReportsProps) {
-  const { t } = useApp()
+  
   const [loading, setLoading] = useState(true)
   const [score, setScore] = useState<FinancialScore | null>(null)
   const [anomalies, setAnomalies] = useState<SpendingAnomaly[]>([])
@@ -61,7 +93,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
 
   useEffect(() => {
     setLoading(true)
-    const lang = isBRL ? 'pt-BR' : 'en'
+    const lang = 'pt-BR'
     fetch(`/api/reports/advanced?language=${lang}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
@@ -97,12 +129,10 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
     return (
       <div className="card">
         <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">
-          {isBRL ? 'Relatórios Avançados' : 'Advanced Reports'}
+          {'Relatórios Avançados'}
         </h2>
         <p className="text-sm text-surface-400 dark:text-surface-500">
-          {isBRL
-            ? 'Adicione transações ao longo do tempo para desbloquear análises avançadas'
-            : 'Add transactions over time to unlock advanced analysis'}
+          {'Adicione transações ao longo do tempo para desbloquear análises avançadas'}
         </p>
       </div>
     )
@@ -117,21 +147,19 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
       {/* Header */}
       <div>
         <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-2">
-          {isBRL ? 'Relatórios Avançados' : 'Advanced Reports'}
+          {'Relatórios Avançados'}
         </h2>
         <p className="text-sm text-surface-400 dark:text-surface-500">
-          {isBRL
-            ? 'Análise detalhada dos seus hábitos financeiros'
-            : 'Detailed analysis of your financial habits'}
+          {'Análise detalhada dos seus hábitos financeiros'}
         </p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 rounded-xl bg-surface-100 dark:bg-surface-800/50 w-fit ring-1 ring-surface-200 dark:ring-surface-700">
         {[
-          { key: 'score' as const, label: isBRL ? 'Score' : 'Score' },
-          { key: 'weekly' as const, label: isBRL ? 'Semanal' : 'Weekly' },
-          { key: 'anomalies' as const, label: isBRL ? 'Alertas' : 'Alerts' },
+          { key: 'score' as const, label: 'Score' },
+          { key: 'weekly' as const, label: 'Semanal' },
+          { key: 'anomalies' as const, label: 'Alertas' },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -156,7 +184,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
             <div className="card relative flex flex-col items-center justify-center py-8 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent dark:from-white/5 pointer-events-none" />
               <h3 className="relative text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
-                {isBRL ? 'Score Financeiro' : 'Financial Score'}
+                {'Score Financeiro'}
               </h3>
               <div className="relative">
                 <svg className="w-36 h-36 -rotate-90" viewBox="0 0 120 120">
@@ -201,7 +229,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                 </div>
               </div>
               <p className="relative text-xs text-surface-400 dark:text-surface-500 mt-2.5 text-center">
-                {isBRL ? 'Baseado nos seus hábitos deste mês' : 'Based on your habits this month'}
+                {'Baseado nos seus hábitos deste mês'}
               </p>
             </div>
 
@@ -210,7 +238,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
               <div className="absolute inset-0 bg-gradient-to-br from-white/30 to-transparent dark:from-white/5 pointer-events-none" />
               <div className="relative">
                 <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
-                  {isBRL ? 'Detalhamento' : 'Breakdown'}
+                  {'Detalhamento'}
                 </h3>
                 {score.breakdown.map((item, i) => {
                   const pct = item.max > 0 ? (item.score / item.max) : 0
@@ -258,7 +286,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                     </svg>
                   </div>
                   <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
-                    {isBRL ? 'Recomendações' : 'Recommendations'}
+                    {'Recomendações'}
                   </h3>
                 </div>
                 <ul className="space-y-2.5">
@@ -284,7 +312,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
         weeklyChartData.length === 0 ? (
           <div className="card flex items-center justify-center py-16">
             <p className="text-sm text-surface-400 dark:text-surface-500">
-              {isBRL ? 'Sem dados semanais suficientes' : 'Not enough weekly data'}
+              {'Sem dados semanais suficientes'}
             </p>
           </div>
         ) : (
@@ -292,7 +320,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
             {/* Weekly Trend Chart */}
             <div className="card relative overflow-hidden transition-all duration-200">
               <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100 mb-4">
-                {isBRL ? 'Tendência Semanal' : 'Weekly Trend'}
+                {'Tendência Semanal'}
               </h3>
               <div style={{ width: '100%', height: 300 }} className="opacity-100 animate-fade-in">
                 <ResponsiveContainer width="100%" height="100%">
@@ -300,7 +328,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-surface-200 dark:text-surface-700/60" />
                     <XAxis
                       dataKey="week"
-                      tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
+                      tick={{ fontSize: 11, fill: '#8f93a1' }}
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v: string) => {
@@ -313,7 +341,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       }}
                     />
                     <YAxis
-                      tick={{ fontSize: 11, fill: isBRL ? '#8f93a1' : '#7a7d8b' }}
+                      tick={{ fontSize: 11, fill: '#8f93a1' }}
                       axisLine={false}
                       tickLine={false}
                       tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(0)}
@@ -328,19 +356,19 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                         }
                         return sliced
                       }}
-                      formatter={(value, name) => [formatCurrency(Number(value)), name === 'income' ? (isBRL ? 'Receita' : 'Income') : (isBRL ? 'Despesa' : 'Expense')]}
+                      formatter={(value, name) => [formatCurrency(Number(value)), name === 'income' ? ('Receita') : ('Despesa')]}
                       contentStyle={{
-                        backgroundColor: isBRL ? '#16171d' : '#fff',
+                        backgroundColor: '#16171d',
                         border: 'none',
                         borderRadius: '12px',
-                        color: isBRL ? '#f1f3f7' : '#16171d',
+                        color: '#f1f3f7',
                         fontSize: '13px',
                         boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
                       }}
                       wrapperStyle={{ outline: 'none' }}
                     />
                     <Legend
-                      formatter={(value: string) => value === 'income' ? (isBRL ? 'Receita' : 'Income') : isBRL ? 'Despesa' : 'Expense'}
+                      formatter={(value: string) => value === 'income' ? ('Receita') : 'Despesa'}
                       wrapperStyle={{ fontSize: '12px' }}
                     />
                     <Bar dataKey="income" fill="#22c55e" radius={[6, 6, 0, 0]} />
@@ -364,7 +392,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                     <div className="space-y-2">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-surface-500 dark:text-surface-400">
-                          {isBRL ? 'Receita' : 'Income'}
+                          {'Receita'}
                         </span>
                         <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                           {formatCurrency(w.income)}
@@ -372,7 +400,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-surface-500 dark:text-surface-400">
-                          {isBRL ? 'Despesa' : 'Expense'}
+                          {'Despesa'}
                         </span>
                         <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
                           {formatCurrency(w.expense)}
@@ -380,7 +408,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       </div>
                       <div className="border-t border-surface-150 dark:border-surface-700/60 pt-2 flex justify-between items-center">
                         <span className={`text-xs font-medium ${w.balance >= 0 ? 'text-surface-600 dark:text-surface-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                          {isBRL ? 'Saldo' : 'Balance'}
+                          {'Saldo'}
                         </span>
                         <span className={`text-xs font-bold ${w.balance >= 0 ? 'text-brand-600 dark:text-brand-400' : 'text-rose-600 dark:text-rose-400'}`}>
                           {formatCurrency(w.balance)}
@@ -389,7 +417,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                       {w.topCategory && (
                         <div className="flex justify-between items-center pt-0.5">
                           <span className="text-xs text-surface-400 dark:text-surface-500">
-                            {isBRL ? 'Principal' : 'Main'}
+                            {'Principal'}
                           </span>
                           <span className="text-xs text-surface-500 dark:text-surface-400 truncate max-w-[120px]">
                             {t(`category.${w.topCategory}`) ?? w.topCategory}
@@ -415,10 +443,10 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
               </svg>
               <div>
                 <p className="font-semibold text-surface-900 dark:text-surface-100">
-                  {isBRL ? 'Nenhum gasto anômalo detectado' : 'No anomalous spending detected'}
+                  {'Nenhum gasto anômalo detectado'}
                 </p>
                 <p className="text-xs text-surface-400 dark:text-surface-500">
-                  {isBRL ? 'Seus gastos estão dentro do padrão esperado' : 'Your spending is within expected patterns'}
+                  {'Seus gastos estão dentro do padrão esperado'}
                 </p>
               </div>
             </div>
@@ -430,16 +458,14 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
               <h3 className="text-sm font-semibold text-surface-900 dark:text-surface-100">
-                {isBRL ? 'Gastos Incomuns Detectados' : 'Unusual Spending Detected'}
+                {'Gastos Incomuns Detectados'}
               </h3>
               <span className="text-xs text-surface-400 dark:text-surface-500 ml-auto">
-                {isBRL ? 'Últimos 3 meses' : 'Last 3 months'}
+                {'Últimos 3 meses'}
               </span>
             </div>
             <p className="text-xs text-surface-400 dark:text-surface-500 mb-4">
-              {isBRL
-                ? 'Gastos que estão significativamente acima da sua média habitual'
-                : 'Spending significantly above your usual average'}
+              {'Gastos que estão significativamente acima da sua média habitual'}
             </p>
             <div className="space-y-3">
               {anomalies.map((a, i) => (
@@ -453,7 +479,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                         {a.title}
                       </p>
                       <p className="text-xs text-surface-500 dark:text-surface-400 mt-0.5">
-                        {t(`category.${a.category}`) ?? a.category} · {new Date(a.date).toLocaleDateString(isBRL ? 'pt-BR' : 'en-US', { day: '2-digit', month: 'short' })}
+                        {t(`category.${a.category}`) ?? a.category} · {new Date(a.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -461,7 +487,7 @@ export default function AdvancedReports({ formatCurrency, isBRL }: AdvancedRepor
                         {formatCurrency(a.amount)}
                       </p>
                       <p className="text-xs text-amber-600 dark:text-amber-400">
-                        {isBRL ? 'Média' : 'Avg'}: {formatCurrency(a.averageInCategory)}
+                        {'Média'}: {formatCurrency(a.averageInCategory)}
                       </p>
                     </div>
                   </div>

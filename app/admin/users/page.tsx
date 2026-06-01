@@ -68,7 +68,7 @@ export default async function AdminUsersPage({
   })
 
   // Provide fallback phone logic - UI will simply show 'Não informado'
-  const formattedUsers = users.map(user => ({
+  const formattedUsers = users.map((user: any) => ({
     ...user,
     createdAt: user.createdAt.toISOString(),
     subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() || null,

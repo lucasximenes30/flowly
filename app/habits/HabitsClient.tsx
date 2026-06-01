@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
-import { useApp } from '@/lib/i18n'
+
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface HabitDTO {
@@ -82,18 +82,18 @@ function getHabitInsights(habits: HabitDTO[], checkins: CheckinDTO[], weekDates:
   if (todayCheckins.length === habits.length) {
     insights.push({
       type: 'positive',
-      text: isBRL ? 'Você completou todos os seus hábitos hoje! Excelente trabalho.' : 'You completed all your habits today! Excellent work.'
+      text: 'Você completou todos os seus hábitos hoje! Excelente trabalho.'
     })
   } else if (todayCheckins.length === 0) {
     insights.push({
       type: 'negative',
-      text: isBRL ? 'Você ainda não concluiu nenhum hábito hoje. Mantenha o foco!' : 'You haven\'t completed any habits today. Stay focused!'
+      text: 'Você ainda não concluiu nenhum hábito hoje. Mantenha o foco!'
     })
   } else if (todayCheckins.length > 0 && todayCheckins.length < habits.length) {
     const remaining = habits.length - todayCheckins.length
     insights.push({
       type: 'neutral',
-      text: isBRL ? `Falta pouco! Conclua mais ${remaining} hábito${remaining > 1 ? 's' : ''} para fechar o dia.` : `Almost there! Complete ${remaining} more habit${remaining > 1 ? 's' : ''} to finish the day.`
+      text: `Falta pouco! Conclua mais ${remaining} hábito${remaining > 1 ? 's' : ''} para fechar o dia.`
     })
   }
 
@@ -101,7 +101,7 @@ function getHabitInsights(habits: HabitDTO[], checkins: CheckinDTO[], weekDates:
   if (bestHabit && bestHabit.currentStreak > 2) {
     insights.push({
       type: 'positive',
-      text: isBRL ? `Sua constância em "${bestHabit.title}" está ótima! Já são ${bestHabit.currentStreak} dias seguidos.` : `Your consistency in "${bestHabit.title}" is great! ${bestHabit.currentStreak} days in a row.`
+      text: `Sua constância em "${bestHabit.title}" está ótima! Já são ${bestHabit.currentStreak} dias seguidos.`
     })
   }
 
@@ -109,7 +109,7 @@ function getHabitInsights(habits: HabitDTO[], checkins: CheckinDTO[], weekDates:
   if (worstHabit && worstHabit.currentStreak === 0 && insights.length < 3) {
     insights.push({
       type: 'negative',
-      text: isBRL ? `Atenção: "${worstHabit.title}" ficou para trás. Que tal retomá-lo hoje?` : `Attention: "${worstHabit.title}" is falling behind. How about resuming it today?`
+      text: `Atenção: "${worstHabit.title}" ficou para trás. Que tal retomá-lo hoje?`
     })
   }
   
@@ -118,7 +118,7 @@ function getHabitInsights(habits: HabitDTO[], checkins: CheckinDTO[], weekDates:
   if (weekPossible > 0 && (weekCheckins / weekPossible) >= 0.8 && insights.length < 3) {
       insights.push({
       type: 'positive',
-      text: isBRL ? `Sua performance semanal está acima de 80%. Continue assim!` : `Your weekly performance is above 80%. Keep it up!`
+      text: `Sua performance semanal está acima de 80%. Continue assim!`
     })
   }
 
@@ -136,8 +136,8 @@ export default function HabitsClient({
   initialRanking,
 }: Props) {
   const router = useRouter()
-  const { locale } = useApp()
-  const isBRL = locale === 'pt-BR'
+  
+  const isBRL = true;
   const today = todayLocal()
 
   // State
@@ -376,27 +376,27 @@ export default function HabitsClient({
           <div className="flex min-w-0 items-center gap-3">
             <div className="min-w-0">
               <h1 className="truncate text-base font-bold tracking-tight text-surface-900 dark:text-surface-100">
-                {isBRL ? 'Hábitos' : 'Habits'}
+                {'Hábitos'}
               </h1>
               <p className="mt-0.5 text-[13px] leading-5 text-surface-600 dark:text-surface-300">
-                {isBRL ? 'Construa uma rotina consistente' : 'Build a consistent routine'}
+                {'Construa uma rotina consistente'}
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:inline text-sm text-surface-500 dark:text-surface-400">
-              {isBRL ? 'Olá' : 'Hi'}, {session.name}
+              {'Olá'}, {session.name}
             </span>
             <button
               onClick={handleLogout}
               className="hidden text-sm text-surface-500 transition-colors hover:text-surface-800 dark:text-surface-400 dark:hover:text-surface-200 sm:inline"
             >
-              {isBRL ? 'Sair' : 'Sign out'}
+              {'Sair'}
             </button>
             <button
               onClick={handleLogout}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 transition-colors hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 sm:hidden"
-              aria-label={isBRL ? 'Sair' : 'Sign out'}
+              aria-label={'Sair'}
             >
               <Lucide.LogOut className="h-4 w-4" />
             </button>
@@ -767,7 +767,7 @@ export default function HabitsClient({
             <div className="card overflow-hidden animate-dashboard-fade">
               <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
                 <Lucide.Lightbulb className="w-5 h-5 text-brand-500 shrink-0" />
-                <span>{isBRL ? 'Seu Progresso' : 'Your Progress'}</span>
+                <span>{'Seu Progresso'}</span>
               </h2>
               <div className="grid gap-3 sm:gap-3.5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
                 {insights.map((insight, i) => (
@@ -820,7 +820,7 @@ export default function HabitsClient({
               <div className="card overflow-hidden animate-dashboard-fade">
                 <h2 className="text-base font-semibold text-surface-900 dark:text-surface-100 mb-4 flex items-center gap-2">
                   <Lucide.Trophy className="w-5 h-5 text-amber-500 shrink-0" />
-                  <span>{isBRL ? 'Ranking de Hábitos' : 'Habits Ranking'}</span>
+                  <span>{'Ranking de Hábitos'}</span>
                 </h2>
 
                 {/* Top 3 Podium */}
@@ -844,7 +844,7 @@ export default function HabitsClient({
                           </p>
                           <div className="flex flex-col items-center gap-0.5 mt-2">
                             <p className="text-[10px] sm:text-xs text-surface-600 dark:text-surface-400">
-                              {isBRL ? 'Pontos' : 'Points'}
+                              {'Pontos'}
                             </p>
                             <p className="text-sm sm:text-base font-bold text-brand-600 dark:text-brand-400">
                               {user.rankingPoints}
@@ -889,12 +889,12 @@ export default function HabitsClient({
                               {user.userName}
                               {isCurrentUser && (
                                 <span className="ml-1 text-xs text-brand-600 dark:text-brand-400">
-                                  {isBRL ? '(você)' : '(you)'}
+                                  {'(você)'}
                                 </span>
                               )}
                             </p>
                             <p className="text-xs text-surface-500 dark:text-surface-500">
-                              🔥 {isBRL ? 'Sequência:' : 'Streak:'} {user.currentStreak}
+                              🔥 {'Sequência:'} {user.currentStreak}
                             </p>
                           </div>
                         </div>
@@ -908,7 +908,7 @@ export default function HabitsClient({
                               {user.rankingPoints}
                             </p>
                             <p className="text-[10px] text-surface-500 dark:text-surface-500">
-                              {isBRL ? 'pontos' : 'pts'}
+                              {'pontos'}
                             </p>
                           </div>
                         </div>

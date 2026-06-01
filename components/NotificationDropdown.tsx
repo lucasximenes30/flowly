@@ -186,9 +186,9 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
     setProcessingId(id)
     try {
       await runNotificationAction({ action: 'register-payment', id })
-      setFeedback(isBRL ? 'Pagamento registrado com sucesso.' : 'Payment registered successfully.')
+      setFeedback('Pagamento registrado com sucesso.')
     } catch {
-      setFeedback(isBRL ? 'Nao foi possivel registrar o pagamento.' : 'Could not register payment.')
+      setFeedback('Nao foi possivel registrar o pagamento.')
       void fetchNotifications()
     } finally {
       setProcessingId(null)
@@ -204,7 +204,7 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
       <button
         onClick={() => setOpen((v) => !v)}
         className="relative flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-all duration-200"
-        title={isBRL ? 'Notificações' : 'Notifications'}
+        title={'Notificações'}
       >
         <Lucide.Bell className="h-5 w-5" />
         {count > 0 && (
@@ -227,14 +227,12 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
           <div className="border-b border-surface-100 px-4 py-3 dark:border-surface-700/60">
             <div className="flex items-center justify-between gap-3">
               <h3 className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-                {isBRL ? 'Notificacoes' : 'Notifications'}
+                {'Notificacoes'}
               </h3>
               <span className="text-xs font-medium text-surface-400">
                 {count > 0
                   ? `${count} ${isBRL ? (count === 1 ? 'nao lida' : 'nao lidas') : count === 1 ? 'unread' : 'unread'}`
-                  : isBRL
-                  ? 'Tudo lido'
-                  : 'All read'}
+                  : 'Tudo lido'}
               </span>
             </div>
             {count > 0 && (
@@ -242,12 +240,12 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
                 onClick={markAllAsRead}
                 className="mt-2 text-[11px] font-semibold text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
               >
-                {isBRL ? 'Marcar todas como lidas' : 'Mark all as read'}
+                {'Marcar todas como lidas'}
               </button>
             )}
             {!apiReady && (
               <p className="mt-2 text-[11px] text-amber-600 dark:text-amber-400">
-                {isBRL ? 'Sincronizacao indisponivel no momento.' : 'Sync is temporarily unavailable.'}
+                {'Sincronizacao indisponivel no momento.'}
               </p>
             )}
             {feedback && (
@@ -261,20 +259,20 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
           {isLoading ? (
             <div className="flex items-center justify-center gap-2 px-4 py-6 text-sm text-surface-500 dark:text-surface-400">
               <Lucide.Loader2 className="h-4 w-4 animate-spin" />
-              {isBRL ? 'Carregando notificacoes...' : 'Loading notifications...'}
+              {'Carregando notificacoes...'}
             </div>
           ) : emptyState ? (
             <div className="flex flex-col items-center gap-2 px-4 py-8">
               <Lucide.CheckCircle2 className="h-8 w-8 text-emerald-400 dark:text-emerald-500" />
               <p className="text-sm text-surface-400 dark:text-surface-500 text-center">
-                {isBRL ? 'Tudo em dia!' : 'All caught up!'}
+                {'Tudo em dia!'}
               </p>
             </div>
           ) : (
             <div className="max-h-80 overflow-y-auto py-2">
               {groups.late.length > 0 && (
                 <NotificationSection
-                  title={isBRL ? 'Atrasadas' : 'Overdue'}
+                  title={'Atrasadas'}
                   items={groups.late}
                   isBRL={isBRL}
                   onRegisterPayment={handleRegisterPayment}
@@ -284,7 +282,7 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
               )}
               {groups.today.length > 0 && (
                 <NotificationSection
-                  title={isBRL ? 'Hoje' : 'Today'}
+                  title={'Hoje'}
                   items={groups.today}
                   isBRL={isBRL}
                   onRegisterPayment={handleRegisterPayment}
@@ -294,7 +292,7 @@ export default function NotificationDropdown({ transactions, cards = [], isBRL }
               )}
               {groups.upcoming.length > 0 && (
                 <NotificationSection
-                  title={isBRL ? 'Em breve' : 'Soon'}
+                  title={'Em breve'}
                   items={groups.upcoming}
                   isBRL={isBRL}
                   onRegisterPayment={handleRegisterPayment}
@@ -386,12 +384,8 @@ function NotificationItem({
 
   const actionLabel =
     notification.sourceType === 'card_bill'
-      ? isBRL
-        ? 'Registrar pagamento'
-        : 'Register payment'
-      : isBRL
-      ? 'Marcar como pago'
-      : 'Mark as paid'
+      ? 'Registrar pagamento'
+      : 'Marcar como pago'
 
   return (
     <div
@@ -420,7 +414,7 @@ function NotificationItem({
               {processing ? (
                 <>
                   <Lucide.Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  {isBRL ? 'Registrando...' : 'Registering...'}
+                  {'Registrando...'}
                 </>
               ) : (
                 <>

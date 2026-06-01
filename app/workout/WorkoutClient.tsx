@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
-import { useApp } from '@/lib/i18n'
+
 
 interface WorkoutPlanDTO {
   id: string
@@ -359,6 +359,9 @@ function buildWorkoutMotivationMessage(input: {
     : '🔥 Workout completed. Keep the momentum!'
 }
 
+
+const locale = 'pt-BR';
+
 export default function WorkoutClient({
   session,
   initialPlan,
@@ -367,7 +370,7 @@ export default function WorkoutClient({
   initialTodayAssignment,
 }: Props) {
   const router = useRouter()
-  const { locale } = useApp()
+  
 
   const [plan, setPlan] = useState<WorkoutPlanDTO | null>(initialPlan)
   const [days, setDays] = useState<WorkoutDayDTO[]>(sortWorkoutDays(initialDays))

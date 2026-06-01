@@ -3,14 +3,12 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useApp } from '@/lib/i18n'
 import BrandLogo from '@/components/BrandLogo'
 import { QRCodeSVG } from 'qrcode.react'
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { t } = useApp()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -413,14 +411,14 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <>
               <div className="space-y-1.5">
                 <label htmlFor="name" className="block text-sm font-medium text-surface-200">
-                  {t('common.name')}
+                  Nome
                 </label>
                 <input
                   id="name"
                   type="text"
                   required
                   className="input-field"
-                  placeholder={t('auth.namePlaceholder')}
+                  placeholder="João Silva"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                 />
@@ -454,14 +452,14 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
           <div className="space-y-1.5">
             <label htmlFor="email" className="block text-sm font-medium text-surface-200">
-              {t('common.email')}
+              E-mail
             </label>
             <input
               id="email"
               type="email"
               required
               className="input-field"
-              placeholder={t('auth.emailPlaceholder')}
+              placeholder="voce@exemplo.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -470,7 +468,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label htmlFor="password" className="block text-sm font-medium text-surface-200">
-                {t('common.password')}
+                Senha
               </label>
               {mode === 'login' && (
                 <Link href="/esqueci-a-senha" className="text-sm font-medium text-brand-300 hover:text-brand-200 transition-colors">
@@ -483,7 +481,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               type="password"
               required
               className="input-field"
-              placeholder={t('auth.passwordPlaceholder')}
+              placeholder="••••••••"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -500,10 +498,10 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                {mode === 'login' ? t('auth.signingIn') : t('auth.creatingAccount')}
+                {mode === 'login' ? 'Entrando...' : 'Criando conta...'}
               </span>
             ) : (
-              mode === 'login' ? t('common.signIn') : t('common.signUp')
+              mode === 'login' ? 'Entrar' : 'Criar Conta'
             )}
           </button>
         </form>

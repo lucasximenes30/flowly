@@ -1,48 +1,13 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
-import { getTransactionsByUser, getUserBalance, getMonthlySummary } from '@/services/transaction.service'
-import { getCardsByUser } from '@/services/card.service'
+import { getUserBalance } from '@/services/transaction.service'
+import { getHabitsByUser } from '@/services/habit.service'
+import { getActiveWorkoutPlanByUser } from '@/services/workoutPlan.service'
 import DashboardClient from './DashboardClient'
 
 export const metadata: Metadata = {
-  title: 'Dashboard',
-}
-
-function serializeData(transactions: any[], balance: any, monthly: any) {
-  const serializedTransactions = transactions.map((t) => ({
-    id: t.id,
-    title: t.title,
-    amount: t.amount.toString(),
-    installmentAmount: t.installmentAmount ? Number(t.installmentAmount) : undefined,
-    type: t.type,
-    category: t.category,
-    date: t.date.toISOString(),
-    isInstallment: t.isInstallment,
-    totalInstallments: t.totalInstallments,
-    purchaseDate: t.purchaseDate?.toISOString(),
-    dueDay: t.dueDay,
-    isRecurring: t.isRecurring,
-    recurringDay: t.recurringDay,
-    isActive: t.isActive,
-    endDate: t.endDate?.toISOString(),
-    cardId: t.cardId ?? undefined,
-  }))
-
-  return {
-    transactions: serializedTransactions,
-    balance: {
-      income: Number(balance.income),
-      expense: Number(balance.expense),
-      balance: Number(balance.balance),
-    },
-    monthly: {
-      income: Number(monthly.income),
-      expense: Number(monthly.expense),
-      balance: Number(monthly.balance),
-      transactionCount: monthly.transactionCount,
-    },
-  }
+  title: 'Painel Central',
 }
 
 export default async function DashboardPage() {
@@ -74,22 +39,23 @@ export default async function DashboardPage() {
     }
   }
 
-  const [transactions, balance, monthly, cards] = await Promise.all([
-    getTransactionsByUser(session.userId),
-    getUserBalance(session.userId),
-    getMonthlySummary(session.userId),
-    getCardsByUser(session.userId),
+  // Fetch unified stats in parallel
+  const [balance, habits, workoutPlan] = await Promise.all([
+    getUserBalance(session.userId).catch(() => ({ income: 0, expense: 0, balance: 0 })),
+    getHabitsByUser(session.userId).catch(() => []),
+    getActiveWorkoutPlanByUser(session.userId).catch(() => null),
   ])
-
-  const data = serializeData(transactions, balance, monthly)
 
   return (
     <DashboardClient
       session={session}
-      transactions={data.transactions}
-      balance={data.balance}
-      monthly={data.monthly}
-      cards={cards}
+      balance={{
+        income: Number(balance.income),
+        expense: Number(balance.expense),
+        balance: Number(balance.balance),
+      }}
+      habitsCount={habits.length}
+      activeWorkoutPlanName={workoutPlan?.name || null}
     />
   )
 }
