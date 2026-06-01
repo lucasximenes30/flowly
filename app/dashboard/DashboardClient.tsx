@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
-import SettingsPanel from '@/components/SettingsPanel'
+import OnboardingClient from '@/components/OnboardingClient'
+
 
 interface Session {
   userId: string
@@ -29,7 +30,6 @@ export default function DashboardClient({
   activeWorkoutPlanName,
 }: DashboardClientProps) {
   const router = useRouter()
-  const [showSettings, setShowSettings] = useState(false)
   const [profileName, setProfileName] = useState(session.name)
 
   const formatCurrency = (value: number) => {
@@ -62,6 +62,7 @@ export default function DashboardClient({
 
   return (
     <>
+      <OnboardingClient />
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 animate-dashboard-fade">
         
         {/* Top Header */}
@@ -77,9 +78,8 @@ export default function DashboardClient({
                 {profileName}
               </span>
 
-              {/* Settings Trigger */}
               <button
-                onClick={() => setShowSettings(true)}
+                onClick={() => router.push('/settings')}
                 className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-all duration-200"
                 title="Configurações"
               >
@@ -104,16 +104,31 @@ export default function DashboardClient({
           {/* Welcome Banner */}
           <div className="rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-purple-800 p-6 sm:p-8 text-white shadow-xl dark:shadow-brand-500/10 border border-white/10 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-            <div className="relative z-10 space-y-2">
-              <span className="inline-block rounded-full px-3 py-1 bg-white/15 border border-white/10 text-xs font-bold tracking-wider uppercase">
-                {todayStr}
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                {getGreeting()}, {profileName}!
-              </h2>
-              <p className="text-sm text-white/80 max-w-[60ch] leading-relaxed font-light">
-                Bem-vindo ao Vynta V2. O seu painel pessoal unificado para gerenciar finanças, hábitos e rotina física de forma fluida.
-              </p>
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-white/15 border border-white/10 text-[10px] font-bold tracking-widest uppercase shadow-sm">
+                  <Lucide.Calendar className="w-3.5 h-3.5" />
+                  {todayStr}
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 bg-emerald-500/20 border border-emerald-400/20 text-emerald-100 text-[10px] font-bold tracking-widest uppercase shadow-sm">
+                  <Lucide.ShieldCheck className="w-3.5 h-3.5" />
+                  Conta Segura
+                </span>
+              </div>
+              <div>
+                <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-2">
+                  {getGreeting()}, {profileName}!
+                </h2>
+                <p className="text-sm text-white/90 max-w-[65ch] leading-relaxed font-medium">
+                  Bem-vindo ao Vynta. O seu painel pessoal seguro para gerenciar finanças, construir hábitos duradouros e evoluir fisicamente.
+                </p>
+                <div className="mt-4 flex items-center gap-4 text-xs font-medium text-white/80">
+                  <div className="flex items-center gap-1.5 bg-white/10 px-2.5 py-1.5 rounded-lg border border-white/5">
+                    <Lucide.Activity className="w-4 h-4 text-brand-300" />
+                    <span>Construindo constância diariamente</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -323,12 +338,6 @@ export default function DashboardClient({
         </main>
       </div>
 
-      {/* Settings Modal */}
-      <SettingsPanel
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
-        session={session}
-      />
     </>
   )
 }

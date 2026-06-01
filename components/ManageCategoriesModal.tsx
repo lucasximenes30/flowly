@@ -161,30 +161,34 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 transition-all duration-300 ${
-        visible ? 'opacity-100 backdrop-blur-sm' : 'opacity-0 backdrop-blur-none'
-      }`}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
-    >
-      <div
-        className={`w-full max-w-2xl max-h-[90vh] rounded-t-2xl sm:rounded-2xl bg-white shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] flex flex-col ${
-          visible ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-12 sm:translate-y-8 opacity-0 scale-95'
-        }`}
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-surface-200 dark:border-surface-700/60">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 md:inset-0 flex flex-col justify-end md:items-center md:justify-center pointer-events-none p-0 md:p-4">
+        <div 
+          className={`pointer-events-auto w-full md:max-w-2xl bg-white shadow-2xl dark:bg-surface-900 md:dark:border dark:border-surface-700/60 rounded-t-[2rem] md:rounded-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out ${
+            visible ? 'translate-y-0 md:scale-100 opacity-100' : 'translate-y-full md:translate-y-0 md:scale-95 opacity-0'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Mobile Drag Pill */}
+          <div className="md:hidden flex justify-center pt-4 pb-2 shrink-0">
+            <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+          </div>
+
+        <div className="flex items-center justify-between px-6 py-4 pt-0 md:pt-4 border-b border-surface-200 dark:border-surface-700/60">
+          <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100 tracking-tight">
             {'Gerenciar Categorias'}
           </h2>
-          <button type="button" onClick={handleClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
-            <Lucide.X className="h-5 w-5" />
+          <button type="button" onClick={handleClose} className="rounded-full p-1.5 text-surface-400 bg-surface-100 dark:bg-surface-800 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
+            <Lucide.X className="h-4 w-4" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-4">
+        <div className="flex-1 overflow-y-auto px-6 py-4 pb-safe">
           {loading ? (
             <div className="py-12 text-center text-sm text-surface-400">{'Carregando...'}</div>
           ) : (
@@ -467,6 +471,7 @@ export default function ManageCategoriesModal({ onClose, onRefresh }: ManageCate
               )}
             </>
           )}
+          </div>
         </div>
       </div>
     </div>

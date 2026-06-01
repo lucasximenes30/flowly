@@ -294,10 +294,20 @@ export default function CalendarClient() {
 
               <div className="space-y-3">
                 {selectedDayEvents.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center opacity-60">
-                    <Lucide.CalendarX2 className="w-12 h-12 text-surface-300 dark:text-surface-600 mb-3" />
-                    <p className="text-sm font-semibold text-surface-600 dark:text-surface-400">Nenhum evento</p>
-                    <p className="text-xs text-surface-400 mt-1">Aproveite o dia livre!</p>
+                  <div className="flex flex-col items-center justify-center py-12 text-center group">
+                    <div className="w-16 h-16 rounded-[1.25rem] bg-surface-100 dark:bg-surface-800/50 border border-surface-200 dark:border-surface-700/50 flex items-center justify-center mb-4 shadow-sm group-hover:rotate-3 transition-transform duration-300">
+                      <Lucide.CalendarX2 strokeWidth={1.5} className="w-8 h-8 text-surface-400 dark:text-surface-500" />
+                    </div>
+                    <p className="text-base font-semibold text-surface-900 dark:text-white mb-2">Sem eventos hoje</p>
+                    <p className="text-xs text-surface-500 dark:text-surface-400 max-w-[200px] leading-relaxed mb-6">
+                      Organize sua semana e nunca esqueça algo importante.
+                    </p>
+                    <button
+                      onClick={() => handleOpenModal()}
+                      className="btn-primary py-2 px-6 text-xs font-semibold"
+                    >
+                      Criar evento
+                    </button>
                   </div>
                 ) : (
                   selectedDayEvents.map((e) => (

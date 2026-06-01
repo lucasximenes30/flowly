@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import * as Lucide from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 const COLORS = [
   { value: 'default', label: 'Padrão' },
@@ -95,161 +96,191 @@ export default function NoteModal({
     }
   }
 
-  if (!isOpen) return null
-
   // Define background map for preview
-  let bgClassPreview = 'bg-white dark:bg-surface-900 border-surface-100 dark:border-surface-800'
-  if (formData.color === 'brand') bgClassPreview = 'bg-brand-50 dark:bg-brand-500/10 border-brand-200 dark:border-brand-500/30'
-  if (formData.color === 'emerald') bgClassPreview = 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/30'
-  if (formData.color === 'orange') bgClassPreview = 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30'
-  if (formData.color === 'blue') bgClassPreview = 'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30'
-  if (formData.color === 'rose') bgClassPreview = 'bg-rose-50 dark:bg-rose-500/10 border-rose-200 dark:border-rose-500/30'
+  let bgClassPreview = 'bg-white dark:bg-surface-900'
+  if (formData.color === 'brand') bgClassPreview = 'bg-brand-50/80 dark:bg-[#1a1c38]'
+  if (formData.color === 'emerald') bgClassPreview = 'bg-emerald-50/80 dark:bg-[#132c25]'
+  if (formData.color === 'orange') bgClassPreview = 'bg-orange-50/80 dark:bg-[#332214]'
+  if (formData.color === 'blue') bgClassPreview = 'bg-blue-50/80 dark:bg-[#142336]'
+  if (formData.color === 'rose') bgClassPreview = 'bg-rose-50/80 dark:bg-[#361623]'
 
   return (
-    <div className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 transition-opacity duration-200 opacity-100 backdrop-blur-sm`}>
-      <div 
-        className={`w-full max-w-lg rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border-t transition-colors duration-300 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:fade-in ${bgClassPreview}`}
-        style={{ maxHeight: 'min(92vh, 44rem)' }}
-      >
-        {/* Header */}
-        <div className="flex-shrink-0 flex justify-between items-center p-6 pb-4">
-          <div className="flex items-center gap-3">
-            <h2 className="font-display text-xl font-bold text-surface-900 dark:text-white">
-              {note ? 'Editar Nota' : 'Nova Smart Note'}
-            </h2>
-            <button
-              type="button"
-              onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })}
-              className={`p-1.5 rounded-full transition-all ${formData.isPinned ? 'bg-brand-500 text-white shadow-md' : 'text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-800'}`}
-              title="Fixar no topo"
-            >
-              <Lucide.Pin className="w-4 h-4" />
-            </button>
-          </div>
-          <button 
-            type="button"
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={onClose}
-            className="p-2 -mr-2 rounded-full text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-800 transition-colors"
+          />
+          <motion.div 
+            initial={{ y: '100%', opacity: 0, scale: 0.95 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: '100%', opacity: 0, scale: 0.95 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            className={`w-full max-w-2xl sm:rounded-[2.5rem] rounded-t-[2.5rem] shadow-2xl flex flex-col overflow-hidden relative border border-surface-200 dark:border-surface-700/50 transition-colors duration-500 ${bgClassPreview}`}
+            style={{ maxHeight: 'min(96vh, 48rem)', height: '80vh' }}
           >
-            <Lucide.X className="w-5 h-5" />
-          </button>
-        </div>
+            {/* Soft inner glow */}
+            <div className="absolute inset-0 shadow-[inset_0_1px_1px_rgba(255,255,255,0.4)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] pointer-events-none z-10 rounded-[inherit]" />
 
-        {/* Corpo Rolável */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
-          <form id="note-form" onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <input
-                type="text"
-                value={formData.title}
-                onChange={e => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-transparent text-xl font-bold text-surface-900 dark:text-white placeholder:text-surface-400 dark:placeholder:text-surface-500 border-none focus:ring-0 p-0 mb-2"
-                placeholder="Título (opcional)"
-              />
+            {/* Mobile Drag Pill */}
+            <div className="sm:hidden flex justify-center pt-3 shrink-0 relative z-20">
+              <div className="w-12 h-1.5 bg-surface-300 dark:bg-surface-600 rounded-full" />
             </div>
 
-            <div>
-              <textarea
-                required
-                value={formData.content}
-                onChange={e => setFormData({ ...formData, content: e.target.value })}
-                className="w-full bg-transparent text-sm sm:text-base text-surface-700 dark:text-surface-300 placeholder:text-surface-400 border-none focus:ring-0 p-0 resize-none min-h-[200px]"
-                placeholder="Comece a escrever sua nota..."
-              />
-            </div>
+            {/* Header Toolbar */}
+            <div className="flex-shrink-0 flex justify-between items-center p-4 sm:p-6 pb-2 pt-2 sm:pt-6 relative z-20">
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFormData({ ...formData, isPinned: !formData.isPinned })}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all duration-300 ${formData.isPinned ? 'bg-brand-500 text-white shadow-md' : 'bg-surface-200/50 dark:bg-surface-800/50 text-surface-500 hover:text-surface-700 dark:hover:text-surface-300 hover:bg-surface-200 dark:hover:bg-surface-800'}`}
+                >
+                  <Lucide.Pin strokeWidth={2} className={`w-3.5 h-3.5 ${formData.isPinned ? 'fill-current' : ''}`} />
+                  {formData.isPinned ? 'Fixada' : 'Fixar'}
+                </button>
 
-            <div className="pt-4 flex flex-wrap gap-4 items-center">
-              <input
-                type="text"
-                value={formData.category}
-                onChange={e => setFormData({ ...formData, category: e.target.value })}
-                className="text-xs bg-surface-100 dark:bg-surface-800 border-none rounded-md px-3 py-1.5 font-medium text-surface-700 dark:text-surface-300 focus:ring-1 focus:ring-brand-500 w-32"
-                placeholder="Categoria..."
-              />
+                <div className="h-4 w-px bg-surface-300 dark:bg-surface-700 mx-2" />
 
-              <div className="flex gap-2">
-                {COLORS.map(c => {
-                  let btnBg = 'bg-surface-200 dark:bg-surface-700'
-                  if (c.value === 'brand') btnBg = 'bg-brand-500'
-                  if (c.value === 'emerald') btnBg = 'bg-emerald-500'
-                  if (c.value === 'orange') btnBg = 'bg-orange-500'
-                  if (c.value === 'blue') btnBg = 'bg-blue-500'
-                  if (c.value === 'rose') btnBg = 'bg-rose-500'
+                <div className="flex gap-1.5 bg-surface-200/30 dark:bg-surface-800/30 p-1 rounded-full backdrop-blur-sm">
+                  {COLORS.map(c => {
+                    let btnBg = 'bg-surface-200 dark:bg-surface-700'
+                    if (c.value === 'brand') btnBg = 'bg-brand-500'
+                    if (c.value === 'emerald') btnBg = 'bg-emerald-500'
+                    if (c.value === 'orange') btnBg = 'bg-orange-500'
+                    if (c.value === 'blue') btnBg = 'bg-blue-500'
+                    if (c.value === 'rose') btnBg = 'bg-rose-500'
 
-                  return (
-                    <button
-                      key={c.value}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, color: c.value })}
-                      className={`w-6 h-6 rounded-full ${btnBg} transition-all ${formData.color === c.value ? 'ring-2 ring-offset-2 ring-brand-500 dark:ring-offset-surface-900 scale-110 shadow-md' : 'hover:scale-110'}`}
-                      title={c.label}
-                    />
-                  )
-                })}
+                    return (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, color: c.value })}
+                        className={`w-5 h-5 rounded-full ${btnBg} transition-all duration-300 ${formData.color === c.value ? 'scale-125 ring-2 ring-offset-1 ring-surface-900 dark:ring-white dark:ring-offset-surface-900' : 'hover:scale-110 opacity-60 hover:opacity-100'}`}
+                        title={c.label}
+                      />
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          </form>
-        </div>
 
-        {/* Footer Fixo */}
-        <div className="flex-shrink-0 p-4 sm:p-6 bg-black/5 dark:bg-white/5 backdrop-blur-md">
-          {showDeleteConfirm ? (
-            <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2">
-              <p className="text-xs font-semibold text-red-600 dark:text-red-400">
-                Deseja excluir esta nota permanentemente?
-              </p>
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(false)}
-                  disabled={loading}
-                  className="btn-secondary flex-1 border-surface-300 dark:border-surface-600"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDelete}
-                  disabled={loading}
-                  className="btn-primary flex-1 bg-red-600 hover:bg-red-700 ring-red-500 border-none"
-                >
-                  {loading ? 'Excluindo...' : 'Excluir'}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="flex gap-3">
-              {note && (
-                <button
-                  type="button"
-                  onClick={() => setShowDeleteConfirm(true)}
-                  disabled={loading}
-                  className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-500/10 dark:text-red-400 dark:hover:bg-red-500/20 transition-colors disabled:opacity-50 border border-transparent"
-                >
-                  <Lucide.Trash2 className="w-5 h-5" />
-                </button>
-              )}
-              <div className="flex-1" />
-              <button
+              <button 
                 type="button"
                 onClick={onClose}
-                disabled={loading}
-                className="btn-secondary border-surface-300 dark:border-surface-600 bg-white dark:bg-surface-800"
+                className="p-2 -mr-2 rounded-full text-surface-400 hover:bg-surface-200 dark:hover:bg-surface-800 hover:text-surface-700 dark:hover:text-surface-200 transition-colors"
               >
-                Fechar
-              </button>
-              <button
-                type="submit"
-                form="note-form"
-                disabled={loading}
-                className="btn-primary"
-              >
-                {loading ? 'Salvando...' : 'Salvar Nota'}
+                <Lucide.X strokeWidth={1.5} className="w-5 h-5" />
               </button>
             </div>
-          )}
+
+            {/* Editor Body */}
+            <div className="flex-1 flex flex-col px-6 sm:px-12 py-4 relative z-20">
+              <form id="note-form" onSubmit={handleSubmit} className="flex flex-col h-full space-y-6">
+                
+                {/* Category & Date */}
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={formData.category}
+                    onChange={e => setFormData({ ...formData, category: e.target.value })}
+                    className="text-xs uppercase tracking-widest bg-transparent border-none p-0 font-bold text-surface-400 dark:text-surface-500 focus:ring-0 placeholder:text-surface-300 dark:placeholder:text-surface-600 w-32"
+                    placeholder="CATEGORIA"
+                  />
+                  <span className="text-[10px] uppercase tracking-widest text-surface-400 dark:text-surface-600 font-bold">
+                    {note ? new Date(note.updatedAt).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={e => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full bg-transparent text-4xl sm:text-5xl font-display font-bold tracking-tighter text-surface-900 dark:text-white placeholder:text-surface-300 dark:placeholder:text-surface-700 border-none focus:ring-0 p-0 leading-tight"
+                  placeholder="Título da nota"
+                />
+
+                {/* Content */}
+                <textarea
+                  required
+                  value={formData.content}
+                  onChange={e => setFormData({ ...formData, content: e.target.value })}
+                  className="flex-1 w-full bg-transparent text-lg text-surface-700 dark:text-surface-300 placeholder:text-surface-400/50 dark:placeholder:text-surface-600 border-none focus:ring-0 p-0 resize-none leading-relaxed scrollbar-thin"
+                  placeholder="Comece a digitar..."
+                />
+              </form>
+            </div>
+
+            {/* Footer Overlay Actions */}
+            <div className="absolute bottom-6 left-6 right-6 flex justify-between items-center pointer-events-none z-30 pb-safe">
+              <div className="pointer-events-auto">
+                {note && (
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(true)}
+                    disabled={loading}
+                    className="w-12 h-12 rounded-full flex items-center justify-center bg-white/80 dark:bg-surface-900/80 backdrop-blur-md border border-red-100 dark:border-red-500/20 text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-400 transition-all shadow-lg active:scale-95"
+                    title="Excluir nota"
+                  >
+                    <Lucide.Trash2 strokeWidth={1.5} className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+
+              <div className="pointer-events-auto flex gap-3">
+                <AnimatePresence>
+                  {showDeleteConfirm && (
+                    <motion.div 
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      className="flex items-center gap-2 bg-white/90 dark:bg-surface-900/90 backdrop-blur-xl p-1.5 rounded-full border border-surface-200 dark:border-surface-700 shadow-xl"
+                    >
+                      <span className="text-xs font-semibold px-3 text-surface-600 dark:text-surface-300">
+                        Confirmar exclusão?
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(false)}
+                        className="px-4 py-2 rounded-full text-xs font-bold bg-surface-100 dark:bg-surface-800 text-surface-700 dark:text-surface-200 hover:bg-surface-200 dark:hover:bg-surface-700 transition-colors"
+                      >
+                        Não
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleDelete}
+                        className="px-4 py-2 rounded-full text-xs font-bold bg-red-500 text-white hover:bg-red-600 transition-colors"
+                      >
+                        Sim
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {!showDeleteConfirm && (
+                  <button
+                    type="submit"
+                    form="note-form"
+                    disabled={loading}
+                    className="flex items-center gap-2 px-6 py-3 rounded-full bg-surface-900 dark:bg-white text-white dark:text-surface-900 font-bold shadow-[0_8px_16px_-6px_rgba(0,0,0,0.3)] dark:shadow-[0_8px_16px_-6px_rgba(255,255,255,0.2)] hover:shadow-[0_12px_20px_-8px_rgba(0,0,0,0.4)] dark:hover:shadow-[0_12px_20px_-8px_rgba(255,255,255,0.3)] transition-all active:scale-95"
+                  >
+                    {loading ? (
+                      <div className="w-4 h-4 border-2 border-surface-200/30 dark:border-surface-700/30 border-t-current rounded-full animate-spin" />
+                    ) : (
+                      <Lucide.Check strokeWidth={2} className="w-4 h-4" />
+                    )}
+                    <span>Salvar</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </motion.div>
         </div>
-      </div>
-    </div>
+      )}
+    </AnimatePresence>
   )
 }

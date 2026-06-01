@@ -34,7 +34,7 @@ export default function SidebarLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <div className="flex min-h-screen relative pb-20 md:pb-0 bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
+    <div className="flex min-h-screen relative pb-[calc(5rem+env(safe-area-inset-bottom))] md:pb-0 bg-surface-50 dark:bg-surface-950 transition-colors duration-300">
       {/* Desktop Sidebar */}
       <Sidebar />
       

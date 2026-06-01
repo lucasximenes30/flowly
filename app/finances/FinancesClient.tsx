@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation'
 import MonthlyReport from '@/components/MonthlyReport'
 import EditTransactionModal from '@/components/EditTransactionModal'
 import CategorySelect from '@/components/CategorySelect'
-import SettingsPanel from '@/components/SettingsPanel'
-import NotificationDropdown from '@/components/NotificationDropdown'
 import * as Lucide from 'lucide-react'
+import NotificationDropdown from '@/components/NotificationDropdown'
 import { getInstallmentInfo, formatShortDate, isInstallmentActiveInMonth, getInstallmentForMonth } from '@/lib/installments'
 import { getLocalToday } from '@/lib/dateUtils'
 
@@ -156,7 +155,6 @@ export default function FinancesClient({
   // Add transaction
   const [showForm, setShowForm] = useState(false)
   const formRef = useRef<HTMLDivElement>(null)
-  const [showSettings, setShowSettings] = useState(false)
   const [title, setTitle] = useState('')
   const [amount, setAmount] = useState('')
   const [type, setType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
@@ -443,7 +441,7 @@ export default function FinancesClient({
 
             {/* Settings button */}
             <button
-              onClick={() => setShowSettings(true)}
+              onClick={() => router.push('/settings')}
               className="flex h-9 w-9 items-center justify-center rounded-xl text-surface-500 hover:bg-surface-100 hover:text-surface-700 dark:text-surface-400 dark:hover:bg-surface-800 dark:hover:text-surface-200 transition-all duration-200"
               title={"Configurações"}
             >
@@ -898,26 +896,38 @@ export default function FinancesClient({
           </div>
 
           {displayedTransactions.length === 0 ? (
-            <div className="py-16 text-center bg-white dark:bg-surface-900 rounded-2xl border border-surface-100 dark:border-surface-800/50">
-              <svg className="mx-auto h-12 w-12 text-surface-300 dark:text-surface-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z" />
-              </svg>
-              <p className="mt-4 text-sm font-medium text-surface-900 dark:text-surface-100">
-                {'Nenhuma transação encontrada'}
-              </p>
-              <p className="mt-1 text-sm text-surface-500 dark:text-surface-400">
-                {(filterType !== 'ALL' || filterDate || filterCategory || filterCardId !== 'ALL') 
-                  ? ('Tente alterar ou limpar os filtros applieds.')
-                  : ('Registre suas receitas e despesas do mês.')}
-              </p>
-              {(filterType !== 'ALL' || filterDate || filterCategory || filterCardId !== 'ALL') && (
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 text-sm font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 mx-auto"
-                >
-                  {'Limpar filtros'}
-                </button>
-              )}
+            <div className="p-1.5 rounded-[2.5rem] bg-surface-100/50 dark:bg-surface-800/30 border border-surface-200 dark:border-surface-700/50 mt-4">
+              <div className="rounded-[calc(2.5rem-0.375rem)] bg-white dark:bg-surface-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] text-center py-20 px-6 flex flex-col items-center justify-center">
+                <div className="w-20 h-20 rounded-[1.5rem] bg-surface-50 dark:bg-surface-950 border border-surface-100 dark:border-surface-800 flex items-center justify-center mb-6 shadow-sm rotate-3 hover:rotate-0 transition-transform duration-500">
+                  <Lucide.Wallet strokeWidth={1} className="w-10 h-10 text-surface-400 dark:text-surface-500" />
+                </div>
+                <h3 className="font-display text-2xl font-bold tracking-tight mb-2 text-surface-900 dark:text-white">
+                  Nenhuma transação
+                </h3>
+                <p className="text-base text-surface-500 dark:text-surface-400 max-w-sm mb-6 leading-relaxed">
+                  {(filterType !== 'ALL' || filterDate || filterCategory || filterCardId !== 'ALL') 
+                    ? ('Tente alterar ou limpar os filtros aplicados.')
+                    : ('Comece organizando sua vida financeira adicionando sua primeira receita ou despesa.')}
+                </p>
+                {(filterType !== 'ALL' || filterDate || filterCategory || filterCardId !== 'ALL') ? (
+                  <button
+                    onClick={clearFilters}
+                    className="mt-2 text-sm font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 transition-colors"
+                  >
+                    {'Limpar filtros'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setShowForm(true)
+                      setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50)
+                    }}
+                    className="group relative inline-flex items-center justify-center rounded-full bg-brand-600 px-8 py-3.5 text-base font-semibold text-white shadow-[0_8px_20px_-6px_rgba(48,64,235,0.4)] transition-all duration-300 hover:bg-brand-700 hover:shadow-[0_12px_24px_-8px_rgba(48,64,235,0.6)] active:scale-[0.98]"
+                  >
+                    Criar Transação
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="space-y-3">
@@ -1150,12 +1160,7 @@ export default function FinancesClient({
       </main>
     </div>
 
-      {/* Settings Panel */}
-      <SettingsPanel
-        open={showSettings}
-        onClose={() => setShowSettings(false)}
-        session={session}
-      />
+
 
       {/* Delete Account - Step 1 Confirmation */}
       {showDeleteConfirm1 && (

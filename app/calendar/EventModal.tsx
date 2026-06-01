@@ -108,9 +108,14 @@ export default function EventModal({
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-pink-500 z-10" />
         
+        {/* Mobile Drag Pill */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0 relative z-20">
+          <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+        </div>
+
         {/* Header Fixo */}
-        <div className="flex-shrink-0 flex justify-between items-center p-6 pb-4 border-b border-surface-100 dark:border-surface-800">
-          <h2 className="font-display text-xl font-bold text-surface-900 dark:text-white">
+        <div className="flex-shrink-0 flex justify-between items-center p-6 pb-4 pt-2 sm:pt-6 border-b border-surface-100 dark:border-surface-800">
+          <h2 className="font-display text-xl font-bold text-surface-900 dark:text-white mt-2 sm:mt-0">
             {event ? 'Editar Evento' : 'Novo Evento'}
           </h2>
           <button 
@@ -225,7 +230,7 @@ export default function EventModal({
         </div>
 
         {/* Footer Fixo */}
-        <div className="flex-shrink-0 p-4 sm:p-6 border-t border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50">
+        <div className="flex-shrink-0 p-4 sm:p-6 border-t border-surface-100 dark:border-surface-800 bg-surface-50/50 dark:bg-surface-900/50 pb-safe">
           {showDeleteConfirm ? (
             <div className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2">
               <div className="flex gap-2 items-start text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 p-3 rounded-xl border border-red-100 dark:border-red-500/20">

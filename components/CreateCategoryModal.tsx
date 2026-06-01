@@ -131,20 +131,32 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
   }
 
   return (
-    <div
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 transition-opacity duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
-    >
-      <div className={`w-full max-w-md rounded-2xl bg-white shadow-2xl dark:bg-surface-900 dark:border dark:border-surface-700/60 transition-all duration-200 ${visible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'}`}>
-        {/* Header */}
-        <div className="mb-5 flex items-center justify-between px-6 pt-5">
-          <h2 className="text-lg font-semibold text-surface-900 dark:text-surface-100">
-            {'Nova Categoria'}
-          </h2>
-          <button onClick={handleClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
-            <Lucide.X className="h-5 w-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${visible ? 'opacity-100' : 'opacity-0'}`}
+        onClick={handleClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 md:inset-0 flex flex-col justify-end md:items-center md:justify-center pointer-events-none p-0 md:p-4">
+        <div 
+          className={`pointer-events-auto w-full md:max-w-md bg-white shadow-2xl dark:bg-surface-900 md:dark:border dark:border-surface-700/60 rounded-t-[2rem] md:rounded-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out ${
+            visible ? 'translate-y-0 md:scale-100 opacity-100' : 'translate-y-full md:translate-y-0 md:scale-95 opacity-0'
+          }`}
+        >
+          {/* Mobile Drag Pill */}
+          <div className="md:hidden flex justify-center pt-4 pb-2 shrink-0">
+            <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+          </div>
+
+          <div className="overflow-y-auto pb-safe flex-1" style={{ scrollbarWidth: 'none' }}>
+            {/* Header */}
+            <div className="mb-5 flex items-center justify-between px-6 pt-2 md:pt-6">
+              <h2 className="text-lg font-bold text-surface-900 dark:text-surface-100 tracking-tight">
+                {'Nova Categoria'}
+              </h2>
+              <button onClick={handleClose} className="text-surface-400 hover:text-surface-600 dark:hover:text-surface-300 transition-colors bg-surface-100 dark:bg-surface-800 p-1.5 rounded-full">
+                <Lucide.X className="h-4 w-4" />
+              </button>
+            </div>
 
         <form onSubmit={handleSubmit} className="px-6 pb-6 space-y-5">
           {/* Name */}
@@ -232,15 +244,17 @@ export default function CreateCategoryModal({ type, onClose, onCreated }: Create
           )}
 
           {/* Actions */}
-          <div className="flex gap-3 pt-1">
-            <button type="button" onClick={handleClose} className="btn-secondary flex-1" disabled={submitting}>
+          <div className="flex gap-3 pt-4 sticky bottom-0 bg-white dark:bg-surface-900 pb-2">
+            <button type="button" onClick={handleClose} className="btn-secondary flex-1 h-12" disabled={submitting}>
               {"Cancelar"}
             </button>
-            <button type="submit" className="btn-primary flex-1" disabled={submitting}>
+            <button type="submit" className="btn-primary flex-1 h-12 active:scale-[0.98]" disabled={submitting}>
               {submitting ? ('Criando...') : ('Criar Categoria')}
             </button>
           </div>
         </form>
+          </div>
+        </div>
       </div>
     </div>
   )

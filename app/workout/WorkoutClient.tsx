@@ -2327,14 +2327,28 @@ export default function WorkoutClient({
               )}
 
               {days.length === 0 ? (
-                <div className="mt-5 rounded-2xl border border-dashed border-surface-300 bg-surface-50/80 p-6 text-center dark:border-surface-700 dark:bg-surface-900/60">
-                  <p className="text-sm text-surface-500 dark:text-surface-400">
-                    {locale === 'pt-BR' ? 'Voce ainda nao criou seus treinos' : "You haven't created workouts yet"}
-                  </p>
-                  <button type="button" onClick={openCreateDayModal} className="btn-secondary mt-4 w-full sm:w-auto">
-                    <Lucide.Plus className="mr-1.5 h-4 w-4" />
-                    {locale === 'pt-BR' ? 'Adicionar treino' : 'Add workout'}
-                  </button>
+                <div className="mt-5 p-1.5 rounded-[2.5rem] bg-surface-100/50 dark:bg-surface-800/30 border border-surface-200 dark:border-surface-700/50">
+                  <div className="rounded-[calc(2.5rem-0.375rem)] bg-white dark:bg-surface-900 shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] dark:shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] text-center py-20 px-6 flex flex-col items-center justify-center relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(249,115,22,0.05),transparent_50%)] pointer-events-none" />
+                    <div className="w-20 h-20 rounded-[1.5rem] bg-surface-50 dark:bg-surface-950 border border-surface-100 dark:border-surface-800 flex items-center justify-center mb-6 shadow-[0_4px_12px_rgba(0,0,0,0.05)] rotate-3 group-hover:rotate-0 transition-transform duration-500 relative z-10">
+                      <Lucide.Dumbbell strokeWidth={1.5} className="w-10 h-10 text-orange-500" />
+                    </div>
+                    <h3 className="font-display text-2xl font-bold tracking-tight mb-2 text-surface-900 dark:text-white relative z-10">
+                      {locale === 'pt-BR' ? 'Comece sua evolução.' : 'Start your evolution.'}
+                    </h3>
+                    <p className="text-sm font-medium text-surface-500 dark:text-surface-400 max-w-sm mb-6 leading-relaxed relative z-10">
+                      {locale === 'pt-BR' 
+                        ? 'Estruture sua rotina. Adicione seu primeiro treino para montar a sua ficha e acompanhar sua progressão.' 
+                        : 'Structure your routine. Add your first workout to build your routine and track progress.'}
+                    </p>
+                    <button
+                      onClick={openCreateDayModal}
+                      className="group relative inline-flex z-10 items-center justify-center gap-2 rounded-full bg-orange-600 px-8 py-3.5 text-sm font-bold text-white shadow-[0_8px_20px_-6px_rgba(249,115,22,0.4)] transition-all duration-300 hover:bg-orange-700 hover:shadow-[0_12px_24px_-8px_rgba(249,115,22,0.6)] active:scale-[0.98]"
+                    >
+                      <Lucide.Plus className="w-4 h-4" />
+                      {locale === 'pt-BR' ? 'Criar treino' : 'Create workout'}
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <div className="mt-5 space-y-3">
@@ -2411,8 +2425,16 @@ export default function WorkoutClient({
                           </button>
 
                           {dayExercises.length === 0 ? (
-                            <div className="mt-3 rounded-xl border border-dashed border-surface-300/80 bg-surface-50 px-3 py-3 text-sm text-surface-500 dark:border-surface-700 dark:bg-surface-900 dark:text-surface-400">
-                              {locale === 'pt-BR' ? 'Nenhum exercicio adicionado ainda' : 'No exercises added yet'}
+                            <div className="mt-3 rounded-xl border border-surface-200/50 bg-surface-50/50 px-4 py-6 text-center dark:border-surface-700/30 dark:bg-surface-800/30">
+                              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-surface-200/50 dark:bg-surface-700/50 mb-2">
+                                <Lucide.Dumbbell className="w-5 h-5 text-surface-400 dark:text-surface-500" />
+                              </div>
+                              <p className="text-sm font-medium text-surface-600 dark:text-surface-300">
+                                {locale === 'pt-BR' ? 'Nenhum exercício neste treino' : 'No exercises in this workout'}
+                              </p>
+                              <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                                {locale === 'pt-BR' ? 'Clique em "Adicionar exercício" para começar' : 'Click "Add exercise" to begin'}
+                              </p>
                             </div>
                           ) : (
                             <div className="mt-3 space-y-2">

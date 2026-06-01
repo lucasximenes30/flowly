@@ -227,46 +227,80 @@ export default function SettingsClient({ session }: SettingsClientProps) {
                 })}
               </div>
             </div>
-
-            {/* Language Selection */}
-            <div className="space-y-2.5">
-              <label className="text-xs font-semibold text-surface-500 uppercase tracking-wider">Idioma</label>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center justify-center gap-2 py-3 rounded-xl border border-brand-500 bg-brand-500/10 text-brand-600 dark:text-brand-400 font-bold text-xs">
-                  <span>🇧🇷</span>
-                  <span>Português</span>
-                </div>
-                <div className="flex items-center justify-center gap-2 py-3 rounded-xl border border-surface-150 dark:border-surface-800 bg-white dark:bg-surface-900 text-surface-400 text-xs opacity-50 cursor-not-allowed">
-                  <span>🇺🇸</span>
-                  <span>English</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Profile Card */}
           <div className="card space-y-6">
-            <h3 className="font-display text-base font-semibold flex items-center gap-2">
-              <Lucide.User className="w-4 h-4 text-brand-500" />
-              <span>Dados do Perfil</span>
-            </h3>
+            <div className="flex justify-between items-center">
+              <h3 className="font-display text-base font-semibold flex items-center gap-2">
+                <Lucide.User className="w-4 h-4 text-brand-500" />
+                <span>Dados do Perfil</span>
+              </h3>
+              <div className="flex items-center gap-1 opacity-50">
+                <Lucide.Award className="w-3.5 h-3.5 text-surface-500" />
+                <span className="text-[10px] font-semibold text-surface-500 uppercase tracking-widest">Membro Vynta</span>
+              </div>
+            </div>
 
             {/* Subscription status */}
-            <div className="p-4 rounded-xl bg-surface-50 dark:bg-surface-800/40 border border-surface-150 dark:border-surface-800 flex justify-between items-center">
-              <div>
-                <p className="text-xs text-surface-500 dark:text-surface-400 uppercase tracking-wider font-semibold">Plano Atual</p>
-                <h4 className="text-sm font-bold text-brand-600 dark:text-brand-400 mt-1">
-                  {userRole === 'ADMIN' ? 'Administrador' : userRole === 'COURTESY' ? 'Cortesia VIP' : userPlan === 'PRO' ? 'VIP' : 'Gratuito'}
-                </h4>
-                {subscriptionEndDate && (
-                  <p className="text-[10px] text-surface-400 mt-0.5">
-                    Vence em: {new Date(subscriptionEndDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}
-                  </p>
+            <div className="relative overflow-hidden p-5 rounded-2xl border bg-gradient-to-br transition-all duration-300 border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-900/60 shadow-sm hover:shadow-md">
+              {(userPlan === 'PRO' || userRole === 'ADMIN' || userRole === 'COURTESY') && (
+                <div className="absolute top-0 right-0 p-4 opacity-10 dark:opacity-20 pointer-events-none">
+                  <Lucide.Crown className="w-24 h-24 text-brand-500" />
+                </div>
+              )}
+              <div className="relative z-10">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <p className="text-[10px] font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-widest mb-1">Status da Assinatura</p>
+                    <h4 className="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
+                      {userRole === 'ADMIN' ? 'Administrador' : userRole === 'COURTESY' ? 'Cortesia VIP' : userPlan === 'PRO' ? 'Plano VIP' : 'Plano Gratuito'}
+                      {(userPlan === 'PRO' || userRole === 'ADMIN' || userRole === 'COURTESY') && (
+                        <Lucide.CheckCircle className="w-5 h-5 text-brand-500 dark:text-brand-400" />
+                      )}
+                    </h4>
+                    {subscriptionEndDate && (
+                      <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                        Renova em: <span className="font-medium text-surface-700 dark:text-surface-300">{new Date(subscriptionEndDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</span>
+                      </p>
+                    )}
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                    (userPlan === 'PRO' || userRole === 'ADMIN' || userRole === 'COURTESY') 
+                      ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400' 
+                      : 'bg-surface-100 dark:bg-surface-800 border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400'
+                  }`}>
+                    Ativo
+                  </span>
+                </div>
+
+                {(userPlan === 'PRO' || userRole === 'ADMIN' || userRole === 'COURTESY') && (
+                  <div className="mt-4 pt-4 border-t border-surface-100 dark:border-surface-800/60">
+                    <p className="text-[10px] font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-widest mb-3">Benefícios Ativos</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {[
+                        'Gestão financeira completa',
+                        'Controle de hábitos',
+                        'Planejamento de treinos',
+                        'Gestão de metas e objetivos',
+                        'Calendário e lembretes',
+                        'Diário e anotações'
+                      ].map((benefit, i) => (
+                        <div key={i} className="flex items-center gap-2">
+                          <Lucide.Check className="w-3.5 h-3.5 text-brand-500" />
+                          <span className="text-xs font-medium text-surface-700 dark:text-surface-300">{benefit}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {(!userPlan || userPlan !== 'PRO') && userRole !== 'ADMIN' && userRole !== 'COURTESY' && (
+                  <button onClick={() => router.push('/subscription')} className="mt-4 w-full btn-primary bg-brand-600 text-xs font-semibold py-2">
+                    Fazer Upgrade para VIP
+                  </button>
                 )}
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                Ativo
-              </span>
             </div>
 
             {/* Change Name */}
@@ -357,7 +391,31 @@ export default function SettingsClient({ session }: SettingsClientProps) {
               >
                 {isChangingPassword ? 'Atualizando...' : 'Atualizar Senha'}
               </button>
+
+              <div className="flex items-center justify-center gap-1.5 mt-4 opacity-70">
+                <Lucide.ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span className="text-[10px] uppercase tracking-wider font-semibold text-surface-500 dark:text-surface-400">Privacidade & Segurança Garantidas</span>
+              </div>
             </div>
+          </div>
+
+          {/* Help & Support Card */}
+          <div 
+            onClick={() => router.push('/settings/help')}
+            className="card space-y-4 cursor-pointer hover:border-brand-500/50 dark:hover:border-brand-500/50 transition-colors group"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="font-display text-base font-semibold flex items-center gap-2">
+                <Lucide.HelpCircle className="w-4 h-4 text-brand-500" />
+                <span>Suporte & Ajuda</span>
+              </h3>
+              <div className="w-8 h-8 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center group-hover:bg-brand-50 dark:group-hover:bg-brand-500/10 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                <Lucide.ChevronRight className="w-4 h-4" />
+              </div>
+            </div>
+            <p className="text-sm text-surface-500 dark:text-surface-400 leading-relaxed">
+              Acesse tutoriais, dicas e respostas para as dúvidas mais comuns sobre como usar o Vynta.
+            </p>
           </div>
 
           {/* Danger Zone Card */}

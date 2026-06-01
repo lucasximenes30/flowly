@@ -36,16 +36,16 @@ export async function GET() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // Check if user has access based on subscription status and role
-    const isPaidActive = user.subscriptionStatus === 'ACTIVE'
-    const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY'
-    const canAccess = isPaidActive || isPrivileged
-
     // Check if subscription has expired (if subscriptionEndDate is set)
     let isExpired = false
     if (user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)) {
       isExpired = true
     }
+
+    // Check if user has access based on subscription status and role
+    const isPaidActive = user.subscriptionStatus === 'ACTIVE'
+    const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY'
+    const canAccess = (isPaidActive && !isExpired) || isPrivileged
 
     console.log('[Subscription/Status] User check:', {
       email: user.email,
@@ -90,6 +90,7 @@ export async function POST() {
         id: true,
         email: true,
         subscriptionStatus: true,
+        subscriptionEndDate: true,
         caktoOrderId: true,
       },
     })
@@ -98,9 +99,11 @@ export async function POST() {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    // If user already ACTIVE, no need to check BlackPayments/AbacatePay
-    if (user.subscriptionStatus === 'ACTIVE') {
-      console.log(`[Subscription/Check] User ${user.email} is already ACTIVE`)
+    const isExpired = user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)
+
+    // If user already ACTIVE and NOT expired, no need to check BlackPayments/AbacatePay
+    if (user.subscriptionStatus === 'ACTIVE' && !isExpired) {
+      console.log(`[Subscription/Check] User ${user.email} is already ACTIVE and not expired`)
       
       // Fix session if it's out of sync
       if (session.subscriptionStatus !== 'ACTIVE') {
@@ -109,25 +112,14 @@ export async function POST() {
         await setSession(session)
       }
       
-      return NextResponse.json({ ok: true, status: 'already_active' })
+      return NextResponse.json({ ok: true, status: 'already_active', canAccess: true })
     }
 
-    // If no pending transaction, cannot check
-    if (!user.caktoOrderId) {
-      console.log(`[Subscription/Check] User ${user.email} has no pending transaction`)
-      return NextResponse.json({
-        ok: false,
-        error: 'Nenhuma transação pendente encontrada',
-        status: 'no_pending_transaction',
-      })
-    }
-
-    // Check transaction status from our DB instead of API since Hosted Checkout handles the state 
-    // and webhook updates our DB.
-    console.log(`[Subscription/Check] Checking transaction status in DB: ${user.caktoOrderId}`)
+    // Check transaction status from our DB using the latest transaction for the user
+    console.log(`[Subscription/Check] Checking latest transaction status in DB for user: ${user.email}`)
 
     const tx = await prisma.paymentTransaction.findFirst({
-      where: { providerTransactionId: user.caktoOrderId },
+      where: { userId: user.id },
       orderBy: { createdAt: 'desc' }
     })
 
@@ -139,6 +131,19 @@ export async function POST() {
       })
     }
 
+    const isOldTx = tx.createdAt < new Date(Date.now() - 24 * 60 * 60 * 1000)
+
+    if (isOldTx && isExpired) {
+      // The user is expired and their last transaction is over 24h old.
+      // Do not activate based on an old transaction.
+      return NextResponse.json({
+        ok: false,
+        error: 'Nenhuma transação recente encontrada',
+        status: 'no_pending_transaction',
+        canAccess: false,
+      })
+    }
+
     const transactionStatus = tx.status.toLowerCase()
 
     console.log(`[Subscription/Check] Transaction status: ${transactionStatus}`)
@@ -147,7 +152,7 @@ export async function POST() {
     if (['approved', 'paid', 'payment_confirmed', 'completed'].includes(transactionStatus)) {
       await activateVipAccess({
         userId: user.id,
-        transactionId: user.caktoOrderId,
+        transactionId: tx.providerTransactionId || tx.id,
       })
 
       // Update session cookie!

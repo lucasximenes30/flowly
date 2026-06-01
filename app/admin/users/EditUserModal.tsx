@@ -56,14 +56,28 @@ export default function EditUserModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <div className="w-full max-w-md bg-white dark:bg-surface-900 rounded-2xl shadow-xl border border-surface-200 dark:border-surface-800 overflow-hidden animate-in fade-in zoom-in-95">
-        <div className="px-6 py-4 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between">
-          <h3 className="font-bold text-lg text-surface-900 dark:text-white">Editar Usuário</h3>
-          <button onClick={onClose} className="p-2 -mr-2 rounded-xl text-surface-400 hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors">
-            <Lucide.X className="w-5 h-5" />
-          </button>
-        </div>
+    <div className="fixed inset-0 z-[60]">
+      <div 
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300"
+        onClick={onClose}
+      />
+      <div className="absolute inset-x-0 bottom-0 md:inset-0 flex flex-col justify-end md:items-center md:justify-center pointer-events-none p-0 md:p-4">
+        <div 
+          className="pointer-events-auto w-full md:max-w-md bg-white shadow-2xl dark:bg-surface-900 md:dark:border dark:border-surface-700/60 rounded-t-[2rem] md:rounded-2xl max-h-[90vh] flex flex-col transition-all duration-300 ease-out animate-in slide-in-from-bottom-4 md:slide-in-from-bottom-0 md:zoom-in-95"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Mobile Drag Pill */}
+          <div className="md:hidden flex justify-center pt-4 pb-2 shrink-0">
+            <div className="w-12 h-1.5 bg-surface-200 dark:bg-surface-700 rounded-full" />
+          </div>
+
+          <div className="px-6 py-4 pt-0 md:pt-4 border-b border-surface-100 dark:border-surface-800 flex items-center justify-between shrink-0">
+            <h3 className="font-bold text-lg text-surface-900 dark:text-white">Editar Usuário</h3>
+            <button onClick={onClose} className="p-1.5 rounded-full text-surface-400 bg-surface-100 dark:bg-surface-800 hover:text-surface-600 dark:hover:text-surface-300 transition-colors">
+              <Lucide.X className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="overflow-y-auto pb-safe flex-1" style={{ scrollbarWidth: 'none' }}>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
           <div className="space-y-1.5">
@@ -132,6 +146,8 @@ export default function EditUserModal({
             </button>
           </div>
         </form>
+          </div>
+        </div>
       </div>
     </div>
   )
