@@ -399,6 +399,36 @@ export default function SettingsClient({ session }: SettingsClientProps) {
             </div>
           </div>
 
+          {/* App Installation Card */}
+          <div className="card space-y-4 border-brand-500/20 bg-brand-500/5">
+            <h3 className="font-display text-base font-semibold flex items-center gap-2">
+              <Lucide.Smartphone className="w-4 h-4 text-brand-500" />
+              <span>Instalar Aplicativo</span>
+            </h3>
+            <p className="text-sm text-surface-500 dark:text-surface-400 leading-relaxed mb-4">
+              Tenha o Vynta na tela inicial do seu celular ou computador para uma experiência mais rápida.
+            </p>
+            <button
+              onClick={() => {
+                const promptEvent = (window as any).pwaDeferredPrompt
+                if (promptEvent) {
+                  promptEvent.prompt()
+                  promptEvent.userChoice.then((choiceResult: any) => {
+                    if (choiceResult.outcome === 'accepted') {
+                      ;(window as any).pwaDeferredPrompt = null
+                    }
+                  })
+                } else {
+                  router.push('/settings/help') // redireciona para o tutorial
+                }
+              }}
+              className="btn-primary w-full h-10 text-xs font-bold shadow-md shadow-brand-500/10 flex items-center justify-center gap-2"
+            >
+              <Lucide.Download className="w-4 h-4" />
+              Ver Opções de Instalação
+            </button>
+          </div>
+
           {/* Help & Support Card */}
           <div 
             onClick={() => router.push('/settings/help')}

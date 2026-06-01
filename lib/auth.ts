@@ -10,6 +10,14 @@ export interface JWTPayload {
   hasWorkoutModule?: boolean
   role?: string
   forcePasswordChange?: boolean
+  plan?: string
+  createdAt?: string
+  canUseFinance?: boolean
+  canUseHabits?: boolean
+  canUseWorkout?: boolean
+  canUseGoals?: boolean
+  canUseNotes?: boolean
+  canUseAgenda?: boolean
   [key: string]: unknown
 }
 

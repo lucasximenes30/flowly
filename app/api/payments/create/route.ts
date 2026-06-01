@@ -50,6 +50,17 @@ export async function POST(req: NextRequest) {
     })
 
     const ip = getClientIp(req)
+    
+    // Attempt to parse body for planTier
+    let planTier: 'vip' | 'pro' = 'vip'
+    try {
+      const body = await req.json()
+      if (body.planTier === 'pro' || body.planTier === 'vip') {
+        planTier = body.planTier
+      }
+    } catch (e) {
+      // Body might be empty, ignore
+    }
 
     console.log('[Payments/Create] Calling AbacatePay API...')
     const paymentData = await createTransaction({
@@ -59,6 +70,7 @@ export async function POST(req: NextRequest) {
       document: user.document ?? null,
       phone: null,
       ip,
+      planTier,
     })
 
     console.log('[Payments/Create] ✓ Payment created successfully, returning redirect URL')

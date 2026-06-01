@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { verifyToken } from '@/lib/auth'
 
-const protectedRoutes = ['/dashboard', '/habits', '/reports', '/cards', '/workout']
-const publicRoutes = ['/', '/login', '/register', '/sucesso', '/esqueci-a-senha']
+const protectedRoutes = ['/dashboard', '/habits', '/reports', '/cards', '/workout', '/goals', '/notes', '/calendar', '/finances', '/settings']
+const publicRoutes = ['/', '/login', '/register', '/sucesso', '/esqueci-a-senha', '/unlock']
 
 export async function middleware(request: NextRequest) {
   const sessionToken = request.cookies.get('session')?.value
@@ -45,11 +45,46 @@ export async function middleware(request: NextRequest) {
     }
 
     if (isProtectedRoute) {
-      const isPaidActive = session.subscriptionStatus === 'ACTIVE';
-      const isPrivileged = session.role === 'COURTESY' || session.role === 'ADMIN';
+      let isExpired = false;
+      
+      if (session.plan === 'FREE_TRIAL' && session.createdAt) {
+        const createdAt = new Date(session.createdAt as string).getTime();
+        const now = Date.now();
+        const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+        if (now > createdAt + threeDaysInMs) {
+          isExpired = true;
+        }
+      } else if (session.plan === 'FREE') {
+        isExpired = true;
+      }
+
+      const isPaidActive = session.subscriptionStatus === 'ACTIVE' && !isExpired;
+      const isPrivileged = session.role === 'COURTESY' || session.role === 'ADMIN' || session.plan === 'COURTESY' || session.plan === 'ADMIN';
 
       if (!isPaidActive && !isPrivileged) {
-        return NextResponse.redirect(new URL('/login?error=inactive', request.url))
+        return NextResponse.redirect(new URL('/unlock', request.url))
+      }
+
+      // Feature Flags Check
+      if (!isPrivileged) {
+        if (path.startsWith('/goals') && !session.canUseGoals) {
+          return NextResponse.redirect(new URL('/unlock?feature=goals', request.url))
+        }
+        if (path.startsWith('/notes') && !session.canUseNotes) {
+          return NextResponse.redirect(new URL('/unlock?feature=notes', request.url))
+        }
+        if (path.startsWith('/calendar') && !session.canUseAgenda) {
+          return NextResponse.redirect(new URL('/unlock?feature=agenda', request.url))
+        }
+        if ((path.startsWith('/finances') || path.startsWith('/cards')) && !session.canUseFinance) {
+          return NextResponse.redirect(new URL('/unlock?feature=finance', request.url))
+        }
+        if (path.startsWith('/habits') && !session.canUseHabits) {
+          return NextResponse.redirect(new URL('/unlock?feature=habits', request.url))
+        }
+        if (path.startsWith('/workout') && !session.canUseWorkout) {
+          return NextResponse.redirect(new URL('/unlock?feature=workout', request.url))
+        }
       }
     }
   }

@@ -17,22 +17,20 @@ async function ensureAdmin() {
   return { id, role }
 }
 
-export async function changeUserAccess(userId: string, type: 'ADMIN' | 'COURTESY' | 'VIP') {
-  const session = await ensureAdmin()
-
-  let data: any = {}
-
-  switch (type) {
-    case 'ADMIN':
-      data = { plan: 'PRO', role: 'ADMIN' }
-      break
-    case 'COURTESY':
-      data = { plan: 'PRO', role: 'COURTESY' }
-      break
-    case 'VIP':
-      data = { plan: 'PRO', role: 'USER' }
-      break
+export async function changeUserAccess(
+  userId: string,
+  data: {
+    plan: string
+    role: string
+    canUseFinance: boolean
+    canUseHabits: boolean
+    canUseWorkout: boolean
+    canUseGoals: boolean
+    canUseNotes: boolean
+    canUseAgenda: boolean
   }
+) {
+  const session = await ensureAdmin()
 
   await prisma.user.update({
     where: { id: userId },
@@ -42,9 +40,9 @@ export async function changeUserAccess(userId: string, type: 'ADMIN' | 'COURTESY
   await createAdminLog({
     adminId: session.id,
     action: 'ACCESS_CHANGED',
-    description: `Acesso alterado para ${type}`,
+    description: `Acesso alterado para plano ${data.plan}`,
     targetUserId: userId,
-    metadata: { newAccess: type },
+    metadata: { newAccess: data.plan, newRole: data.role },
   })
 
   revalidatePath('/admin/users')

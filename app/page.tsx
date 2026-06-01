@@ -4,6 +4,8 @@ import BrandLogo from '@/components/BrandLogo'
 import { ArrowRight, CheckCircle2, LayoutDashboard, Target, Activity, ShieldCheck, Zap, Globe, Clock, ThumbsUp, CheckSquare, Calendar, StickyNote } from 'lucide-react'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import MagneticButton from '@/components/landing/MagneticButton'
+import SmartCTA from '@/components/landing/SmartCTA'
+import HeaderActions from '@/components/landing/HeaderActions'
 import { CAKTO_CONFIG } from '@/lib/cakto'
 
 // Layout Helpers
@@ -66,24 +68,15 @@ export default function LandingPage() {
         
         {/* Header */}
         <header className="flex items-center justify-between py-6 md:py-8">
-          <div className="shrink-0">
+          <div className="shrink-0 mr-4">
              <BrandLogo size="md" />
           </div>
-          <div className="flex justify-end gap-3 md:gap-6 items-center">
-            <Link href="/login" className="text-sm font-semibold text-surface-400 hover:text-white transition-colors duration-300">
-              Entrar
-            </Link>
-            <MagneticButton href="/register" intensity={0.2}>
-               <div className="hidden sm:flex rounded-full bg-white/10 hover:bg-white/15 border border-white/10 px-6 py-2.5 text-sm font-semibold items-center gap-2 text-white transition-colors duration-300">
-                 Desbloquear acesso
-               </div>
-            </MagneticButton>
-          </div>
+          <HeaderActions />
         </header>
 
         {/* Hero Section */}
-        <section className="py-24 md:py-32 grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-12 items-center">
-          <div className="lg:col-span-5 space-y-8 text-left">
+        <section className="py-24 md:py-32 flex flex-col items-center text-center max-w-4xl mx-auto">
+          <div className="space-y-8">
             <ScrollReveal delay={0.1}>
               <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-md">
                 Sistema Pessoal de Gestão
@@ -95,30 +88,15 @@ export default function LandingPage() {
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
-              <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[50ch] font-light">
+              <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[50ch] mx-auto font-light">
                 O Vynta centraliza sua gestão financeira, protege suas metas, estrutura sua agenda, consolida suas notas e acompanha seus treinos. Pare de dispersar energia em múltiplos aplicativos.
               </p>
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
-              <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                <MagneticButton href="/register" intensity={0.4}>
-                  <div className="group w-full sm:w-auto inline-flex justify-between items-center rounded-full bg-white text-[#050505] px-6 sm:px-8 py-4 font-bold shadow-lg text-sm sm:text-base">
-                    <span>Quero organizar minha vida</span>
-                    <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center ml-4 shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
-                      <ArrowRight className="w-4 h-4 text-black" strokeWidth={2.5} />
-                    </span>
-                  </div>
-                </MagneticButton>
-                <MagneticButton href="#solucao" intensity={0.2}>
-                  <div className="w-full sm:w-auto inline-flex items-center justify-center rounded-full px-6 sm:px-8 py-4 font-bold text-white bg-transparent border border-white/15 hover:bg-white/5 transition-colors duration-300 text-sm sm:text-base">
-                    Ver como funciona
-                  </div>
-                </MagneticButton>
+              <div className="flex justify-center">
+                <SmartCTA />
               </div>
             </ScrollReveal>
-          </div>
-          <div className="lg:col-span-7 relative w-full mt-12 lg:mt-0">
-            <BezelImage src="/images/painel V2.png" mobileSrc="/images/Painel Mobile V2.jpeg" alt="Vynta Dashboard" priority={true} />
           </div>
         </section>
 

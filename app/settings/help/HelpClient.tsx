@@ -141,6 +141,38 @@ const HELP_SECTIONS = [
         </div>
       </div>
     )
+  },
+  {
+    id: 'pwa',
+    title: 'Instalação do Aplicativo',
+    icon: Lucide.Download,
+    color: 'text-purple-500',
+    bg: 'bg-purple-500/10',
+    content: (
+      <div className="space-y-4">
+        <p className="text-sm text-surface-600 dark:text-surface-400">
+          Você pode instalar o Vynta no seu celular ou computador para ter acesso mais rápido, como um aplicativo nativo.
+        </p>
+        <div className="space-y-3">
+          <h4 className="font-semibold text-surface-900 dark:text-white text-sm">No iPhone/iPad (Safari)</h4>
+          <p className="text-sm text-surface-600 dark:text-surface-400">
+            Toque no ícone de <Lucide.Share className="inline w-4 h-4 mx-1 text-blue-500" /> (Compartilhar) na barra inferior do Safari e, em seguida, role a tela e toque em <strong>"Adicionar à Tela de Início"</strong>.
+          </p>
+        </div>
+        <div className="space-y-3">
+          <h4 className="font-semibold text-surface-900 dark:text-white text-sm">No Android (Chrome)</h4>
+          <p className="text-sm text-surface-600 dark:text-surface-400">
+            Abra o menu do navegador (três pontinhos no canto superior direito) e toque em <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela inicial"</strong>.
+          </p>
+        </div>
+        <div className="space-y-3">
+          <h4 className="font-semibold text-surface-900 dark:text-white text-sm">No Computador (Chrome/Edge)</h4>
+          <p className="text-sm text-surface-600 dark:text-surface-400">
+            Procure pelo ícone de instalação (um monitor com setinha para baixo) no lado direito da barra de endereços (onde você digita o site) e clique nele.
+          </p>
+        </div>
+      </div>
+    )
   }
 ]
 
