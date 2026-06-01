@@ -4,7 +4,6 @@ import BrandLogo from '@/components/BrandLogo'
 import { ArrowRight, CheckCircle2, LayoutDashboard, Target, Activity, ShieldCheck, Zap, Globe, Clock, ThumbsUp, CheckSquare, Calendar, StickyNote } from 'lucide-react'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import MagneticButton from '@/components/landing/MagneticButton'
-import HeroAnimation from '@/components/landing/HeroAnimation'
 import { CAKTO_CONFIG } from '@/lib/cakto'
 
 // Layout Helpers
@@ -119,7 +118,7 @@ export default function LandingPage() {
             </ScrollReveal>
           </div>
           <div className="lg:col-span-7 relative w-full mt-12 lg:mt-0">
-            <HeroAnimation />
+            <BezelImage src="/images/painel V2.png" mobileSrc="/images/Painel Mobile V2.jpeg" alt="Vynta Dashboard" priority={true} />
           </div>
         </section>
 
