@@ -61,6 +61,17 @@ export default function GoalModal({
     setShowDeleteConfirm(false)
   }, [goal, isOpen])
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digits = value.replace(/\D/g, '');
+    if (!digits) {
+      setFormData({ ...formData, targetAmount: '' });
+      return;
+    }
+    const amount = (parseInt(digits, 10) / 100).toFixed(2);
+    setFormData({ ...formData, targetAmount: amount });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
@@ -167,13 +178,12 @@ export default function GoalModal({
                       </label>
                       <input
                         required
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.targetAmount}
-                        onChange={e => setFormData({ ...formData, targetAmount: e.target.value })}
+                        type="text"
+                        inputMode="numeric"
+                        value={formData.targetAmount ? Number(formData.targetAmount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                        onChange={handleAmountChange}
                         className="w-full font-mono rounded-2xl border border-surface-200 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800 px-5 py-3.5 text-base font-medium text-surface-900 dark:text-white placeholder:text-surface-400 transition-all focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
-                        placeholder="10000.00"
+                        placeholder="0,00"
                       />
                     </div>
                     <div className="col-span-2 sm:col-span-1">

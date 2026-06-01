@@ -33,6 +33,17 @@ export default function TransactionModal({
     setErrorMsg('')
   }, [isOpen, goal])
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const digits = value.replace(/\D/g, '');
+    if (!digits) {
+      setFormData({ ...formData, amount: '' });
+      return;
+    }
+    const amount = (parseInt(digits, 10) / 100).toFixed(2);
+    setFormData({ ...formData, amount: amount });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!goal) return
@@ -144,13 +155,12 @@ export default function TransactionModal({
                     </label>
                     <input
                       required
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      value={formData.amount}
-                      onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                      type="text"
+                      inputMode="numeric"
+                      value={formData.amount ? Number(formData.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                      onChange={handleAmountChange}
                       className="w-full font-mono text-2xl font-bold tracking-tight rounded-2xl border border-surface-200 dark:border-surface-700/80 bg-surface-50 dark:bg-surface-800 px-5 py-4 text-surface-900 dark:text-white placeholder:text-surface-300 dark:placeholder:text-surface-600 transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-                      placeholder="0.00"
+                      placeholder="0,00"
                     />
                   </div>
 
