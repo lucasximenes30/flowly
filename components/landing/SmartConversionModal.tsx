@@ -54,7 +54,7 @@ export default function SmartConversionModal({ isOpen, onClose }: SmartConversio
               </li>
             </ul>
             <button 
-              onClick={() => router.push('/register')} 
+              onClick={() => router.push('/register?plan=trial')} 
               className="w-full py-3 text-sm font-semibold text-surface-300 border border-surface-700 rounded-full hover:bg-surface-800 transition-colors"
             >
               Continuar teste grátis

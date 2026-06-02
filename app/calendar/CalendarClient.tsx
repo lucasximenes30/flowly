@@ -18,6 +18,7 @@ import {
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import EventModal from './EventModal'
+import MobileEventModal from './MobileEventModal'
 
 type CalendarEvent = {
   id: string
@@ -346,13 +347,22 @@ export default function CalendarClient() {
       </main>
 
       {isModalOpen && (
-        <EventModal
-          isOpen={isModalOpen}
-          onClose={() => handleCloseModal(false)}
-          onSuccess={() => handleCloseModal(true)}
-          event={selectedEvent}
-          selectedDate={selectedDate}
-        />
+        <>
+          <EventModal
+            isOpen={isModalOpen}
+            onClose={() => handleCloseModal(false)}
+            onSuccess={() => handleCloseModal(true)}
+            event={selectedEvent}
+            selectedDate={selectedDate}
+          />
+          <MobileEventModal
+            isOpen={isModalOpen}
+            onClose={() => handleCloseModal(false)}
+            onSuccess={() => handleCloseModal(true)}
+            event={selectedEvent}
+            selectedDate={selectedDate}
+          />
+        </>
       )}
     </div>
   )

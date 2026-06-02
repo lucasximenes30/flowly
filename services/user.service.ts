@@ -10,6 +10,7 @@ export interface RegisterInput {
   email: string
   password: string
   document?: string
+  planTier?: 'vip' | 'pro' | 'trial'
 }
 
 export interface LoginInput {
@@ -21,14 +22,39 @@ export async function registerUser(input: RegisterInput) {
   const hashedPassword = await hash(input.password, SALT_ROUNDS)
 
   try {
+    let plan: 'VIP' | 'PRO' | 'FREE_TRIAL' = 'VIP'
+    let subscriptionStatus: 'ACTIVE' | 'INACTIVE' = 'INACTIVE'
+    let canUseAgenda = false
+    let canUseNotes = false
+    let subscriptionExpiresAt: Date | undefined = undefined
+
+    if (input.planTier === 'trial') {
+      plan = 'FREE_TRIAL'
+      subscriptionStatus = 'ACTIVE'
+      // 3 days from now
+      subscriptionExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+    } else if (input.planTier === 'pro') {
+      plan = 'PRO'
+      subscriptionStatus = 'INACTIVE'
+      canUseAgenda = true
+      canUseNotes = true
+    } else {
+      // vip default
+      plan = 'VIP'
+      subscriptionStatus = 'INACTIVE'
+    }
+
     const user = await prisma.user.create({
       data: {
         name: input.name,
         email: input.email.toLowerCase(),
         password: hashedPassword,
         document: input.document || null,
-        plan: 'FREE_TRIAL',
-        subscriptionStatus: 'ACTIVE',
+        plan,
+        subscriptionStatus,
+        canUseAgenda,
+        canUseNotes,
+        subscriptionExpiresAt,
       },
     })
 
