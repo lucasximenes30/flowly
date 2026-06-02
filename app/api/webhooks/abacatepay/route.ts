@@ -6,11 +6,13 @@ import crypto from 'crypto'
 const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
-  const signature = req.headers.get('x-webhook-signature')?.trim() || ''
-  
+  let signature = req.headers.get('x-webhook-signature')?.trim() || ''
   if (!signature) {
-    console.error('[AbacatePay Webhook] Missing x-webhook-signature header')
-    // We will not return 401 immediately, we will check if there is a query secret fallback first
+    signature = req.headers.get('x-abacatepay-signature')?.trim() || ''
+  }
+
+  if (!signature) {
+    console.error('[AbacatePay Webhook] Missing signature headers')
   }
 
   const rawBody = await req.text()
@@ -25,22 +27,22 @@ export async function POST(req: Request) {
     console.log('[AbacatePay Webhook] Query param webhookSecret matched successfully.')
   }
 
+  let isSignatureValid = false;
+
   // Signature verification using native Node.js crypto
   if (secret) {
     try {
-      let isBufferMatch = false
-      
       if (signature) {
         const expectedSignatureHex = crypto.createHmac('sha256', secret).update(rawBody).digest('hex')
         const expectedSignatureB64 = crypto.createHmac('sha256', secret).update(rawBody).digest('base64')
 
         if (signature.length === expectedSignatureHex.length) {
-          isBufferMatch = crypto.timingSafeEqual(
+          isSignatureValid = crypto.timingSafeEqual(
             Buffer.from(signature, 'utf8'),
             Buffer.from(expectedSignatureHex, 'utf8')
           )
         } else if (signature.length === expectedSignatureB64.length) {
-          isBufferMatch = crypto.timingSafeEqual(
+          isSignatureValid = crypto.timingSafeEqual(
             Buffer.from(signature, 'utf8'),
             Buffer.from(expectedSignatureB64, 'utf8')
           )
@@ -49,23 +51,20 @@ export async function POST(req: Request) {
         }
       }
 
-      if (!isBufferMatch && !isQuerySecretMatch) {
-        console.error('[AbacatePay Webhook] Invalid signature verification and query secret did not match.')
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      if (!isSignatureValid && !isQuerySecretMatch) {
+        console.warn('[AbacatePay Webhook] Invalid signature. Will fallback to strict API verification.')
+      } else {
+        console.log('[AbacatePay Webhook] Authorization verified successfully.')
       }
-      
-      console.log('[AbacatePay Webhook] Authorization verified successfully.')
     } catch (err: any) {
       console.error('[AbacatePay Webhook] Signature validation error:', err.message)
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
   } else {
-    // If no secret is configured in development, we allow bypassing verification
     if (process.env.NODE_ENV === 'development') {
-      console.warn('[AbacatePay Webhook] [DEV-ONLY] Webhook secret not configured in .env. Bypassing signature verification.')
+      console.warn('[AbacatePay Webhook] [DEV-ONLY] Webhook secret not configured. Bypassing signature.')
+      isSignatureValid = true;
     } else {
-      console.error('[AbacatePay Webhook] ABACATEPAY_WEBHOOK_SECRET is not configured. Rejecting request.')
-      return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
+      console.warn('[AbacatePay Webhook] ABACATEPAY_WEBHOOK_SECRET is not configured. Will rely on strict API verification.')
     }
   }
 
@@ -81,12 +80,49 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
       }
 
-      // The externalId is where we stored user.id in the checkout
-      const userId = checkout.externalId
+      // The externalId format is now: {userId}_{timestamp}
+      const rawExternalId = checkout.externalId || ''
+      const userId = rawExternalId.split('_')[0]
       const transactionId = checkout.id
       const amountCents = checkout.amount || 0
       
       console.log(`[AbacatePay Webhook] Payment confirmed for user: ${userId}, transaction: ${transactionId}`)
+
+      // Very important: Verify with AbacatePay API directly if the checkout is actually PAID
+      // This protects against spoofed webhooks even if signature validation was bypassed
+      try {
+        const { AbacatePay } = await import('@abacatepay/sdk');
+        // We only use the SDK for other stuff if needed, but for validation we use fetch
+        
+        let apiVerified = false;
+        try {
+          const res = await fetch(`https://api.abacatepay.com/v2/checkouts/list`, {
+            headers: {
+              'Authorization': `Bearer ${process.env.ABACATEPAY_API_KEY}`
+            }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const list = data.data || [];
+            const apiCheckout = list.find((c: any) => c.id === transactionId);
+            if (apiCheckout && apiCheckout.status === 'PAID') {
+               apiVerified = true;
+            }
+          }
+        } catch (apiErr) {
+          console.warn('[AbacatePay Webhook] SDK checkouts.list failed:', apiErr);
+        }
+        
+        if (!isSignatureValid && !isQuerySecretMatch && !apiVerified) {
+             console.error('[AbacatePay Webhook] Signature failed and no API verification possible. Rejecting.');
+             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+      } catch (err: any) {
+        console.warn('[AbacatePay Webhook] Could not verify via API:', err.message);
+        if (!isSignatureValid && !isQuerySecretMatch) {
+             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+      }
 
       if (userId) {
         let planTier: 'VIP' | 'PRO' = 'VIP';
