@@ -3,10 +3,10 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// Plan prices
 const PLAN_PRICES = {
   vip: 1990,
   pro: 2990,
+  promo: 2490,
 }
 
 // Helper to init the SDK safely
@@ -27,17 +27,17 @@ export interface CreateTransactionInput {
   /** Client IP address (optional) */
   ip?: string | null
   /** Plan tier selected */
-  planTier?: 'vip' | 'pro'
+  planTier?: 'vip' | 'pro' | 'promo'
 }
 
 /**
  * Ensures a Vynta product exists in AbacatePay and returns its ID.
  */
-async function ensureProduct(tier: 'vip' | 'pro' = 'vip'): Promise<string> {
+async function ensureProduct(tier: 'vip' | 'pro' | 'promo' = 'vip'): Promise<string> {
   const abacate = getAbacate()
   const priceCents = PLAN_PRICES[tier]
   const externalId = `vynta-${tier}-${priceCents}`
-  const name = tier === 'pro' ? 'Vynta PRO' : 'Vynta VIP'
+  const name = tier === 'vip' ? 'Vynta VIP' : (tier === 'promo' ? 'Vynta PRO (Promo)' : 'Vynta PRO')
 
   // We could list products to see if it exists, but the easiest way is 
   // to list and find by externalId, or simply try to create and catch error, 

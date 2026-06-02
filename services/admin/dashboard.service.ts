@@ -2,32 +2,45 @@ import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, addDays } from 'date-fns'
 
 export async function getDashboardStats() {
-  const [totalUsers, vipUsers, pendingUsers, inactiveUsers] = await Promise.all([
+  const [totalUsers, activeVip, activePro, pendingPayments, expiredSubs, trialUsers, upgradeConversions] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({
+      where: { plan: 'VIP', subscriptionStatus: 'ACTIVE' },
+    }),
+    prisma.user.count({
+      where: { plan: 'PRO', subscriptionStatus: 'ACTIVE' },
+    }),
+    prisma.user.count({
       where: {
-        plan: 'PRO',
-        role: { notIn: ['ADMIN', 'COURTESY'] },
-        subscriptionStatus: 'ACTIVE',
+        plan: { in: ['VIP', 'PRO'] },
+        subscriptionStatus: { in: ['INACTIVE', 'PENDING'] },
       },
     }),
     prisma.user.count({
       where: {
-        subscriptionStatus: 'PENDING',
+        plan: { in: ['VIP', 'PRO'] },
+        OR: [
+          { subscriptionStatus: { in: ['PAST_DUE', 'CANCELED'] } },
+          { subscriptionEndDate: { lt: new Date() } }
+        ]
       },
     }),
     prisma.user.count({
-      where: {
-        subscriptionStatus: 'INACTIVE',
-      },
+      where: { plan: 'FREE_TRIAL' },
+    }),
+    prisma.user.count({
+      where: { usedUpgradeOffer: true },
     }),
   ])
 
   return {
     totalUsers,
-    vipUsers,
-    pendingUsers,
-    inactiveUsers,
+    activeVip,
+    activePro,
+    pendingPayments,
+    expiredSubs,
+    trialUsers,
+    upgradeConversions,
   }
 }
 

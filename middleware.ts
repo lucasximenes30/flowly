@@ -46,6 +46,7 @@ export async function middleware(request: NextRequest) {
 
     if (isProtectedRoute) {
       let isExpired = false;
+      let currentState = 'active';
       
       if (session.plan === 'FREE_TRIAL' && session.createdAt) {
         const createdAt = new Date(session.createdAt as string).getTime();
@@ -53,16 +54,32 @@ export async function middleware(request: NextRequest) {
         const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
         if (now > createdAt + threeDaysInMs) {
           isExpired = true;
+          currentState = 'trial_expired';
         }
+      } else if (session.plan === 'VIP' || session.plan === 'PRO') {
+         if (session.subscriptionStatus === 'INACTIVE' || session.subscriptionStatus === 'PENDING') {
+            isExpired = true;
+            currentState = 'payment_pending';
+         } else if (session.subscriptionStatus === 'PAST_DUE' || session.subscriptionStatus === 'CANCELED' || session.subscriptionStatus === 'EXPIRED') {
+            isExpired = true;
+            currentState = 'expired';
+         } else if (session.subscriptionEndDate) {
+            const endDate = new Date(session.subscriptionEndDate as string).getTime();
+            if (Date.now() > endDate) {
+               isExpired = true;
+               currentState = 'expired';
+            }
+         }
       } else if (session.plan === 'FREE') {
         isExpired = true;
+        currentState = 'expired';
       }
 
       const isPaidActive = session.subscriptionStatus === 'ACTIVE' && !isExpired;
       const isPrivileged = session.role === 'COURTESY' || session.role === 'ADMIN' || session.plan === 'COURTESY' || session.plan === 'ADMIN';
 
       if (!isPaidActive && !isPrivileged) {
-        return NextResponse.redirect(new URL('/unlock', request.url))
+        return NextResponse.redirect(new URL(`/unlock?state=${currentState}`, request.url))
       }
 
       // Feature Flags Check

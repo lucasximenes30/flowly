@@ -37,6 +37,7 @@ model User {
   canUseGoals           Boolean                @default(false)
   canUseNotes           Boolean                @default(false)
   canUseAgenda          Boolean                @default(false)
+  usedUpgradeOffer      Boolean                @default(false)
 
   cards                 Card[]
   customCategories      Category[]

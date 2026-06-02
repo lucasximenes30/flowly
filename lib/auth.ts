@@ -12,6 +12,8 @@ export interface JWTPayload {
   forcePasswordChange?: boolean
   plan?: string
   createdAt?: string
+  subscriptionEndDate?: string
+  usedUpgradeOffer?: boolean
   canUseFinance?: boolean
   canUseHabits?: boolean
   canUseWorkout?: boolean

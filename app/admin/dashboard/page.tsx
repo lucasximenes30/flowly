@@ -7,9 +7,12 @@ import { getWhatsappLink, getWhatsappMessage, WhatsappMessageType } from '@/lib/
 
 type DashboardStats = {
   totalUsers: number
-  vipUsers: number
-  pendingUsers: number
-  inactiveUsers: number
+  activeVip: number
+  activePro: number
+  pendingPayments: number
+  expiredSubs: number
+  trialUsers: number
+  upgradeConversions: number
 }
 
 type PaymentStats = {
@@ -238,20 +241,46 @@ export default function AdminDashboardPage() {
                 <Lucide.Crown className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">VIPs Ativos</p>
-                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.vipUsers}</p>
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">PROs Ativos</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.activePro}</p>
               </div>
             </div>
           </div>
 
           <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
             <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.Star className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">VIPs Ativos</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.activeVip}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.Zap className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Usuários Trial</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.trialUsers}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center flex-shrink-0">
                 <Lucide.Clock className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Pendentes</p>
-                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.pendingUsers}</p>
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Pgtos. Pendentes</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.pendingPayments}</p>
               </div>
             </div>
           </div>
@@ -262,8 +291,20 @@ export default function AdminDashboardPage() {
                 <Lucide.UserX className="w-5 h-5 sm:w-6 sm:h-6" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Inativos</p>
-                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.inactiveUsers}</p>
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Expirados</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.expiredSubs}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-surface-900 border border-surface-200 dark:border-surface-800 p-4 sm:p-6 rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-xl flex items-center justify-center flex-shrink-0">
+                <Lucide.Rocket className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm font-medium text-surface-500 dark:text-surface-400 leading-tight">Upgrades p/ PRO</p>
+                <p className="text-xl sm:text-2xl font-bold text-surface-900 dark:text-white">{stats.upgradeConversions}</p>
               </div>
             </div>
           </div>
