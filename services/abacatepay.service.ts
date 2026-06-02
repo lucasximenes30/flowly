@@ -98,11 +98,13 @@ export async function createTransaction(user: CreateTransactionInput) {
 
     const appUrl = process.env.APP_URL || 'https://flowly-blue.vercel.app'
 
+    const checkoutExternalId = `${user.id}_${Date.now()}`
+
     // 3. Create the checkout
     const checkout = await abacate.checkouts.create({
       items: [{ id: productId, quantity: 1 }],
       customer,
-      externalId: user.id, // Using user ID as external ID for tracking
+      externalId: checkoutExternalId, // Unique per attempt
       returnUrl: `${appUrl}/payment/return`,
       completionUrl: `${appUrl}/payment/return`, // Where to go after success
     })
