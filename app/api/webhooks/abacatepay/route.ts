@@ -89,6 +89,16 @@ export async function POST(req: Request) {
       console.log(`[AbacatePay Webhook] Payment confirmed for user: ${userId}, transaction: ${transactionId}`)
 
       if (userId) {
+        let planTier: 'VIP' | 'PRO' = 'VIP';
+        let usedUpgradeOffer: boolean | undefined = undefined;
+
+        if (amountCents >= 2990) {
+          planTier = 'PRO';
+        } else if (amountCents >= 2490) {
+          planTier = 'PRO';
+          usedUpgradeOffer = true;
+        }
+
         // Upsert payment transaction
         await prisma.paymentTransaction.upsert({
           where: { providerTransactionId: transactionId },
@@ -109,10 +119,12 @@ export async function POST(req: Request) {
           },
         })
 
-        // Activate VIP
+        // Activate Subscription
         await activateVipAccess({
           userId: userId,
           transactionId: transactionId,
+          planTier,
+          usedUpgradeOffer,
         })
         
         // Also update billing provider info

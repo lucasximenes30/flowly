@@ -74,11 +74,13 @@ export async function registerUser(input: RegisterInput) {
       canUseGoals: user.canUseGoals,
       canUseNotes: user.canUseNotes,
       canUseAgenda: user.canUseAgenda,
+      usedUpgradeOffer: user.usedUpgradeOffer,
+      subscriptionEndDate: user.subscriptionEndDate ? user.subscriptionEndDate.toISOString() : undefined,
     }
 
     const token = await signToken(payload)
 
-    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda }, token }
+    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda, usedUpgradeOffer: user.usedUpgradeOffer, subscriptionEndDate: user.subscriptionEndDate }, token }
   } catch (error: any) {
     if (error.code === 'P2002') {
       throw new Error('Email already registered')
@@ -117,9 +119,11 @@ export async function loginUser(input: LoginInput) {
     canUseGoals: user.canUseGoals,
     canUseNotes: user.canUseNotes,
     canUseAgenda: user.canUseAgenda,
+    usedUpgradeOffer: user.usedUpgradeOffer,
+    subscriptionEndDate: user.subscriptionEndDate ? user.subscriptionEndDate.toISOString() : undefined,
   }
 
   const token = await signToken(payload)
 
-  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda }, token }
+  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda, usedUpgradeOffer: user.usedUpgradeOffer, subscriptionEndDate: user.subscriptionEndDate }, token }
 }

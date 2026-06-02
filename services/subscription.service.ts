@@ -5,23 +5,32 @@ const prisma = new PrismaClient()
 interface ActivateVipInput {
   userId: string
   transactionId?: string
+  planTier?: 'VIP' | 'PRO'
+  usedUpgradeOffer?: boolean
 }
 
 /**
- * Shared helper to activate a user's VIP access.
- * Sets the user to ACTIVE, assigns PRO plan, and sets the subscription window to 30 days from now.
+ * Shared helper to activate a user's subscription.
+ * Sets the user to ACTIVE, assigns the plan, and sets the subscription window to 30 days from now.
  */
-export async function activateVipAccess({ userId, transactionId }: ActivateVipInput) {
+export async function activateVipAccess({ userId, transactionId, planTier = 'PRO', usedUpgradeOffer }: ActivateVipInput) {
   const now = new Date()
   const endDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000) // +30 days
 
   const updateData: any = {
     subscriptionStatus: UserSubscriptionStatus.ACTIVE,
-    plan: UserPlan.PRO,
+    plan: planTier,
     billingProvider: 'abacatepay',
     billingApprovedAt: now,
     subscriptionStartDate: now,
     subscriptionEndDate: endDate,
+    canUseNotes: planTier === 'PRO',
+    canUseAgenda: planTier === 'PRO',
+    canUseGoals: planTier === 'PRO',
+  }
+
+  if (usedUpgradeOffer !== undefined) {
+    updateData.usedUpgradeOffer = usedUpgradeOffer;
   }
 
   if (transactionId) {

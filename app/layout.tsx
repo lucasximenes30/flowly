@@ -25,12 +25,15 @@ export const metadata: Metadata = {
   },
   description: 'Gestão financeira pessoal com clareza e fluidez.',
   manifest: '/manifest.json',
-  themeColor: '#050505',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
     title: 'Vynta',
   },
+}
+
+export const viewport = {
+  themeColor: '#050505',
 }
 
 export default function RootLayout({
