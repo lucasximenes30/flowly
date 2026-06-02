@@ -149,7 +149,7 @@ export async function POST() {
     console.log(`[Subscription/Check] Transaction status: ${transactionStatus}`)
 
     // If payment is approved, activate user
-    if (['approved', 'paid', 'payment_confirmed', 'completed'].includes(transactionStatus)) {
+    if (['approved', 'paid', 'payment_confirmed', 'completed', 'active'].includes(transactionStatus)) {
       await activateVipAccess({
         userId: user.id,
         transactionId: tx.providerTransactionId || tx.id,
@@ -158,6 +158,9 @@ export async function POST() {
       // Update session cookie!
       const { setSession } = await import('@/lib/auth')
       session.subscriptionStatus = 'ACTIVE'
+      if (user.subscriptionEndDate) {
+        session.subscriptionEndDate = new Date(user.subscriptionEndDate).toISOString()
+      }
       await setSession(session)
 
       console.log(`[Subscription/Check] User ${user.email} ACTIVATED`)
