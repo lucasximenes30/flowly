@@ -28,6 +28,8 @@ export interface CreateTransactionInput {
   ip?: string | null
   /** Plan tier selected */
   planTier?: 'vip' | 'pro' | 'promo'
+  /** The base URL of the application */
+  appUrl: string
 }
 
 /**
@@ -96,7 +98,7 @@ export async function createTransaction(user: CreateTransactionInput) {
       cellphone: user.phone ? user.phone.replace(/\D/g, '') : undefined,
     }
 
-    const appUrl = process.env.APP_URL || 'https://flowly-blue.vercel.app'
+    const appUrl = user.appUrl
 
     const checkoutExternalId = `${user.id}_${Date.now()}`
 

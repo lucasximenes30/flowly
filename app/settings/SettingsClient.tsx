@@ -254,7 +254,7 @@ export default function SettingsClient({ session }: SettingsClientProps) {
                   <div>
                     <p className="text-[10px] font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-widest mb-1">Status da Assinatura</p>
                     <h4 className="text-xl font-bold text-surface-900 dark:text-white flex items-center gap-2">
-                      {userRole === 'ADMIN' ? 'Administrador' : userRole === 'COURTESY' ? 'Cortesia VIP' : userPlan === 'PRO' ? 'Plano VIP' : 'Plano Gratuito'}
+                      {userRole === 'ADMIN' ? 'Administrador' : userRole === 'COURTESY' ? 'Cortesia VIP' : userPlan === 'PRO' ? 'Plano PRO' : userPlan === 'VIP' ? 'Plano VIP' : 'Plano Gratuito'}
                       {(userPlan === 'PRO' || userRole === 'ADMIN' || userRole === 'COURTESY') && (
                         <Lucide.CheckCircle className="w-5 h-5 text-brand-500 dark:text-brand-400" />
                       )}

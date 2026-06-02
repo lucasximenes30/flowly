@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     }
 
     console.log('[Payments/Create] Calling AbacatePay API...')
+    const appUrl = req.nextUrl.origin
     const paymentData = await createTransaction({
       id: user.id,
       email: user.email,
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       phone: null,
       ip,
       planTier,
+      appUrl,
     })
 
     console.log('[Payments/Create] ✓ Payment created successfully, returning redirect URL')

@@ -61,13 +61,15 @@ export async function POST(request: NextRequest) {
       if (planTier === 'vip' || planTier === 'pro') {
         try {
           const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip') ?? null
+          const appUrl = request.nextUrl.origin
           const paymentData = await createTransaction({
             id: result.user.id,
             email: result.user.email,
             name: result.user.name,
             document: document || null,
             ip,
-            planTier
+            planTier,
+            appUrl,
           })
           console.log(`[Auth/Register] Redirecting new user ${result.user.email} to AbacatePay`)
           return NextResponse.json({ success: true, redirectUrl: paymentData.url })
