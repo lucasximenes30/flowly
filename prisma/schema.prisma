@@ -31,6 +31,13 @@ model User {
   subscriptionEndDate   DateTime?
   subscriptionExpiresAt DateTime?
   hasWorkoutModule      Boolean                @default(false)
+  canUseFinance         Boolean                @default(true)
+  canUseHabits          Boolean                @default(true)
+  canUseWorkout         Boolean                @default(true)
+  canUseGoals           Boolean                @default(false)
+  canUseNotes           Boolean                @default(false)
+  canUseAgenda          Boolean                @default(false)
+
   cards                 Card[]
   customCategories      Category[]
   exercises             Exercise[]
@@ -425,7 +432,11 @@ enum PaymentStatus {
 
 enum UserPlan {
   FREE
+  FREE_TRIAL
+  VIP
   PRO
+  COURTESY
+  ADMIN
 }
 
 enum UserSex {

@@ -14,12 +14,14 @@ export default function MagneticButton({
   children, 
   href,
   className,
-  intensity = 0.5
+  intensity = 0.5,
+  onClick
 }: { 
   children: React.ReactNode
   href?: string
   className?: string
   intensity?: number
+  onClick?: React.MouseEventHandler
 }) {
   const ref = useRef<HTMLDivElement>(null)
   
@@ -57,11 +59,11 @@ export default function MagneticButton({
       className={cn("relative group block w-fit shrink-0", className)}
     >
       {href ? (
-        <Link href={href} className="block w-full h-full cursor-pointer outline-none">
+        <Link href={href} onClick={onClick} className="block w-full h-full cursor-pointer outline-none">
           {children}
         </Link>
       ) : (
-        <button className="block w-full h-full cursor-pointer outline-none">
+        <button onClick={onClick} className="block w-full h-full cursor-pointer outline-none">
           {children}
         </button>
       )}

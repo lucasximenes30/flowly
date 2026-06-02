@@ -27,6 +27,8 @@ export async function registerUser(input: RegisterInput) {
         email: input.email.toLowerCase(),
         password: hashedPassword,
         document: input.document || null,
+        plan: 'FREE_TRIAL',
+        subscriptionStatus: 'ACTIVE',
       },
     })
 
@@ -37,11 +39,20 @@ export async function registerUser(input: RegisterInput) {
       subscriptionStatus: user.subscriptionStatus,
       hasWorkoutModule: user.hasWorkoutModule,
       forcePasswordChange: user.forcePasswordChange,
+      role: user.role,
+      plan: user.plan,
+      createdAt: user.createdAt.toISOString(),
+      canUseFinance: user.canUseFinance,
+      canUseHabits: user.canUseHabits,
+      canUseWorkout: user.canUseWorkout,
+      canUseGoals: user.canUseGoals,
+      canUseNotes: user.canUseNotes,
+      canUseAgenda: user.canUseAgenda,
     }
 
     const token = await signToken(payload)
 
-    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, forcePasswordChange: user.forcePasswordChange }, token }
+    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange }, token }
   } catch (error: any) {
     if (error.code === 'P2002') {
       throw new Error('Email already registered')
@@ -71,9 +82,18 @@ export async function loginUser(input: LoginInput) {
     subscriptionStatus: user.subscriptionStatus,
     hasWorkoutModule: user.hasWorkoutModule,
     forcePasswordChange: user.forcePasswordChange,
+    role: user.role,
+    plan: user.plan,
+    createdAt: user.createdAt.toISOString(),
+    canUseFinance: user.canUseFinance,
+    canUseHabits: user.canUseHabits,
+    canUseWorkout: user.canUseWorkout,
+    canUseGoals: user.canUseGoals,
+    canUseNotes: user.canUseNotes,
+    canUseAgenda: user.canUseAgenda,
   }
 
   const token = await signToken(payload)
 
-  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, forcePasswordChange: user.forcePasswordChange }, token }
+  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange }, token }
 }

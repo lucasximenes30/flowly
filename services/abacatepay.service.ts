@@ -3,8 +3,11 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// To change the price back to R$19,90, update this constant to 1990
-const VYNTA_VIP_PRICE_CENTS = 1990
+// Plan prices
+const PLAN_PRICES = {
+  vip: 1990,
+  pro: 2990,
+}
 
 // Helper to init the SDK safely
 const getAbacate = () => {
@@ -23,14 +26,18 @@ export interface CreateTransactionInput {
   phone?: string | null
   /** Client IP address (optional) */
   ip?: string | null
+  /** Plan tier selected */
+  planTier?: 'vip' | 'pro'
 }
 
 /**
- * Ensures a Vynta VIP product exists in AbacatePay and returns its ID.
+ * Ensures a Vynta product exists in AbacatePay and returns its ID.
  */
-async function ensureVipProduct(): Promise<string> {
+async function ensureProduct(tier: 'vip' | 'pro' = 'vip'): Promise<string> {
   const abacate = getAbacate()
-  const externalId = 'vynta-vip-1990'
+  const priceCents = PLAN_PRICES[tier]
+  const externalId = `vynta-${tier}-${priceCents}`
+  const name = tier === 'pro' ? 'Vynta PRO' : 'Vynta VIP'
 
   // We could list products to see if it exists, but the easiest way is 
   // to list and find by externalId, or simply try to create and catch error, 
@@ -47,14 +54,14 @@ async function ensureVipProduct(): Promise<string> {
     // Product doesn't exist, create it
     const newProduct = await abacate.products.create({
       externalId,
-      name: 'Vynta VIP',
-      price: VYNTA_VIP_PRICE_CENTS,
+      name,
+      price: priceCents,
       currency: 'BRL',
     })
     
     return newProduct.id
   } catch (error: any) {
-    console.error('[AbacatePay] Failed to ensure VIP product:', error.message)
+    console.error(`[AbacatePay] Failed to ensure ${tier.toUpperCase()} product:`, error.message)
     throw error
   }
 }
@@ -77,8 +84,9 @@ export async function createTransaction(user: CreateTransactionInput) {
   }
 
   try {
+    const tier = user.planTier || 'vip'
     // 1. Ensure the product exists
-    const productId = await ensureVipProduct()
+    const productId = await ensureProduct(tier)
 
     // 2. Prepare customer payload
     const customer = {
@@ -107,7 +115,7 @@ export async function createTransaction(user: CreateTransactionInput) {
         userId: user.id,
         provider: 'abacatepay',
         providerTransactionId: checkout.id || `pending_${Date.now()}`,
-        amount: VYNTA_VIP_PRICE_CENTS / 100,
+        amount: PLAN_PRICES[tier] / 100,
         status: 'PENDING',
         rawStatus: 'checkout_created',
       },

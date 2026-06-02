@@ -40,7 +40,15 @@ export async function POST(request: NextRequest) {
       subscriptionStatus: result.user.subscriptionStatus,
       hasWorkoutModule: result.user.hasWorkoutModule,
       role: result.user.role,
+      plan: result.user.plan,
+      createdAt: result.user.createdAt ? new Date(result.user.createdAt).toISOString() : undefined,
       forcePasswordChange: result.user.forcePasswordChange,
+      canUseFinance: result.user.canUseFinance,
+      canUseHabits: result.user.canUseHabits,
+      canUseWorkout: result.user.canUseWorkout,
+      canUseGoals: result.user.canUseGoals,
+      canUseNotes: result.user.canUseNotes,
+      canUseAgenda: result.user.canUseAgenda,
     })
 
     // If user is inactive and not privileged, return inactive status

@@ -3,6 +3,7 @@ import { Manrope, Sora } from 'next/font/google'
 import { ThemeProvider } from '@/lib/theme'
 import Script from 'next/script'
 import SidebarLayout from '@/components/SidebarLayout'
+import InstallPWA from '@/components/mobile/InstallPWA'
 import './globals.css'
 
 const manrope = Manrope({
@@ -23,6 +24,13 @@ export const metadata: Metadata = {
     template: '%s | Vynta',
   },
   description: 'Gestão financeira pessoal com clareza e fluidez.',
+  manifest: '/manifest.json',
+  themeColor: '#050505',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Vynta',
+  },
 }
 
 export default function RootLayout({
@@ -61,6 +69,7 @@ export default function RootLayout({
           <SidebarLayout>
             {children}
           </SidebarLayout>
+          <InstallPWA />
         </ThemeProvider>
       </body>
     </html>

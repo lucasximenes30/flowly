@@ -30,6 +30,7 @@ export function getUserAccessTier(user: { role: string; plan: string }) {
   if (user.role === 'ADMIN') return 'ADMIN'
   if (user.role === 'COURTESY') return 'COURTESY'
   if (user.plan === 'PRO') return 'VIP'
+  if (user.plan === 'FREE_TRIAL') return 'TRIAL'
   return 'FREE'
 }
 
@@ -187,6 +188,7 @@ export default function UserTable({
                           user.role === 'ADMIN' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' :
                           user.role === 'COURTESY' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' :
                           user.plan === 'PRO' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' :
+                          user.plan === 'FREE_TRIAL' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400' :
                           'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
                         }`}>
                           {getUserAccessTier(user)}
@@ -333,6 +335,7 @@ export default function UserTable({
                     user.role === 'ADMIN' ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' :
                     user.role === 'COURTESY' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-400' :
                     user.plan === 'PRO' ? 'bg-brand-100 text-brand-700 dark:bg-brand-500/10 dark:text-brand-400' :
+                    user.plan === 'FREE_TRIAL' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-400' :
                     'bg-surface-100 text-surface-600 dark:bg-surface-800 dark:text-surface-400'
                   }`}>
                     {getUserAccessTier(user)}
