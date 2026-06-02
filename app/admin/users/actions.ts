@@ -34,7 +34,7 @@ export async function changeUserAccess(
 
   await prisma.user.update({
     where: { id: userId },
-    data,
+    data: data as any,
   })
 
   await createAdminLog({
