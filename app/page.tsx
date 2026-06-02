@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import BrandLogo from '@/components/BrandLogo'
-import { ArrowRight, CheckCircle2, LayoutDashboard, Target, Activity, ShieldCheck, Zap, Globe, Clock, ThumbsUp, CheckSquare, Calendar, StickyNote } from 'lucide-react'
+import { ArrowRight, CheckCircle2, LayoutDashboard, Target, Activity, ShieldCheck, Zap, Globe, Clock, ThumbsUp, CheckSquare, Calendar, StickyNote, X } from 'lucide-react'
 import ScrollReveal from '@/components/landing/ScrollReveal'
 import MagneticButton from '@/components/landing/MagneticButton'
 import SmartCTA from '@/components/landing/SmartCTA'
@@ -407,51 +407,95 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="planos" className="py-20 md:py-24 px-4 md:px-0">
+        <section id="planos" className="py-20 md:py-32 px-4 md:px-0">
           <ScrollReveal>
-            <div className="max-w-5xl mx-auto rounded-[2rem] md:rounded-[3rem] bg-gradient-to-b from-brand-900/20 to-[#050505] p-1.5 md:p-2 ring-1 ring-white/10 shadow-[0_40px_80px_-20px_rgba(48,64,235,0.2)] relative overflow-hidden group">
-               <div className="absolute top-0 right-0 w-[300px] h-[300px] md:w-[500px] md:h-[500px] bg-brand-500/20 rounded-full blur-[100px] md:blur-[120px] pointer-events-none group-hover:bg-brand-500/30 transition-colors duration-1000" />
-               <div className="relative rounded-[calc(2rem-0.375rem)] md:rounded-[calc(3rem-0.5rem)] bg-[#050505]/80 backdrop-blur-3xl border border-white/5 p-8 md:p-12 lg:p-20 flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-16">
-                  
-                  <div className="flex-1 space-y-6 md:space-y-8 text-center lg:text-left w-full">
-                    <div className="space-y-4">
-                       <span className="inline-block rounded-full px-4 py-1.5 md:py-2 bg-brand-500/10 text-brand-300 border border-brand-500/20 text-xs font-bold tracking-widest uppercase">
-                         Acesso Premium Completo
-                       </span>
-                       <h2 className="font-display text-5xl md:text-6xl lg:text-7xl font-semibold text-white tracking-tighter">R$ 19,90<span className="text-xl md:text-2xl text-surface-500 font-normal tracking-normal">/mês</span></h2>
-                       <div className="space-y-2">
-                          <p className="text-brand-300 font-semibold text-base md:text-lg pt-1 bg-brand-500/10 inline-block px-3 py-1 rounded-md border border-brand-500/20">O melhor investimento no seu tempo.</p>
-                          <p className="text-surface-400 font-medium text-sm md:text-base leading-relaxed max-w-sm mx-auto lg:mx-0">Todos os módulos integrados. Finanças, Metas, Agenda, Notas, Hábitos e Treinos.</p>
-                       </div>
-                    </div>
-                    
-                    <div className="pt-6 border-t border-white/10 w-full text-left">
-                      <p className="text-sm font-semibold text-surface-300 uppercase tracking-wider mb-4 mx-auto lg:mx-0 text-center lg:text-left">O que está incluído:</p>
-                      <ul className="space-y-3 md:space-y-4 mb-6 md:mb-8 max-w-sm mx-auto lg:mx-0">
-                        {['Gestão Financeira & Metas', 'IA de Insights em Tempo Real', 'Agenda & Notas Integradas', 'Rastreador de Hábitos e Treinos'].map((item, i) => (
-                            <li key={i} className="flex items-start gap-3 text-surface-200">
-                              <CheckCircle2 className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" strokeWidth={2} />
-                              <span className="font-medium text-sm md:text-[1.05rem] leading-snug">{item}</span>
-                            </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-
-                  <div className="w-full lg:w-auto shrink-0 flex flex-col gap-6 pt-4 lg:pt-0">
-                    <MagneticButton href="/register" intensity={0.4}>
-                      <div className="group w-full lg:w-[300px] flex justify-between items-center rounded-full bg-white text-[#050505] px-6 md:px-8 py-4 md:py-5 font-bold text-base md:text-[1.05rem] shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_-15px_rgba(255,255,255,0.4)] transition-all">
-                        <span>Quero assinar</span>
-                        <span className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-black/5 flex items-center justify-center ml-2 md:ml-4 shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
-                           <ArrowRight className="w-4 h-4 md:w-5 md:h-5 text-black" strokeWidth={2.5} />
-                        </span>
-                      </div>
-                    </MagneticButton>
-                    <p className="text-xs text-center text-surface-500 font-medium bg-white/[0.02] py-2 rounded-full border border-white/5">Cancele quando quiser, sem burocracia.</p>
-                  </div>
-               </div>
+            <div className="text-center mb-16 space-y-4">
+              <span className="inline-block rounded-full px-4 py-1.5 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs uppercase tracking-[0.2em] font-bold">
+                Assinatura Simples
+              </span>
+              <h2 className="font-display text-4xl md:text-5xl font-semibold text-white tracking-tighter">
+                Escolha o seu plano.
+              </h2>
             </div>
           </ScrollReveal>
+          
+          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+            
+            {/* VIP Plan */}
+            <ScrollReveal delay={0.1}>
+              <div className="rounded-[2rem] bg-surface-900/50 border border-white/5 p-8 md:p-10 flex flex-col h-full hover:border-white/10 transition-colors">
+                <div className="mb-8">
+                  <h3 className="text-2xl font-bold text-white mb-2">VIP</h3>
+                  <div className="flex items-end gap-2 mb-4">
+                    <span className="text-5xl font-display font-semibold text-white">R$ 19,90</span>
+                    <span className="text-surface-400 mb-1">/mês</span>
+                  </div>
+                  <p className="text-surface-400 text-sm">Controle financeiro e construção de hábitos.</p>
+                </div>
+                
+                <ul className="space-y-4 mb-10 flex-1">
+                  {['Finanças inteligentes (IA)', 'Tabela de Hábitos', 'Módulo de Treinos', 'Sem limite de tempo'].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-surface-200">
+                      <CheckCircle2 className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" strokeWidth={2} />
+                      <span className="font-medium text-sm md:text-base leading-snug">{item}</span>
+                    </li>
+                  ))}
+                  <li className="flex items-start gap-3 text-surface-600">
+                    <X className="w-5 h-5 shrink-0 mt-0.5" strokeWidth={2} />
+                    <span className="font-medium text-sm md:text-base leading-snug">Sem Metas, Agenda ou Notas</span>
+                  </li>
+                </ul>
+
+                <MagneticButton href="/register?plan=vip" intensity={0.2}>
+                  <div className="w-full flex justify-center items-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-4 font-bold transition-all">
+                    Desbloquear VIP
+                  </div>
+                </MagneticButton>
+              </div>
+            </ScrollReveal>
+
+            {/* PRO Plan */}
+            <ScrollReveal delay={0.2}>
+              <div className="relative rounded-[2rem] bg-gradient-to-b from-purple-900/20 to-surface-900 border border-purple-500/30 p-8 md:p-10 flex flex-col h-full shadow-[0_0_60px_-15px_rgba(168,85,247,0.15)] overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none" />
+                <div className="absolute top-0 right-8 bg-purple-500 text-white text-[0.65rem] font-bold px-4 py-1.5 rounded-b-lg tracking-wider uppercase shadow-lg">
+                  Mais escolhido
+                </div>
+
+                <div className="mb-8 relative z-10">
+                  <h3 className="text-2xl font-bold text-white mb-2">PRO</h3>
+                  <div className="flex items-end gap-2 mb-4">
+                    <span className="text-5xl font-display font-semibold text-white">R$ 29,90</span>
+                    <span className="text-purple-300 mb-1">/mês</span>
+                  </div>
+                  <p className="text-purple-200 text-sm font-medium">O ecossistema completo para sua vida.</p>
+                </div>
+                
+                <ul className="space-y-4 mb-10 flex-1 relative z-10">
+                  <li className="flex items-start gap-3 text-white">
+                    <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" strokeWidth={2} />
+                    <span className="font-bold text-sm md:text-base leading-snug">Tudo do plano VIP, e também:</span>
+                  </li>
+                  {['Gestão de Metas e Alvos', 'Agenda e Calendário Pessoal', 'Segundo Cérebro (Notas)'].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-surface-200">
+                      <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" strokeWidth={2} />
+                      <span className="font-medium text-sm md:text-base leading-snug">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <MagneticButton href="/register?plan=pro" intensity={0.2}>
+                  <div className="relative z-10 w-full flex justify-between items-center rounded-full bg-white text-[#050505] px-6 py-4 font-bold shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.5)] transition-all group">
+                    <span>Desbloquear PRO</span>
+                    <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
+                       <ArrowRight className="w-4 h-4 text-black" strokeWidth={2.5} />
+                    </span>
+                  </div>
+                </MagneticButton>
+              </div>
+            </ScrollReveal>
+
+          </div>
         </section>
 
         {/* Final CTA & Footer */}
@@ -460,7 +504,7 @@ export default function LandingPage() {
               <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-3xl leading-[1.1]">Comece a proteger a coisa mais valiosa que você tem: O seu foco.</h2>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <MagneticButton href="/register" intensity={0.3}>
+              <MagneticButton href="#planos" intensity={0.3}>
                 <div className="group inline-flex justify-between items-center rounded-full bg-brand-600 text-white px-6 sm:px-8 py-4 font-bold text-base sm:text-lg shadow-[0_0_40px_-15px_rgba(48,64,235,0.8)]">
                   <span className="mr-6 sm:mr-8">Desbloquear acesso agora</span>
                   <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">

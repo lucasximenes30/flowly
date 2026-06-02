@@ -2,20 +2,22 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { registerUser } from '@/services/user.service'
 import { setSession } from '@/lib/auth'
+import { createTransaction } from '@/services/abacatepay.service'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   document: z.string().min(11, 'CPF inválido').max(14).optional(),
+  planTier: z.enum(['vip', 'pro', 'trial']).optional(),
 })
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, email, password, document } = registerSchema.parse(body)
+    const { name, email, password, document, planTier } = registerSchema.parse(body)
 
-    const result = await registerUser({ name, email, password, document })
+    const result = await registerUser({ name, email, password, document, planTier })
     
     // ── Check if user can access (same logic as login) ──────────────────
     const isPaidActive = result.user.subscriptionStatus === 'ACTIVE'
@@ -56,6 +58,33 @@ export async function POST(request: NextRequest) {
     // If user is inactive and not privileged, return inactive status
     // Frontend will redirect them to unlock screen instead of dashboard
     if (!isPaidActive && !isPrivileged) {
+      if (planTier === 'vip' || planTier === 'pro') {
+        try {
+          const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip') ?? null
+          const paymentData = await createTransaction({
+            id: result.user.id,
+            email: result.user.email,
+            name: result.user.name,
+            document: document || null,
+            ip,
+            planTier
+          })
+          console.log(`[Auth/Register] Redirecting new user ${result.user.email} to AbacatePay`)
+          return NextResponse.json({ success: true, redirectUrl: paymentData.url })
+        } catch (e: any) {
+          console.error('[Auth/Register] Failed to create transaction:', e)
+          return NextResponse.json(
+            {
+              success: false,
+              error: e.code === 'MISSING_DOCUMENT' ? e.message : 'Não foi possível gerar o pagamento. Faça login para tentar novamente.',
+              status: 'inactive',
+              user: result.user,
+            },
+            { status: 200 }
+          )
+        }
+      }
+
       console.log(`[Auth/Register] New user ${result.user.email} is INACTIVE - frontend will show unlock screen`)
       return NextResponse.json(
         {

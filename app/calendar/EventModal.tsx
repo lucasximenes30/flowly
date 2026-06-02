@@ -111,9 +111,9 @@ export default function EventModal({
   if (!isOpen) return null
 
   return (
-    <div className={`fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/60 p-0 sm:p-4 transition-opacity duration-200 opacity-100 backdrop-blur-sm`}>
+    <div className={`hidden sm:flex fixed inset-0 z-[60] items-center justify-center bg-black/60 p-4 transition-opacity duration-200 opacity-100 backdrop-blur-sm`}>
       <div 
-        className="w-full max-w-md bg-white dark:bg-surface-900 rounded-t-3xl sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border-t border-surface-100 dark:border-surface-800/80 animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:fade-in duration-300" 
+        className="w-full max-w-md bg-white dark:bg-surface-900 rounded-2xl shadow-2xl flex flex-col overflow-hidden relative border-t border-surface-100 dark:border-surface-800/80 animate-in fade-in duration-300" 
         style={{ maxHeight: 'min(92vh, 44rem)' }}
       >
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-brand-500 to-pink-500 z-10" />

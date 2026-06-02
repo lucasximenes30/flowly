@@ -13,6 +13,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [document, setDocument] = useState('')
+  const planTier = searchParams.get('plan')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [paymentData, setPaymentData] = useState<any>(null)
@@ -33,7 +34,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
       const body = mode === 'login'
         ? { email, password }
-        : { name, email, password, document: document.replace(/\D/g, '') }
+        : { name, email, password, document: document.replace(/\D/g, ''), planTier }
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -45,6 +46,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
       if (!res.ok) {
         setError(data.error ?? 'Algo deu errado')
+        return
+      }
+
+      // ── Handle AbacatePay Redirect ──────────────────────────────────────
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl
         return
       }
 
