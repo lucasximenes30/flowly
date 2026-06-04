@@ -59,7 +59,7 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
               Parece que você ainda não concluiu seu pagamento.
             </h1>
             <p className="mx-auto max-w-lg text-[1.05rem] leading-relaxed text-surface-400">
-              Finalize sua assinatura para desbloquear o acesso completo ao Flowly.
+              Finalize sua assinatura para desbloquear o acesso completo ao Vynta.
             </p>
           </div>
         )}
@@ -68,10 +68,10 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
           <div className="text-center space-y-6">
             <BrandLogo size="lg" className="justify-center" priority />
             <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight text-white">
-              Seu período grátis acabou.
+              Seu período gratuito terminou.
             </h1>
             <p className="mx-auto max-w-lg text-[1.05rem] leading-relaxed text-surface-400">
-              Escolha seu plano e continue usando o Vynta.
+              Escolha um plano para continuar usando o Vynta.
             </p>
           </div>
         )}
@@ -115,13 +115,24 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
               </div>
             </div>
             
-            <button
-              onClick={() => handleUnlock(session.plan === 'PRO' ? 'pro' : 'vip')}
-              disabled={loading}
-              className="w-full rounded-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 shadow-[0_0_20px_-5px_rgba(48,64,235,0.5)] transition-all disabled:opacity-50"
-            >
-              {loading ? 'Redirecionando...' : 'Realizar pagamento'}
-            </button>
+            <div className="space-y-3">
+              <button
+                onClick={() => handleUnlock(session.plan === 'PRO' ? 'pro' : 'vip')}
+                disabled={loading}
+                className="w-full rounded-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-4 shadow-[0_0_20px_-5px_rgba(48,64,235,0.5)] transition-all disabled:opacity-50"
+              >
+                {loading ? 'Redirecionando...' : 'Realizar Pagamento'}
+              </button>
+
+              <a
+                href="https://wa.me/5585992551864?text=Ol%C3%A1%21%20Preciso%20de%20ajuda%20com%20minha%20conta%20Vynta."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex justify-center items-center w-full rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 transition-all"
+              >
+                💬 Falar com Suporte
+              </a>
+            </div>
             <div className="text-center mt-6 pt-4 border-t border-white/10">
               <p className="text-surface-400 text-sm mb-4">Deseja mudar seu plano?</p>
               <div className="grid grid-cols-2 gap-4">
@@ -171,9 +182,9 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
             <button
               onClick={() => handleUnlock('vip')}
               disabled={loading}
-              className="w-full text-surface-400 hover:text-white transition-colors text-sm py-2"
+              className="w-full text-surface-400 hover:text-white transition-colors text-sm py-2 font-medium bg-surface-900 rounded-full hover:bg-surface-800"
             >
-              Continuar no VIP — R$ 19,90
+              Renovar VIP — R$ 19,90
             </button>
           </div>
         )}

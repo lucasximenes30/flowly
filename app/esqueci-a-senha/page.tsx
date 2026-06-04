@@ -24,11 +24,18 @@ export default function RecuperarSenhaPlaceholder() {
             A funcionalidade de recuperação automática de senha estará disponível na próxima atualização.
           </p>
           
-          <div className="p-4 rounded-xl bg-brand-900/10 border border-brand-900/30">
-            <p className="text-brand-300 text-sm font-medium">
-              Se você acabou de comprar, não se preocupe! Sua conta está segura. Para definir sua senha manualmente agora, entre em contato através do e-mail:
+          <div className="p-4 rounded-xl bg-brand-900/10 border border-brand-900/30 flex flex-col items-center">
+            <p className="text-brand-300 text-sm font-medium text-center">
+              Se você acabou de comprar, não se preocupe! Sua conta está segura. Precisa de ajuda para recuperar seu acesso?
             </p>
-            <p className="mt-3 text-white font-semibold">suporte@vynta.com</p>
+            <a 
+              href="https://wa.me/5585992551864?text=Ol%C3%A1%21%20Preciso%20de%20ajuda%20com%20minha%20conta%20Vynta."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2.5 px-6 rounded-xl transition-colors text-sm"
+            >
+              💬 Falar com Suporte
+            </a>
           </div>
 
           <div className="pt-4">

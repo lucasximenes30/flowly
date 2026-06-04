@@ -99,10 +99,11 @@
   }
 
   .modal-content {
-    @apply w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-elevated p-6 scale-95 opacity-0 transition-all duration-200;
+    @apply w-full max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-elevated p-6 scale-95 opacity-0 transition-all duration-200 flex flex-col;
     @apply dark:bg-surface-900 dark:border dark:border-surface-700/60;
     max-height: min(92vh, 44rem);
     overflow-y: auto;
+    padding-bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
   }
   .modal-overlay.active .modal-content {
     @apply scale-100 opacity-100;
