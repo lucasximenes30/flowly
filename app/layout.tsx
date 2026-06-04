@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/lib/theme'
 import Script from 'next/script'
 import SidebarLayout from '@/components/SidebarLayout'
 import InstallPWA from '@/components/mobile/InstallPWA'
+import { Analytics } from "@vercel/analytics/next"
 import './globals.css'
 
 const manrope = Manrope({
@@ -73,6 +74,7 @@ export default function RootLayout({
             {children}
           </SidebarLayout>
           <InstallPWA />
+          <Analytics />
         </ThemeProvider>
       </body>
     </html>
