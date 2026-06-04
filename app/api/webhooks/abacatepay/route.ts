@@ -125,10 +125,12 @@ export async function POST(req: Request) {
       }
 
       if (userId) {
-        let planTier: 'VIP' | 'PRO' = 'VIP';
+        let planTier: 'VIP' | 'PRO' | 'PRO_YEARLY' = 'VIP';
         let usedUpgradeOffer: boolean | undefined = undefined;
 
-        if (amountCents >= 2990) {
+        if (amountCents >= 23990) {
+          planTier = 'PRO_YEARLY';
+        } else if (amountCents >= 2990) {
           planTier = 'PRO';
         } else if (amountCents >= 2490) {
           planTier = 'PRO';

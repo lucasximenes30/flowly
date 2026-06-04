@@ -436,6 +436,7 @@ enum UserPlan {
   FREE_TRIAL
   VIP
   PRO
+  PRO_YEARLY
   COURTESY
   ADMIN
 }

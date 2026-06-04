@@ -31,8 +31,8 @@ export async function registerUser(input: RegisterInput) {
     if (input.planTier === 'trial') {
       plan = 'FREE_TRIAL'
       subscriptionStatus = 'ACTIVE'
-      // 3 days from now
-      subscriptionExpiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)
+      // 1 day from now
+      subscriptionExpiresAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
     } else if (input.planTier === 'pro') {
       plan = 'PRO'
       subscriptionStatus = 'INACTIVE'
@@ -76,11 +76,12 @@ export async function registerUser(input: RegisterInput) {
       canUseAgenda: user.canUseAgenda,
       usedUpgradeOffer: user.usedUpgradeOffer,
       subscriptionEndDate: user.subscriptionEndDate ? user.subscriptionEndDate.toISOString() : undefined,
+      subscriptionExpiresAt: user.subscriptionExpiresAt ? user.subscriptionExpiresAt.toISOString() : undefined,
     }
 
     const token = await signToken(payload)
 
-    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda, usedUpgradeOffer: user.usedUpgradeOffer, subscriptionEndDate: user.subscriptionEndDate }, token }
+    return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda, usedUpgradeOffer: user.usedUpgradeOffer, subscriptionEndDate: user.subscriptionEndDate, subscriptionExpiresAt: user.subscriptionExpiresAt }, token }
   } catch (error: any) {
     if (error.code === 'P2002') {
       throw new Error('Email already registered')
@@ -121,9 +122,10 @@ export async function loginUser(input: LoginInput) {
     canUseAgenda: user.canUseAgenda,
     usedUpgradeOffer: user.usedUpgradeOffer,
     subscriptionEndDate: user.subscriptionEndDate ? user.subscriptionEndDate.toISOString() : undefined,
+    subscriptionExpiresAt: user.subscriptionExpiresAt ? user.subscriptionExpiresAt.toISOString() : undefined,
   }
 
   const token = await signToken(payload)
 
-  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda, usedUpgradeOffer: user.usedUpgradeOffer, subscriptionEndDate: user.subscriptionEndDate }, token }
+  return { user: { id: user.id, name: user.name, email: user.email, subscriptionStatus: user.subscriptionStatus, hasWorkoutModule: user.hasWorkoutModule, role: user.role, plan: user.plan, forcePasswordChange: user.forcePasswordChange, createdAt: user.createdAt, canUseFinance: user.canUseFinance, canUseHabits: user.canUseHabits, canUseWorkout: user.canUseWorkout, canUseGoals: user.canUseGoals, canUseNotes: user.canUseNotes, canUseAgenda: user.canUseAgenda, usedUpgradeOffer: user.usedUpgradeOffer, subscriptionEndDate: user.subscriptionEndDate, subscriptionExpiresAt: user.subscriptionExpiresAt }, token }
 }

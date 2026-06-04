@@ -48,15 +48,25 @@ export async function middleware(request: NextRequest) {
       let isExpired = false;
       let currentState = 'active';
       
-      if (session.plan === 'FREE_TRIAL' && session.createdAt) {
-        const createdAt = new Date(session.createdAt as string).getTime();
+      if (session.plan === 'FREE_TRIAL') {
         const now = Date.now();
-        const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
-        if (now > createdAt + threeDaysInMs) {
-          isExpired = true;
-          currentState = 'trial_expired';
+        
+        if (session.subscriptionExpiresAt) {
+          const expiresAt = new Date(session.subscriptionExpiresAt as string).getTime();
+          if (now > expiresAt) {
+            isExpired = true;
+            currentState = 'trial_expired';
+          }
+        } else if (session.createdAt) {
+          // Fallback para usuários antigos do trial de 3 dias que ainda não têm subscriptionExpiresAt na sessão
+          const createdAt = new Date(session.createdAt as string).getTime();
+          const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
+          if (now > createdAt + threeDaysInMs) {
+            isExpired = true;
+            currentState = 'trial_expired';
+          }
         }
-      } else if (session.plan === 'VIP' || session.plan === 'PRO') {
+      } else if (session.plan === 'VIP' || session.plan === 'PRO' || session.plan === 'PRO_YEARLY') {
          if (session.subscriptionStatus === 'INACTIVE' || session.subscriptionStatus === 'PENDING') {
             isExpired = true;
             currentState = 'payment_pending';

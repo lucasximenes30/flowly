@@ -14,7 +14,7 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleUpgrade = async (tier: 'vip' | 'pro') => {
+  const handleUpgrade = async (tier: 'vip' | 'pro' | 'pro_yearly') => {
     setLoading(true)
     setError('')
     try {
@@ -48,7 +48,7 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300 animate-dashboard-fade">
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
             <button
               onClick={() => router.push('/settings')}
@@ -68,7 +68,7 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 sm:px-6 py-10 space-y-12">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-10 space-y-12">
         <div className="text-center space-y-4 max-w-2xl mx-auto">
           <h1 className="font-display text-3xl md:text-4xl font-bold tracking-tight text-surface-900 dark:text-white">
             Evolua sua rotina com o Vynta
@@ -84,7 +84,7 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* VIP Plan */}
           <div className="relative rounded-[2rem] bg-white dark:bg-surface-900/40 border border-surface-200 dark:border-white/5 p-8 flex flex-col hover:border-brand-500/30 transition-colors shadow-xl shadow-surface-200/50 dark:shadow-none">
             <div className="space-y-4 mb-8">
@@ -130,21 +130,57 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
           </div>
 
           {/* PRO Plan */}
-          <div className="relative rounded-[2rem] bg-gradient-to-b from-brand-900/10 dark:from-brand-900/20 to-white dark:to-[#050505] p-1 ring-1 ring-brand-500/30 shadow-2xl shadow-brand-500/20 flex flex-col">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-              Recomendado
+          <div className="relative rounded-[2rem] bg-surface-50 dark:bg-surface-900/60 border border-brand-500/30 p-8 flex flex-col hover:border-brand-500/50 transition-colors">
+            <div className="space-y-4 mb-8">
+              <span className="inline-block rounded-full px-3 py-1 bg-brand-500/10 text-brand-600 dark:text-brand-300 text-xs font-bold tracking-widest uppercase">
+                Completo
+              </span>
+              <h2 className="text-3xl font-display font-semibold text-surface-900 dark:text-white">PRO</h2>
+              <div className="flex items-baseline gap-1">
+                <span className="text-4xl font-bold text-surface-900 dark:text-white">R$ 29,90</span>
+                <span className="text-surface-500">/mês</span>
+              </div>
+              <p className="text-surface-500 dark:text-brand-200/70 text-sm">O sistema de vida completo, sem interrupções.</p>
             </div>
-            <div className="bg-white dark:bg-[#050505]/80 backdrop-blur-xl rounded-[calc(2rem-4px)] p-8 flex flex-col h-full border border-brand-100 dark:border-white/5">
+
+            <ul className="space-y-4 mb-10 flex-1">
+              {['Gestão Financeira completa', 'Rastreador de Hábitos', 'Módulo de Treinos', 'Sistema de Metas', 'Agenda e Calendário', 'Anotações e 2º Cérebro'].map((item, i) => (
+                <li key={i} className="flex items-start gap-3 text-surface-700 dark:text-surface-200">
+                  <Lucide.CheckCircle2 className="w-5 h-5 text-brand-500 dark:text-brand-400 shrink-0 mt-0.5" />
+                  <span className="text-[0.95rem] font-medium">{item}</span>
+                </li>
+              ))}
+            </ul>
+
+            <button
+              onClick={() => handleUpgrade('pro')}
+              disabled={loading || session.plan === 'PRO'}
+              className="w-full rounded-full bg-brand-100 hover:bg-brand-200 dark:bg-surface-800 dark:hover:bg-surface-700 text-brand-700 dark:text-white font-semibold py-4 transition-colors disabled:opacity-50"
+            >
+              {loading ? 'Aguarde...' : session.plan === 'PRO' ? 'Seu Plano Atual' : 'Assinar PRO'}
+            </button>
+          </div>
+
+          {/* PRO YEARLY Plan */}
+          <div className="relative rounded-[2rem] bg-gradient-to-b from-brand-600 to-brand-900 p-1 shadow-[0_20px_40px_-10px_rgba(48,64,235,0.4)] flex flex-col">
+            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
+              <Lucide.Star className="w-3 h-3 fill-brand-900" />
+              Melhor Valor
+            </div>
+            <div className="bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl rounded-[calc(2rem-4px)] p-8 flex flex-col h-full border border-white/5">
               <div className="space-y-4 mb-8">
-                <span className="inline-block rounded-full px-3 py-1 bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-300 text-xs font-bold tracking-widest uppercase">
-                  Completo
+                <span className="inline-block rounded-full px-3 py-1 bg-brand-500/20 text-brand-600 dark:text-brand-300 text-xs font-bold tracking-widest uppercase border border-brand-500/30">
+                  Anual
                 </span>
-                <h2 className="text-3xl font-display font-semibold text-surface-900 dark:text-white">PRO</h2>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-4xl font-bold text-surface-900 dark:text-white">R$ 29,90</span>
-                  <span className="text-surface-500">/mês</span>
+                <h2 className="text-3xl font-display font-semibold text-surface-900 dark:text-white">PRO ANUAL</h2>
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-bold text-surface-900 dark:text-white">R$ 239,90</span>
+                    <span className="text-surface-500">/ano</span>
+                  </div>
+                  <span className="text-emerald-500 dark:text-emerald-400 font-medium text-sm">Economize R$ 118,90 por ano</span>
                 </div>
-                <p className="text-brand-600/80 dark:text-brand-200/70 text-sm">O sistema de vida completo, sem interrupções.</p>
+                <p className="text-surface-600 dark:text-brand-200/70 text-sm">O mesmo sistema completo, com um super desconto anual.</p>
               </div>
 
               <ul className="space-y-4 mb-10 flex-1">
@@ -157,12 +193,12 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
               </ul>
 
               <button
-                onClick={() => handleUpgrade('pro')}
-                disabled={loading}
+                onClick={() => handleUpgrade('pro_yearly')}
+                disabled={loading || session.plan === 'PRO_YEARLY'}
                 className="group w-full flex justify-between items-center rounded-full bg-brand-600 dark:bg-white text-white dark:text-[#050505] px-6 py-4 font-bold shadow-[0_0_30px_-5px_rgba(48,64,235,0.4)] dark:shadow-[0_0_30px_-5px_rgba(255,255,255,0.2)] transition-all disabled:opacity-50"
               >
-                <span>{loading ? 'Aguarde...' : 'Assinar PRO'}</span>
-                {!loading && (
+                <span>{loading ? 'Aguarde...' : session.plan === 'PRO_YEARLY' ? 'Seu Plano Atual' : 'Assinar PRO Anual'}</span>
+                {!loading && session.plan !== 'PRO_YEARLY' && (
                   <span className="w-8 h-8 rounded-full bg-white/20 dark:bg-black/5 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1">
                     <Lucide.ArrowRight className="w-4 h-4 text-white dark:text-black" strokeWidth={2.5} />
                   </span>

@@ -6,7 +6,6 @@ import ScrollReveal from '@/components/landing/ScrollReveal'
 import MagneticButton from '@/components/landing/MagneticButton'
 import SmartCTA from '@/components/landing/SmartCTA'
 import HeaderActions from '@/components/landing/HeaderActions'
-import { CAKTO_CONFIG } from '@/lib/cakto'
 
 // Layout Helpers
 function BezelImage({ src, mobileSrc, alt, className, priority = false }: { src: string, mobileSrc?: string, alt: string, className?: string, priority?: boolean }) {
@@ -79,22 +78,25 @@ export default function LandingPage() {
           <div className="space-y-8">
             <ScrollReveal delay={0.1}>
               <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-md">
-                Sistema Pessoal de Gestão
+                SISTEMA PESSOAL DE GESTÃO
               </span>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <h1 className="font-display text-5xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-tighter text-white leading-[1.05]">
-                Assuma o controle total da sua <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400">rotina.</span>
+                Pare de sobreviver à sua própria <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400">rotina.</span>
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
-              <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[50ch] mx-auto font-light">
-                O Vynta centraliza sua gestão financeira, protege suas metas, estrutura sua agenda, consolida suas notas e acompanha seus treinos. Pare de dispersar energia em múltiplos aplicativos.
+              <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[55ch] mx-auto font-light">
+                Sua vida não precisa ser uma coleção de abas abertas, contas surpresa e metas abandonadas. A clareza que você precisa para parar de apagar incêndios e começar a viver de forma intencional.
               </p>
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
-              <div className="flex justify-center">
+              <div className="flex flex-col items-center justify-center">
                 <SmartCTA />
+                <p className="mt-6 text-sm text-surface-500 font-medium tracking-wide">
+                  Milhares de decisões. Um só lugar para controlá-las.
+                </p>
               </div>
             </ScrollReveal>
           </div>
@@ -106,8 +108,8 @@ export default function LandingPage() {
             <ScrollReveal>
               <div className="text-center px-4">
                 <span className="inline-block rounded-full px-4 py-1.5 mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs uppercase tracking-[0.2em] font-bold">A raiz do problema</span>
-                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl tracking-tight font-semibold text-white max-w-3xl mx-auto leading-tight">
-                  Sua vida não cabe em um só lugar. Até agora.
+                <h2 className="font-display text-4xl md:text-5xl lg:text-6xl tracking-tight font-semibold text-white max-w-4xl mx-auto leading-tight">
+                  Por que você sente que está sempre correndo, mas nunca sai do lugar?
                 </h2>
               </div>
             </ScrollReveal>
@@ -117,9 +119,9 @@ export default function LandingPage() {
                 <div className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors duration-500 rounded-[2rem] p-8 md:p-12 space-y-6 flex flex-col justify-between h-full group">
                   <LayoutDashboard className="w-10 h-10 text-rose-400 group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
                   <div className="space-y-4">
-                    <h3 className="text-2xl font-bold text-white">O caos de 10 apps diferentes</h3>
+                    <h3 className="text-2xl font-bold text-white">Falsas promessas de organização</h3>
                     <p className="text-surface-400 text-lg leading-relaxed max-w-sm font-light">
-                      Anotações perdidas, compromissos esquecidos e planilhas de gastos confusas. A desorganização é o que faz você perder o foco.
+                      Você baixa um app financeiro, outro para hábitos e compra uma agenda cara. Duas semanas depois, abandonou todos. O problema não é sua disciplina, é a fragmentação exaustiva.
                     </p>
                   </div>
                 </div>
@@ -128,9 +130,9 @@ export default function LandingPage() {
                 <div className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors duration-500 rounded-[2rem] p-8 md:p-12 space-y-6 flex flex-col justify-between h-full group">
                   <Target className="w-10 h-10 text-amber-400 group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
                   <div className="space-y-4">
-                    <h3 className="text-xl font-bold text-white">Falta de visão clara</h3>
+                    <h3 className="text-xl font-bold text-white">O cansaço invisível</h3>
                     <p className="text-surface-400 leading-relaxed font-light">
-                      É impossível manter a constância nos hábitos e no bolso quando a informação não está centralizada e acessível rapidamente.
+                      A sensação angustiante de que esqueceu de pagar um boleto ou deixou algo importante para trás. Você está sempre sobrecarregado, mas raramente sente que foi produtivo.
                     </p>
                   </div>
                 </div>
@@ -139,9 +141,9 @@ export default function LandingPage() {
                 <div className="bg-white/5 border border-white/10 hover:border-white/20 transition-colors duration-500 rounded-[2rem] p-8 md:p-12 md:py-16 flex flex-col md:flex-row items-start md:items-center gap-10 group">
                   <div className="flex-1 space-y-4">
                     <Activity className="w-10 h-10 text-emerald-400 group-hover:scale-110 transition-transform duration-500" strokeWidth={1.5} />
-                    <h3 className="text-3xl font-bold text-white">Descontrole Financeiro</h3>
-                    <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-2xl font-light">
-                      Não saber para onde o dinheiro foi gera estresse. A base de uma vida estruturada é ter paz mental financeira. O Vynta transforma esse caos em relatórios acionáveis e insights reais.
+                    <h3 className="text-3xl font-bold text-white">Onde o seu dinheiro foi parar?</h3>
+                    <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-3xl font-light">
+                      Trabalhar o mês inteiro e, na última semana, não ter ideia de como o saldo evaporou. A ansiedade financeira destrói sua paz mental e sabota qualquer tentativa de planejamento para o futuro.
                     </p>
                   </div>
                 </div>
@@ -155,10 +157,10 @@ export default function LandingPage() {
           <ScrollReveal>
             <div className="max-w-4xl mx-auto text-center space-y-8 md:space-y-10 px-4">
               <h2 className="font-display text-4xl md:text-5xl lg:text-7xl font-semibold tracking-tighter text-white">
-                Seu comando central.
+                O único sistema que você precisa.
               </h2>
               <p className="text-lg md:text-xl lg:text-2xl text-surface-400 leading-relaxed font-light">
-                O Vynta não é apenas um app de finanças. É um sistema completo para você desenhar e executar a vida que deseja.
+                O Vynta não é um punhado de ferramentas soltas. É um sistema nervoso central desenhado para você recuperar o controle do seu dinheiro, do seu tempo e da sua vida.
               </p>
             </div>
           </ScrollReveal>
@@ -172,14 +174,14 @@ export default function LandingPage() {
             <div className="space-y-6 order-2 lg:order-1">
               <SectionHeading 
                 eyebrow="Finanças + Inteligência Artificial" 
-                title="Clareza absoluta sobre o seu dinheiro." 
+                title="Saiba exatamente para onde seu dinheiro foge." 
               />
               <ScrollReveal delay={0.3}>
                 <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Acompanhe entradas e saídas instantaneamente. Nossa IA analisa seu comportamento real de gastos para alertar sobre excessos e recomendar cortes.
+                  Pare de ser pego de surpresa. Nossa Inteligência Artificial mapeia seus gastos reais e te dá a visão de raio-x necessária para tomar decisões blindadas antes da conta zerar.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Insights baseados no seu histórico', 'Acompanhamento rápido pelo celular', 'Relatórios que apontam falhas de orçamento'].map((feature, i) => (
+                  {['Paz mental com relatórios brutalmente claros', 'Identifique e cancele assinaturas fantasmas', 'Corte gastos por impulso sem esforço'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckCircle2 className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
                       <span className="text-base md:text-lg">{feature}</span>
@@ -201,14 +203,14 @@ export default function LandingPage() {
             <div className="space-y-6">
               <SectionHeading 
                 eyebrow="Planejamento de Metas" 
-                title="Conquiste seus maiores objetivos." 
+                title="O fim das resoluções de ano novo abandonadas." 
               />
               <ScrollReveal delay={0.3}>
                 <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Transforme desejos em alvos tangíveis. Defina o valor, estabeleça o prazo e acompanhe o progresso de cada depósito até a barra chegar a 100%.
+                  Metas não sobrevivem apenas na sua cabeça. Crie compromissos inegociáveis com o seu futuro e veja, em tempo real, o seu esforço se transformando em conquistas palpáveis.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Visualização clara do progresso', 'Separe dinheiro virtualmente sem complicação', 'Motivação real para economizar'].map((feature, i) => (
+                  {['Foco absoluto no que realmente importa', 'Separe o dinheiro antes de gastá-lo', 'Celebre cada pequena vitória até os 100%'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckCircle2 className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
                       <span className="text-base md:text-lg">{feature}</span>
@@ -224,14 +226,14 @@ export default function LandingPage() {
             <div className="space-y-6 order-2 lg:order-1">
               <SectionHeading 
                 eyebrow="Agenda Simplificada" 
-                title="O tempo trabalha para você." 
+                title="Seja o único dono do seu próprio tempo." 
               />
               <ScrollReveal delay={0.3}>
                 <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Eventos, compromissos e lembretes em uma visualização direta. Não perca prazos e tire a pressão de ter que lembrar de tudo.
+                  A ansiedade nasce do acúmulo. Descarregue suas obrigações no sistema e deixe o tempo trabalhar a seu favor. Chega de esquecer prazos ou chocar compromissos.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Organize seus dias com facilidade', 'Evite choques de compromissos', 'Visão mensal panorâmica'].map((feature, i) => (
+                  {['Elimine de vez a sobrecarga mental', 'Nunca mais perca um prazo ou boleto crítico', 'Trabalhe de forma proativa, e nunca reativa'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <Calendar className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
                       <span className="text-base md:text-lg">{feature}</span>
@@ -253,14 +255,14 @@ export default function LandingPage() {
             <div className="space-y-6">
               <SectionHeading 
                 eyebrow="Gestão de Hábitos" 
-                title="Construa disciplina diária." 
+                title="Torne-se a pessoa que você prometeu ser." 
               />
               <ScrollReveal delay={0.3}>
                 <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Acompanhar seu dia a dia é o que constrói resultados reais. Nossa tabela de hábitos entrega a dopamina limpa ao marcar as tarefas como concluídas.
+                  A motivação sempre falha, a disciplina não. Construa uma fundação sólida de hábitos inquebráveis e veja como as pequenas vitórias diárias transformam sua identidade.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Não quebre a corrente (Streaks)', 'Tabela verde altamente visual', 'Sua rotina levada a sério'].map((feature, i) => (
+                  {['Disciplina visualizada e recompensada', 'Elimine a culpa crônica da procrastinação', 'Construa a sua constância no modo automático'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckSquare className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
                       <span className="text-base md:text-lg">{feature}</span>
@@ -276,14 +278,14 @@ export default function LandingPage() {
             <div className="space-y-6 order-2 lg:order-1">
               <SectionHeading 
                 eyebrow="Notas e Descarregamento Mental" 
-                title="Um segundo cérebro para suas ideias." 
+                title="Liberte sua mente do peso de lembrar de tudo." 
               />
               <ScrollReveal delay={0.3}>
                 <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Textos rápidos, reflexões ou listas complexas. Mantenha todas as suas anotações importantes seguras, organizadas e sempre à mão.
+                  Seu cérebro foi feito para ter ideias brilhantes, não para armazená-las. Capture insights de ouro e estruture seus pensamentos antes que desapareçam no caos do dia a dia.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Edição em Rich Text', 'Categorização por cores e pastas', 'Seus pensamentos estruturados'].map((feature, i) => (
+                  {['Sua mente finalmente silenciosa', 'Informação organizada e sempre acessível', 'Transforme confusão mental em pura clareza'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <StickyNote className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
                       <span className="text-base md:text-lg">{feature}</span>
@@ -305,14 +307,14 @@ export default function LandingPage() {
             <div className="space-y-6">
               <SectionHeading 
                 eyebrow="Treinamento (Opcional)" 
-                title="Aposente a ficha de papel na academia." 
+                title="Resultados estéticos não aceitam desculpas." 
               />
               <ScrollReveal delay={0.3}>
                 <p className="text-lg md:text-xl text-surface-400 leading-relaxed pb-6 font-light">
-                  Acompanhe a evolução do seu peso e repetições sem burocracia. Perfeito para uso rápido entre as séries, memorizando sua força ao longo do tempo.
+                  O que não é medido com precisão, nunca evolui. Esqueça fichas de papel rasgadas e acompanhe seu progresso físico com a frieza e precisão de um atleta de elite.
                 </p>
                 <ul className="space-y-4 pt-2">
-                  {['Histórico de cargas automático', 'Foco no progresso real', 'Interface escura e amigável para o treino'].map((feature, i) => (
+                  {['Evolução documentada de força', 'Comprometimento inabalável com seu corpo', 'Um histórico de evolução que gera orgulho'].map((feature, i) => (
                     <li key={i} className="flex items-center gap-4 text-surface-300 font-medium tracking-wide">
                       <CheckCircle2 className="w-6 h-6 text-brand-400 shrink-0" strokeWidth={1.5} />
                       <span className="text-base md:text-lg">{feature}</span>
@@ -329,16 +331,16 @@ export default function LandingPage() {
         <section className="py-32 border-t border-white/5 space-y-20">
           <ScrollReveal>
             <div className="text-center">
-              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tighter">Acorde todos os dias sabendo exatamente o seu propósito.</h2>
+              <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tighter">Deixe o caos no passado. Viva com clareza absoluta.</h2>
             </div>
           </ScrollReveal>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {[
-              { icon: ShieldCheck, title: "Paz de Espírito", text: "Remova a preocupação de deixar obrigações escapar por causa do esquecimento banal." },
-              { icon: Zap, title: "Basta Executar", text: "Suas decisões já foram tomadas. É só você abrir, consultar seu Vynta e começar o dia focado." },
-              { icon: Globe, title: "A Visão de Cima", text: "Compreenda a sua vida de cima. Finanças, rotina e saúde em um só hub." },
-              { icon: Target, title: "O Novo Você", text: "Vicie a sua mente no sentimento maravilhoso que vem com o avanço palpável." }
+              { icon: ShieldCheck, title: "De Ansioso para Seguro", text: "Substitua o pânico constante de esquecer contas pelo alívio puro de ter a sua vida sob controle absoluto." },
+              { icon: Zap, title: "De Reativo para Intencional", text: "Pare de apagar incêndios e decidir tudo de última hora. Acorde com o seu caminho para a vitória já desenhado." },
+              { icon: Globe, title: "De Fragmentado para Integrado", text: "Sua vida não é um quebra-cabeça solto. Una seu dinheiro, seu tempo e sua saúde num único ecossistema fluido." },
+              { icon: Target, title: "De Estagnado para Imparável", text: "Troque a frustração amarga de não evoluir pelo vício incrível da disciplina recompensada e crescimento visível." }
             ].map((Benefit, i) => (
               <ScrollReveal key={i} delay={i * 0.1}>
                 <div className="bg-surface-900/40 backdrop-blur-md border border-white/5 hover:border-white/10 hover:bg-surface-800/40 transition-all rounded-[2rem] p-8 text-center space-y-6 group h-full">
@@ -356,16 +358,16 @@ export default function LandingPage() {
         {/* Objection Handling Section */}
         <section className="py-20 md:py-24 border-t border-white/5 space-y-12 md:space-y-16">
           <div className="text-center px-4 max-w-2xl mx-auto mb-12">
-             <h2 className="font-display text-3xl md:text-4xl font-semibold text-white tracking-tighter">Ainda em dúvida?</h2>
+             <h2 className="font-display text-3xl md:text-4xl font-semibold text-white tracking-tighter">A verdade nua e crua.</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4 md:px-0 max-w-5xl mx-auto">
              <ScrollReveal delay={0.1}>
                  <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
                     <Clock className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
                     <div className="space-y-2">
-                      <h4 className="text-base md:text-lg font-bold text-white">"Eu não sou muito disciplinado"</h4>
+                      <h4 className="text-base md:text-lg font-bold text-white">"Mas eu não tenho tempo para preencher tudo isso."</h4>
                       <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
-                        É exatamente para isso que estamos aqui. Você não precisa ser perfeito. O Vynta foca no básico para construir a disciplina de preencher dia após dia.
+                        Se você não tem 5 minutos para organizar sua vida, você está apenas sobrevivendo. O Vynta é brutalmente simples: abra, registre, feche. Você investe minutos e ganha horas de clareza mental.
                       </p>
                     </div>
                  </div>
@@ -374,20 +376,20 @@ export default function LandingPage() {
                  <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
                     <CheckSquare className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
                     <div className="space-y-2">
-                      <h4 className="text-base md:text-lg font-bold text-white">"Já tentei outros apps e parei"</h4>
+                      <h4 className="text-base md:text-lg font-bold text-white">"Vou me empolgar e abandonar depois de uma semana."</h4>
                       <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
-                        A maioria tenta fazer tudo e complica. Nós removemos as fricções unindo as 5 áreas mais vitais em uma navegação rápida, para você resolver em segundos.
+                        Você abandona ferramentas porque elas são frias e exaustivas. Nós projetamos o Vynta para liberar dopamina limpa a cada "check". A constância se torna inevitável e viciante.
                       </p>
                     </div>
                  </div>
              </ScrollReveal>
              <ScrollReveal delay={0.3}>
                  <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
-                    <Activity className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
+                    <LayoutDashboard className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
                     <div className="space-y-2">
-                      <h4 className="text-base md:text-lg font-bold text-white">"Não entendo nada de finanças"</h4>
+                      <h4 className="text-base md:text-lg font-bold text-white">"Eu já tentei outros vários aplicativos e não deu certo."</h4>
                       <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
-                        Não é necessário. Basta adicionar ganhos e gastos. Nossa IA processa e cria análises avisando onde você deve agir. Simples, sem jargões.
+                        O Vynta não é mais um aplicativo genérico. É um sistema nervoso central. Quando você usa 5 apps soltos, sua energia vaza nos espaços entre eles. Nós unimos os pilares para que você recupere seu foco.
                       </p>
                     </div>
                  </div>
@@ -396,9 +398,9 @@ export default function LandingPage() {
                  <div className="bg-transparent border border-white/10 border-dashed rounded-[2rem] p-6 md:p-8 flex items-start gap-4 h-full hover:bg-white/[0.02] transition-colors">
                     <ThumbsUp className="w-6 h-6 text-brand-400 shrink-0 mt-1" strokeWidth={1.5} />
                     <div className="space-y-2">
-                      <h4 className="text-base md:text-lg font-bold text-white">"Não quero adicionar mais um custo"</h4>
+                      <h4 className="text-base md:text-lg font-bold text-white">"Vale a pena pagar por mais uma assinatura?"</h4>
                       <p className="text-surface-400 font-light text-sm md:text-base leading-relaxed">
-                        O Vynta se paga já no primeiro mês apontando assinaturas esquecidas e excessos no orçamento, fora o valor inestimável da organização mental.
+                        O quanto custa a sua paz mental? O Vynta se paga já no primeiro mês apontando assinaturas inúteis e cortando desperdícios que você nem sabia que tinha. É um investimento, não um custo.
                       </p>
                     </div>
                  </div>
@@ -419,18 +421,18 @@ export default function LandingPage() {
             </div>
           </ScrollReveal>
           
-          <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
             
             {/* VIP Plan */}
             <ScrollReveal delay={0.1}>
               <div className="rounded-[2rem] bg-surface-900/50 border border-white/5 p-8 md:p-10 flex flex-col h-full hover:border-white/10 transition-colors">
                 <div className="mb-8">
                   <h3 className="text-2xl font-bold text-white mb-2">VIP</h3>
+                  <p className="text-surface-400 text-sm mb-4">Para pessoas que querem controle financeiro imediato.</p>
                   <div className="flex items-end gap-2 mb-4">
                     <span className="text-5xl font-display font-semibold text-white">R$ 19,90</span>
                     <span className="text-surface-400 mb-1">/mês</span>
                   </div>
-                  <p className="text-surface-400 text-sm">Controle financeiro e construção de hábitos.</p>
                 </div>
                 
                 <ul className="space-y-4 mb-10 flex-1">
@@ -446,37 +448,79 @@ export default function LandingPage() {
                   </li>
                 </ul>
 
-                <MagneticButton href="/register?plan=vip" intensity={0.2}>
-                  <div className="w-full flex justify-center items-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-4 font-bold transition-all">
-                    Desbloquear VIP
-                  </div>
-                </MagneticButton>
+                <div className="flex flex-col items-center gap-3">
+                  <MagneticButton href="/register?plan=vip" intensity={0.2}>
+                    <div className="w-full flex justify-center items-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-4 font-bold transition-all">
+                      Desbloquear VIP
+                    </div>
+                  </MagneticButton>
+                  <span className="text-xs text-surface-500 font-medium tracking-wide text-center">Sem fidelidade • Cancele quando quiser</span>
+                </div>
               </div>
             </ScrollReveal>
 
             {/* PRO Plan */}
             <ScrollReveal delay={0.2}>
-              <div className="relative rounded-[2rem] bg-gradient-to-b from-purple-900/20 to-surface-900 border border-purple-500/30 p-8 md:p-10 flex flex-col h-full shadow-[0_0_60px_-15px_rgba(168,85,247,0.15)] overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/20 rounded-full blur-[80px] pointer-events-none" />
+              <div className="relative rounded-[2rem] bg-surface-900/80 border border-white/10 p-8 md:p-10 flex flex-col h-full hover:border-white/20 transition-colors overflow-hidden">
+                <div className="mb-8 relative z-10">
+                  <h3 className="text-2xl font-bold text-white mb-2">PRO</h3>
+                  <p className="text-surface-300 text-sm font-medium mb-4">Para pessoas que querem o controle completo de suas vidas.</p>
+                  <div className="flex items-end gap-2 mb-4">
+                    <span className="text-5xl font-display font-semibold text-white">R$ 29,90</span>
+                    <span className="text-surface-400 mb-1">/mês</span>
+                  </div>
+                </div>
+                
+                <ul className="space-y-4 mb-10 flex-1 relative z-10">
+                  <li className="flex items-start gap-3 text-white">
+                    <CheckCircle2 className="w-5 h-5 text-surface-400 shrink-0 mt-0.5" strokeWidth={2} />
+                    <span className="font-bold text-sm md:text-base leading-snug">Tudo do plano VIP, e também:</span>
+                  </li>
+                  {['Gestão de Metas e Alvos', 'Agenda e Calendário Pessoal', 'Segundo Cérebro (Notas)'].map((item, i) => (
+                    <li key={i} className="flex items-start gap-3 text-surface-200">
+                      <CheckCircle2 className="w-5 h-5 text-brand-400 shrink-0 mt-0.5" strokeWidth={2} />
+                      <span className="font-medium text-sm md:text-base leading-snug">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="flex flex-col items-center gap-3">
+                  <MagneticButton href="/register?plan=pro" intensity={0.2}>
+                    <div className="relative z-10 w-full flex justify-center items-center rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-4 font-bold transition-all group">
+                      <span>Desbloquear PRO</span>
+                    </div>
+                  </MagneticButton>
+                  <span className="text-xs text-surface-500 font-medium tracking-wide text-center">Sem fidelidade • Cancele quando quiser</span>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* PRO YEARLY Plan */}
+            <ScrollReveal delay={0.3}>
+              <div className="relative rounded-[2rem] bg-gradient-to-b from-purple-900/40 to-surface-900 border border-purple-500/50 p-8 md:p-10 flex flex-col h-full shadow-[0_0_60px_-15px_rgba(168,85,247,0.25)] overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-purple-500/30 rounded-full blur-[80px] pointer-events-none" />
                 <div className="absolute top-0 right-8 bg-purple-500 text-white text-[0.65rem] font-bold px-4 py-1.5 rounded-b-lg tracking-wider uppercase shadow-lg">
                   Mais escolhido
                 </div>
 
                 <div className="mb-8 relative z-10">
-                  <h3 className="text-2xl font-bold text-white mb-2">PRO</h3>
-                  <div className="flex items-end gap-2 mb-4">
-                    <span className="text-5xl font-display font-semibold text-white">R$ 29,90</span>
-                    <span className="text-purple-300 mb-1">/mês</span>
+                  <h3 className="text-2xl font-bold text-white mb-2">PRO ANUAL</h3>
+                  <p className="text-purple-200 text-sm font-medium mb-4">O ecossistema completo para sua vida com o melhor custo-benefício.</p>
+                  <div className="flex items-end gap-2 mb-2">
+                    <span className="text-5xl font-display font-semibold text-white">R$ 197,90</span>
+                    <span className="text-purple-300 mb-1">/ano</span>
                   </div>
-                  <p className="text-purple-200 text-sm font-medium">O ecossistema completo para sua vida.</p>
+                  <div className="inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400 font-bold text-xs mt-1">
+                    Economize mais de 40% com o plano anual
+                  </div>
                 </div>
                 
                 <ul className="space-y-4 mb-10 flex-1 relative z-10">
                   <li className="flex items-start gap-3 text-white">
                     <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" strokeWidth={2} />
-                    <span className="font-bold text-sm md:text-base leading-snug">Tudo do plano VIP, e também:</span>
+                    <span className="font-bold text-sm md:text-base leading-snug">Tudo do ecossistema PRO liberado</span>
                   </li>
-                  {['Gestão de Metas e Alvos', 'Agenda e Calendário Pessoal', 'Segundo Cérebro (Notas)'].map((item, i) => (
+                  {['Um ano inteiro sem interrupções', 'O equivalente a R$ 16,50 por mês', 'Acesso imediato a todas as áreas'].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-surface-200">
                       <CheckCircle2 className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" strokeWidth={2} />
                       <span className="font-medium text-sm md:text-base leading-snug">{item}</span>
@@ -484,9 +528,9 @@ export default function LandingPage() {
                   ))}
                 </ul>
 
-                <MagneticButton href="/register?plan=pro" intensity={0.2}>
+                <MagneticButton href="/register?plan=pro_yearly" intensity={0.2}>
                   <div className="relative z-10 w-full flex justify-between items-center rounded-full bg-white text-[#050505] px-6 py-4 font-bold shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.5)] transition-all group">
-                    <span>Desbloquear PRO</span>
+                    <span>Desbloquear PRO Anual</span>
                     <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
                        <ArrowRight className="w-4 h-4 text-black" strokeWidth={2.5} />
                     </span>
@@ -501,12 +545,12 @@ export default function LandingPage() {
         {/* Final CTA & Footer */}
         <footer className="py-32 text-center flex flex-col items-center border-t border-white/5 space-y-16">
             <ScrollReveal>
-              <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-3xl leading-[1.1]">Comece a proteger a coisa mais valiosa que você tem: O seu foco.</h2>
+              <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-4xl leading-[1.1]">Sua vida não vai se organizar sozinha. Cada dia de procrastinação é um dia a menos de evolução.</h2>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <MagneticButton href="#planos" intensity={0.3}>
-                <div className="group inline-flex justify-between items-center rounded-full bg-brand-600 text-white px-6 sm:px-8 py-4 font-bold text-base sm:text-lg shadow-[0_0_40px_-15px_rgba(48,64,235,0.8)]">
-                  <span className="mr-6 sm:mr-8">Desbloquear acesso agora</span>
+                <div className="group inline-flex justify-between items-center rounded-full bg-brand-600 text-white px-6 sm:px-8 py-4 font-bold text-base sm:text-lg shadow-[0_0_40px_-15px_rgba(48,64,235,0.8)] hover:bg-brand-500 transition-colors">
+                  <span className="mr-6 sm:mr-8">Quero assumir o controle da minha vida</span>
                   <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
                     <ArrowRight className="w-4 h-4 text-white" strokeWidth={2.5} />
                   </span>
