@@ -19,6 +19,7 @@
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "facebook-nodejs-business-sdk": "^24.0.1",
     "framer-motion": "^12.38.0",
     "jose": "^5.9.0",
     "lucide-react": "^1.7.0",
