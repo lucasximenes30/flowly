@@ -112,12 +112,22 @@ export default function PaymentReturnPage() {
             </div>
 
             {status !== 'active' && status !== 'loading' && (
-               <button
-                 onClick={() => router.push('/dashboard')}
-                 className="btn-secondary w-full mt-2"
-               >
-                 Voltar ao Painel
-               </button>
+               <div className="w-full space-y-3 mt-2">
+                 <a 
+                   href="https://wa.me/5585992551864?text=Ol%C3%A1%21%20Preciso%20de%20ajuda%20com%20minha%20conta%20Vynta."
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   className="flex items-center justify-center gap-2 w-full py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-semibold text-sm transition-colors"
+                 >
+                   💬 Falar com Suporte
+                 </a>
+                 <button
+                   onClick={() => router.push('/dashboard')}
+                   className="btn-secondary w-full"
+                 >
+                   Voltar ao Painel
+                 </button>
+               </div>
             )}
           </div>
         </div>

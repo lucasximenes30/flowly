@@ -5,7 +5,16 @@ export async function POST(request: Request) {
   try {
     const { email, password } = await request.json()
 
-    if (email === 'admin' && password === '9925518') {
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminPassword) {
+      return NextResponse.json(
+        { error: 'Erro de configuração do servidor.' },
+        { status: 500 }
+      );
+    }
+
+    if (email === 'admin' && password === adminPassword) {
       const payload: JWTPayload = {
         userId: 'admin-system',
         email: 'admin@vynta.com',

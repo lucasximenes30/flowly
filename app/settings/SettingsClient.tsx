@@ -430,23 +430,25 @@ export default function SettingsClient({ session }: SettingsClientProps) {
           </div>
 
           {/* Help & Support Card */}
-          <div 
-            onClick={() => router.push('/settings/help')}
-            className="card space-y-4 cursor-pointer hover:border-brand-500/50 dark:hover:border-brand-500/50 transition-colors group"
+          <a
+            href="https://wa.me/5585992551864?text=Ol%C3%A1%21%20Preciso%20de%20ajuda%20com%20minha%20conta%20Vynta."
+            target="_blank"
+            rel="noopener noreferrer"
+            className="card space-y-4 cursor-pointer hover:border-emerald-500/50 dark:hover:border-emerald-500/50 transition-colors group block"
           >
             <div className="flex items-center justify-between">
               <h3 className="font-display text-base font-semibold flex items-center gap-2">
-                <Lucide.HelpCircle className="w-4 h-4 text-brand-500" />
-                <span>Suporte & Ajuda</span>
+                <span className="text-xl">💬</span>
+                <span>Falar com Suporte</span>
               </h3>
-              <div className="w-8 h-8 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center group-hover:bg-brand-50 dark:group-hover:bg-brand-500/10 group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
-                <Lucide.ChevronRight className="w-4 h-4" />
+              <div className="w-8 h-8 rounded-full bg-surface-100 dark:bg-surface-800 flex items-center justify-center group-hover:bg-emerald-50 dark:group-hover:bg-emerald-500/10 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                <Lucide.ExternalLink className="w-4 h-4" />
               </div>
             </div>
             <p className="text-sm text-surface-500 dark:text-surface-400 leading-relaxed">
-              Acesse tutoriais, dicas e respostas para as dúvidas mais comuns sobre como usar o Vynta.
+              Precisa de ajuda? Entre em contato diretamente com nossa equipe pelo WhatsApp.
             </p>
-          </div>
+          </a>
 
           {/* Danger Zone Card */}
           <div className="card border-rose-300 dark:border-rose-900/40 bg-rose-500/5 p-5 flex flex-col justify-between">
