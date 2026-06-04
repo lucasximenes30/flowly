@@ -10,7 +10,7 @@ export interface RegisterInput {
   email: string
   password: string
   document?: string
-  planTier?: 'vip' | 'pro' | 'trial'
+  planTier?: 'vip' | 'pro' | 'trial' | 'pro_yearly'
 }
 
 export interface LoginInput {
@@ -22,7 +22,7 @@ export async function registerUser(input: RegisterInput) {
   const hashedPassword = await hash(input.password, SALT_ROUNDS)
 
   try {
-    let plan: 'VIP' | 'PRO' | 'FREE_TRIAL' = 'VIP'
+    let plan: 'VIP' | 'PRO' | 'PRO_YEARLY' | 'FREE_TRIAL' = 'VIP'
     let subscriptionStatus: 'ACTIVE' | 'INACTIVE' = 'INACTIVE'
     let canUseAgenda = false
     let canUseNotes = false
@@ -33,8 +33,8 @@ export async function registerUser(input: RegisterInput) {
       subscriptionStatus = 'ACTIVE'
       // 1 day from now
       subscriptionExpiresAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
-    } else if (input.planTier === 'pro') {
-      plan = 'PRO'
+    } else if (input.planTier === 'pro' || input.planTier === 'pro_yearly') {
+      plan = input.planTier === 'pro_yearly' ? 'PRO_YEARLY' : 'PRO'
       subscriptionStatus = 'INACTIVE'
       canUseAgenda = true
       canUseNotes = true

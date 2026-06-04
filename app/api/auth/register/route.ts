@@ -9,7 +9,7 @@ const registerSchema = z.object({
   email: z.string().email('Invalid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   document: z.string().min(11, 'CPF inválido').max(14).optional(),
-  planTier: z.enum(['vip', 'pro', 'trial']).optional(),
+  planTier: z.enum(['vip', 'pro', 'trial', 'pro_yearly']).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     // If user is inactive and not privileged, return inactive status
     // Frontend will redirect them to unlock screen instead of dashboard
     if (!isPaidActive && !isPrivileged) {
-      if (planTier === 'vip' || planTier === 'pro') {
+      if (planTier === 'vip' || planTier === 'pro' || planTier === 'pro_yearly') {
         try {
           const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip') ?? null
           const appUrl = request.nextUrl.origin
