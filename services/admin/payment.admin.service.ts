@@ -80,7 +80,7 @@ export async function getDashboardPaymentStats() {
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
 
-  const [monthlyApproved, pendingCount, approvedCount, activeVipCount] =
+  const [monthlyApproved, pendingCount, approvedCount, activeVipCount, activeProCount, activeProYearlyCount] =
     await Promise.all([
       // Sum of ACTIVE payments this month (real revenue)
       prisma.paymentTransaction.findMany({
@@ -103,11 +103,15 @@ export async function getDashboardPaymentStats() {
       }),
       // VIP users count for estimated revenue fallback
       prisma.user.count({
-        where: {
-          plan: 'PRO',
-          subscriptionStatus: 'ACTIVE',
-          role: { notIn: ['ADMIN', 'COURTESY'] },
-        },
+        where: { plan: 'VIP', subscriptionStatus: 'ACTIVE', role: { notIn: ['ADMIN', 'COURTESY'] } },
+      }),
+      // PRO users count for estimated revenue fallback
+      prisma.user.count({
+        where: { plan: 'PRO', subscriptionStatus: 'ACTIVE', role: { notIn: ['ADMIN', 'COURTESY'] } },
+      }),
+      // PRO_YEARLY users count for estimated revenue fallback
+      prisma.user.count({
+        where: { plan: 'PRO_YEARLY', subscriptionStatus: 'ACTIVE', role: { notIn: ['ADMIN', 'COURTESY'] } },
       }),
     ])
 
@@ -119,7 +123,7 @@ export async function getDashboardPaymentStats() {
   // Decide if revenue is real or estimated
   const isEstimated = monthlyApproved.length === 0
   const revenueCents = isEstimated
-    ? activeVipCount * PLAN_PRICE_CENTS
+    ? (activeVipCount * 1990) + (activeProCount * 2990) + (activeProYearlyCount * 1999)
     : realRevenueCents
 
   return {

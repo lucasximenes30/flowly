@@ -7,6 +7,7 @@ const PLAN_PRICES = {
   vip: 1990,
   pro: 2990,
   promo: 2490,
+  pro_yearly: 23990,
 }
 
 // Helper to init the SDK safely
@@ -27,7 +28,7 @@ export interface CreateTransactionInput {
   /** Client IP address (optional) */
   ip?: string | null
   /** Plan tier selected */
-  planTier?: 'vip' | 'pro' | 'promo'
+  planTier?: 'vip' | 'pro' | 'promo' | 'pro_yearly'
   /** The base URL of the application */
   appUrl: string
 }
@@ -35,11 +36,11 @@ export interface CreateTransactionInput {
 /**
  * Ensures a Vynta product exists in AbacatePay and returns its ID.
  */
-async function ensureProduct(tier: 'vip' | 'pro' | 'promo' = 'vip'): Promise<string> {
+async function ensureProduct(tier: 'vip' | 'pro' | 'promo' | 'pro_yearly' = 'vip'): Promise<string> {
   const abacate = getAbacate()
   const priceCents = PLAN_PRICES[tier]
   const externalId = `vynta-${tier}-${priceCents}`
-  const name = tier === 'vip' ? 'Vynta VIP' : (tier === 'promo' ? 'Vynta PRO (Promo)' : 'Vynta PRO')
+  const name = tier === 'vip' ? 'Vynta VIP' : (tier === 'promo' ? 'Vynta PRO (Promo)' : (tier === 'pro_yearly' ? 'Vynta PRO Anual' : 'Vynta PRO'))
 
   // We could list products to see if it exists, but the easiest way is 
   // to list and find by externalId, or simply try to create and catch error, 

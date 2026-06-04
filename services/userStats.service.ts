@@ -115,17 +115,29 @@ function toUserStatsDTO(item: UserStatsRecord): UserStatsDTO {
 }
 
 async function ensureUserStatsRecord(userId: string, client: unknown): Promise<UserStatsRecord> {
-  return userStatsDelegate(client).upsert({
-    where: { userId },
-    create: {
-      userId,
-      currentStreak: 0,
-      longestStreak: 0,
-      score: 0,
-      lastWorkoutDate: null,
-    },
-    update: {},
-  })
+  const delegate = userStatsDelegate(client)
+  try {
+    return await delegate.upsert({
+      where: { userId },
+      create: {
+        userId,
+        currentStreak: 0,
+        longestStreak: 0,
+        score: 0,
+        lastWorkoutDate: null,
+      },
+      update: {},
+    })
+  } catch (error: any) {
+    // Tratamento para Race Condition: Se duas chamadas simultâneas tentarem criar
+    // e der erro de restrição única (Unique constraint failed - P2002),
+    // apenas retornamos o registro que acabou de ser criado pela outra chamada.
+    if (error.code === 'P2002') {
+      const existing = await delegate.findUnique({ where: { userId } })
+      if (existing) return existing
+    }
+    throw error
+  }
 }
 
 export async function getUserStats(userId: string): Promise<UserStatsDTO> {

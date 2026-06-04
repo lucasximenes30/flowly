@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { startOfDay, endOfDay, addDays } from 'date-fns'
+import { UserPlan } from '@prisma/client'
 
 export async function getDashboardStats() {
-  const [totalUsers, activeVip, activePro, pendingPayments, expiredSubs, trialUsers, upgradeConversions] = await Promise.all([
+  const [totalUsers, activeVip, activePro, activeProYearly, pendingPayments, expiredSubs, trialUsers, upgradeConversions] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({
       where: { plan: 'VIP', subscriptionStatus: 'ACTIVE' },
@@ -11,14 +12,17 @@ export async function getDashboardStats() {
       where: { plan: 'PRO', subscriptionStatus: 'ACTIVE' },
     }),
     prisma.user.count({
+      where: { plan: 'PRO_YEARLY', subscriptionStatus: 'ACTIVE' },
+    }),
+    prisma.user.count({
       where: {
-        plan: { in: ['VIP', 'PRO'] },
+        plan: { in: ['VIP', 'PRO', 'PRO_YEARLY'] },
         subscriptionStatus: { in: ['INACTIVE', 'PENDING'] },
       },
     }),
     prisma.user.count({
       where: {
-        plan: { in: ['VIP', 'PRO'] },
+        plan: { in: ['VIP', 'PRO', 'PRO_YEARLY'] },
         OR: [
           { subscriptionStatus: { in: ['PAST_DUE', 'CANCELED'] } },
           { subscriptionEndDate: { lt: new Date() } }
@@ -37,6 +41,7 @@ export async function getDashboardStats() {
     totalUsers,
     activeVip,
     activePro,
+    activeProYearly,
     pendingPayments,
     expiredSubs,
     trialUsers,
@@ -56,7 +61,7 @@ export async function getExpiringUsers() {
   const in7DaysEnd = endOfDay(addDays(now, 7))
 
   const baseWhere = {
-    plan: 'PRO' as const,
+    plan: { in: ['VIP', 'PRO', 'PRO_YEARLY'] as UserPlan[] },
     role: { notIn: ['ADMIN', 'COURTESY'] as any },
     subscriptionStatus: 'ACTIVE' as const,
   }
@@ -173,18 +178,22 @@ export async function getUsersDistribution() {
     select: { role: true, plan: true },
   })
 
-  const dist = { VIP: 0, COURTESY: 0, ADMIN: 0, FREE: 0 }
+    const dist = { VIP: 0, PRO: 0, PRO_YEARLY: 0, COURTESY: 0, ADMIN: 0, FREE: 0 }
   users.forEach((u) => {
     if (u.role === 'ADMIN') dist.ADMIN++
     else if (u.role === 'COURTESY') dist.COURTESY++
-    else if (u.plan === 'PRO') dist.VIP++
+    else if (u.plan === 'VIP') dist.VIP++
+    else if (u.plan === 'PRO') dist.PRO++
+    else if (u.plan === 'PRO_YEARLY') dist.PRO_YEARLY++
     else dist.FREE++
   })
 
   return [
     { name: 'VIP', value: dist.VIP, color: '#3b82f6' }, // blue-500
-    { name: 'Courtesy', value: dist.COURTESY, color: '#8b5cf6' }, // violet-500
-    { name: 'Admin', value: dist.ADMIN, color: '#f59e0b' }, // amber-500
+    { name: 'PRO', value: dist.PRO, color: '#10b981' }, // emerald-500
+    { name: 'PRO Anual', value: dist.PRO_YEARLY, color: '#f59e0b' }, // amber-500
+    { name: 'Cortesia', value: dist.COURTESY, color: '#8b5cf6' }, // violet-500
+    { name: 'Admin', value: dist.ADMIN, color: '#ef4444' }, // red-500
     { name: 'Free', value: dist.FREE, color: '#64748b' }, // slate-500
   ].filter((item) => item.value > 0)
 }

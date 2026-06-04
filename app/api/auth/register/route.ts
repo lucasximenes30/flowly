@@ -53,6 +53,7 @@ export async function POST(request: NextRequest) {
       canUseGoals: result.user.canUseGoals,
       canUseNotes: result.user.canUseNotes,
       canUseAgenda: result.user.canUseAgenda,
+      subscriptionExpiresAt: result.user.subscriptionExpiresAt ? new Date(result.user.subscriptionExpiresAt).toISOString() : undefined,
     })
 
     // If user is inactive and not privileged, return inactive status

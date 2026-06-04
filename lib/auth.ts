@@ -13,6 +13,7 @@ export interface JWTPayload {
   plan?: string
   createdAt?: string
   subscriptionEndDate?: string
+  subscriptionExpiresAt?: string
   usedUpgradeOffer?: boolean
   canUseFinance?: boolean
   canUseHabits?: boolean

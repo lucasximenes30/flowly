@@ -52,10 +52,10 @@ export async function POST(req: NextRequest) {
     const ip = getClientIp(req)
     
     // Attempt to parse body for planTier
-    let planTier: 'vip' | 'pro' = 'vip'
+    let planTier: 'vip' | 'pro' | 'pro_yearly' | 'promo' = 'vip'
     try {
       const body = await req.json()
-      if (body.planTier === 'pro' || body.planTier === 'vip') {
+      if (['vip', 'pro', 'pro_yearly', 'promo'].includes(body.planTier)) {
         planTier = body.planTier
       }
     } catch (e) {
