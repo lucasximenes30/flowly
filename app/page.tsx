@@ -507,11 +507,11 @@ export default function LandingPage() {
                   <h3 className="text-2xl font-bold text-white mb-2">PRO ANUAL</h3>
                   <p className="text-purple-200 text-sm font-medium mb-4">O ecossistema completo para sua vida com o melhor custo-benefício.</p>
                   <div className="flex items-end gap-2 mb-2">
-                    <span className="text-5xl font-display font-semibold text-white">R$ 197,90</span>
+                    <span className="text-5xl font-display font-semibold text-white">R$ 239,90</span>
                     <span className="text-purple-300 mb-1">/ano</span>
                   </div>
                   <div className="inline-block px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-400 font-bold text-xs mt-1">
-                    Economize mais de 40% com o plano anual
+                    Economize R$ 118,90 com o plano anual
                   </div>
                 </div>
                 

@@ -27,7 +27,12 @@ export default function InstallPWA() {
       setDeferredPrompt(e)
       ;(window as any).pwaDeferredPrompt = e // Save globally for settings/tutorial
       if (!isAppStandalone) {
-        setShowPrompt(true)
+        const hasDismissed = localStorage.getItem('vynta_pwa_dismissed')
+        const hasShownSession = sessionStorage.getItem('vynta_pwa_shown')
+        if (!hasDismissed && !hasShownSession) {
+          setShowPrompt(true)
+          sessionStorage.setItem('vynta_pwa_shown', 'true')
+        }
       }
     }
 
@@ -37,8 +42,10 @@ export default function InstallPWA() {
     if (isIosDevice && !isAppStandalone) {
       // Show iOS prompt only once ever (or until cleared)
       const hasDismissed = localStorage.getItem('vynta_pwa_dismissed')
-      if (!hasDismissed) {
+      const hasShownSession = sessionStorage.getItem('vynta_pwa_shown')
+      if (!hasDismissed && !hasShownSession) {
         setShowPrompt(true)
+        sessionStorage.setItem('vynta_pwa_shown', 'true')
       }
     } else if (!isIosDevice && !isAppStandalone) {
       const hasDismissed = localStorage.getItem('vynta_pwa_dismissed')

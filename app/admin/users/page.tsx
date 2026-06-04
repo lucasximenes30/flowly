@@ -83,14 +83,12 @@ export default async function AdminUsersPage({
   let trialActive = 0;
   let trialExpiringToday = 0;
   let trialExpiringTomorrow = 0;
-  let trialExpiringIn2Days = 0;
-  let trialExpiringIn3Days = 0;
   let trialExpired = 0;
 
-  const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+  const oneDayMs = 24 * 60 * 60 * 1000;
 
   allFreeTrials.forEach(u => {
-    const expiresAt = new Date(u.createdAt.getTime() + threeDaysMs);
+    const expiresAt = new Date(u.createdAt.getTime() + oneDayMs);
     if (expiresAt < now) {
       trialExpired++;
     } else {
@@ -98,9 +96,7 @@ export default async function AdminUsersPage({
       const daysUntilExpiration = Math.floor((expiresAt.getTime() - startOfToday.getTime()) / (1000 * 60 * 60 * 24));
       
       if (daysUntilExpiration === 0) trialExpiringToday++;
-      else if (daysUntilExpiration === 1) trialExpiringTomorrow++;
-      else if (daysUntilExpiration === 2) trialExpiringIn2Days++;
-      else if (daysUntilExpiration >= 3) trialExpiringIn3Days++;
+      else if (daysUntilExpiration >= 1) trialExpiringTomorrow++;
     }
   });
 
@@ -178,17 +174,9 @@ export default async function AdminUsersPage({
       <div className="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 p-4 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden">
         <div>
           <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300">Testes Grátis (Free Trial)</h3>
-          <p className="text-xs text-blue-700 dark:text-blue-400/80 mt-1">Acompanhamento do funil de testes de 3 dias.</p>
+          <p className="text-xs text-blue-700 dark:text-blue-400/80 mt-1">Acompanhamento do funil de testes de 24 horas.</p>
         </div>
         <div className="flex gap-4 md:gap-6 overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
-          <div className="text-center shrink-0">
-            <span className="block text-xl font-bold text-blue-600 dark:text-blue-400">{trialExpiringIn3Days}</span>
-            <span className="text-[0.65rem] uppercase tracking-wider font-semibold text-blue-800/60 dark:text-blue-400/60">Em 3 Dias</span>
-          </div>
-          <div className="text-center shrink-0">
-            <span className="block text-xl font-bold text-blue-600 dark:text-blue-400">{trialExpiringIn2Days}</span>
-            <span className="text-[0.65rem] uppercase tracking-wider font-semibold text-blue-800/60 dark:text-blue-400/60">Em 2 Dias</span>
-          </div>
           <div className="text-center shrink-0">
             <span className="block text-xl font-bold text-amber-600 dark:text-amber-500">{trialExpiringTomorrow}</span>
             <span className="text-[0.65rem] uppercase tracking-wider font-semibold text-amber-800/60 dark:text-amber-500/60">Amanhã</span>

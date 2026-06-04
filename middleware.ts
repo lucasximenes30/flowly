@@ -60,8 +60,8 @@ export async function middleware(request: NextRequest) {
         } else if (session.createdAt) {
           // Fallback para usuários antigos do trial de 3 dias que ainda não têm subscriptionExpiresAt na sessão
           const createdAt = new Date(session.createdAt as string).getTime();
-          const threeDaysInMs = 3 * 24 * 60 * 60 * 1000;
-          if (now > createdAt + threeDaysInMs) {
+          const oneDayInMs = 24 * 60 * 60 * 1000;
+          if (now > createdAt + oneDayInMs) {
             isExpired = true;
             currentState = 'trial_expired';
           }
@@ -120,5 +120,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/dashboard/:path*', '/habits/:path*', '/reports/:path*', '/cards/:path*', '/workout/:path*', '/admin/:path*', '/force-password-change'],
+  matcher: ['/dashboard/:path*', '/habits/:path*', '/reports/:path*', '/cards/:path*', '/workout/:path*', '/admin/:path*', '/force-password-change', '/goals/:path*', '/notes/:path*', '/calendar/:path*', '/finances/:path*'],
 }

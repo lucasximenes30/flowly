@@ -22,6 +22,12 @@ export default async function DashboardPage() {
       subscriptionStatus: true,
       subscriptionEndDate: true,
       role: true,
+      plan: true,
+      createdAt: true,
+      subscriptionExpiresAt: true,
+      canUseGoals: true,
+      canUseNotes: true,
+      canUseAgenda: true,
     },
   })
 
@@ -30,10 +36,23 @@ export default async function DashboardPage() {
   // Check if subscription has expired
   const isPaidActive = user.subscriptionStatus === 'ACTIVE'
   const isPrivileged = user.role === 'ADMIN' || user.role === 'COURTESY'
-  const isExpired = user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)
+  const isTrial = user.plan === 'FREE_TRIAL'
+  
+  let isExpired = false;
+  if (isTrial) {
+    const now = Date.now();
+    const oneDayInMs = 24 * 60 * 60 * 1000;
+    if (user.subscriptionExpiresAt) {
+      if (now > new Date(user.subscriptionExpiresAt).getTime()) isExpired = true;
+    } else if (user.createdAt) {
+      if (now > new Date(user.createdAt).getTime() + oneDayInMs) isExpired = true;
+    }
+  } else {
+    isExpired = user.subscriptionEndDate && new Date() > new Date(user.subscriptionEndDate)
+  }
 
   // Redirect if inactive or if VIP access expired
-  if (!isPaidActive || (user.subscriptionStatus === 'ACTIVE' && isExpired)) {
+  if ((!isPaidActive && !isTrial) || (user.subscriptionStatus === 'ACTIVE' && isExpired) || (isTrial && isExpired)) {
     if (!isPrivileged) {
       redirect('/login?error=inactive')
     }
@@ -48,7 +67,15 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      session={session}
+      session={{
+        ...session,
+        plan: user.plan,
+        createdAt: user.createdAt?.toISOString() || null,
+        subscriptionExpiresAt: user.subscriptionExpiresAt?.toISOString() || null,
+        canUseGoals: user.canUseGoals,
+        canUseNotes: user.canUseNotes,
+        canUseAgenda: user.canUseAgenda,
+      }}
       balance={{
         income: Number(balance.income),
         expense: Number(balance.expense),

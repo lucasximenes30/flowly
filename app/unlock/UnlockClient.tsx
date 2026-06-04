@@ -10,9 +10,10 @@ import { JWTPayload } from '@/lib/auth'
 interface UnlockClientProps {
   session: JWTPayload
   state?: string
+  feature?: string
 }
 
-export default function UnlockClient({ session, state }: UnlockClientProps) {
+export default function UnlockClient({ session, state, feature }: UnlockClientProps) {
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -48,7 +49,7 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
   }
 
   const renderPlans = () => (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto px-4">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto px-4 pt-6">
       {/* VIP Plan */}
       <div className="relative rounded-[2rem] bg-surface-900/40 backdrop-blur-md border border-white/5 p-8 flex flex-col hover:border-white/10 transition-colors">
         <div className="space-y-4 mb-8">
@@ -127,9 +128,8 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
 
       {/* PRO YEARLY Plan */}
       <div className="relative rounded-[2rem] bg-gradient-to-b from-brand-500 to-[#050505] p-1 shadow-[0_20px_40px_-10px_rgba(48,64,235,0.4)] flex flex-col">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
-          <Star className="w-3 h-3 fill-brand-900" />
-          Melhor Valor
+        <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-5 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 whitespace-nowrap">
+          🔥 Melhor custo-benefício
         </div>
         <div className="bg-[#050505]/95 backdrop-blur-xl rounded-[calc(2rem-4px)] p-8 flex flex-col h-full border border-white/5">
           <div className="space-y-4 mb-8">
@@ -197,7 +197,7 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
               Seu período gratuito terminou.
             </h1>
             <p className="mx-auto max-w-lg text-[1.05rem] leading-relaxed text-surface-400">
-              Você já experimentou o Vynta. Escolha um plano para continuar organizando a sua vida.
+              Você testou o Vynta. Agora escolha o plano ideal para continuar organizando sua vida.
             </p>
           </div>
         )}
@@ -238,7 +238,7 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
           </div>
         )}
         
-        {!['payment_pending', 'trial_expired', 'expired'].includes(state || '') && (
+        {!['payment_pending', 'trial_expired', 'expired'].includes(state || '') && !feature && (
           <div className="text-center space-y-6">
             <BrandLogo size="lg" className="justify-center" priority />
             <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight text-white">
@@ -246,6 +246,24 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
             </h1>
             <p className="mx-auto max-w-lg text-[1.05rem] leading-relaxed text-surface-400">
               Sua conta está inativa. Escolha o plano que melhor se adapta à sua rotina para continuar evoluindo.
+            </p>
+          </div>
+        )}
+
+        {feature && (
+          <div className="text-center space-y-6">
+            <BrandLogo size="lg" className="justify-center" priority />
+            <h1 className="font-display text-4xl md:text-5xl font-semibold tracking-tight text-white">
+              Módulo Bloqueado
+            </h1>
+            <p className="mx-auto max-w-lg text-[1.05rem] leading-relaxed text-surface-400">
+              {feature === 'goals' && `O módulo de Metas não está habilitado no plano ${session.plan === 'FREE_TRIAL' ? 'Teste Grátis' : session.plan === 'VIP' ? 'VIP' : 'atual'}. `}
+              {feature === 'agenda' && `A Agenda não está habilitada no plano ${session.plan === 'FREE_TRIAL' ? 'Teste Grátis' : session.plan === 'VIP' ? 'VIP' : 'atual'}. `}
+              {feature === 'notes' && `O módulo de Notas não está habilitado no plano ${session.plan === 'FREE_TRIAL' ? 'Teste Grátis' : session.plan === 'VIP' ? 'VIP' : 'atual'}. `}
+              {feature === 'finance' && `O módulo de Finanças não está habilitado no seu plano atual. `}
+              {feature === 'habits' && `O módulo de Hábitos não está habilitado no seu plano atual. `}
+              {feature === 'workout' && `O módulo de Treinos não está habilitado no seu plano atual. `}
+              Faça o upgrade para habilitar o acesso completo.
             </p>
           </div>
         )}
@@ -366,10 +384,9 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
           <div className="max-w-4xl mx-auto space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* PRO YEARLY UPGRADE CARD */}
-              <div className="relative rounded-[2rem] bg-gradient-to-b from-brand-500 to-[#050505] p-1 shadow-[0_20px_40px_-10px_rgba(48,64,235,0.4)] flex flex-col h-full">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
-                  <Star className="w-3 h-3 fill-brand-900" />
-                  Melhor Valor
+              <div className="relative rounded-[2rem] bg-gradient-to-b from-brand-500 to-[#050505] p-1 shadow-[0_20px_40px_-10px_rgba(48,64,235,0.4)] flex flex-col h-full mt-6 md:mt-0">
+                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-5 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 whitespace-nowrap">
+                  🔥 Melhor custo-benefício
                 </div>
                 <div className="bg-[#050505]/95 backdrop-blur-xl rounded-[calc(2rem-4px)] p-8 text-center flex-1 flex flex-col justify-center">
                   <h2 className="text-3xl font-display font-bold text-white mb-2">PRO ANUAL</h2>
@@ -462,8 +479,8 @@ export default function UnlockClient({ session, state }: UnlockClientProps) {
           </div>
         )}
 
-        {/* TRIAL EXPIRED OR NO STATE */}
-        {(!state || state === 'trial_expired') && renderPlans()}
+        {/* TRIAL EXPIRED OR NO STATE OR BLOCKED FEATURE */}
+        {(!state || state === 'trial_expired' || !!feature) && renderPlans()}
 
         <div className="text-center pt-8">
           <button onClick={() => router.push('/login')} className="text-surface-500 hover:text-white transition-colors text-sm">

@@ -84,7 +84,7 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6">
           {/* VIP Plan */}
           <div className="relative rounded-[2rem] bg-white dark:bg-surface-900/40 border border-surface-200 dark:border-white/5 p-8 flex flex-col hover:border-brand-500/30 transition-colors shadow-xl shadow-surface-200/50 dark:shadow-none">
             <div className="space-y-4 mb-8">
@@ -163,9 +163,8 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
 
           {/* PRO YEARLY Plan */}
           <div className="relative rounded-[2rem] bg-gradient-to-b from-brand-600 to-brand-900 p-1 shadow-[0_20px_40px_-10px_rgba(48,64,235,0.4)] flex flex-col">
-            <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-4 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1">
-              <Lucide.Star className="w-3 h-3 fill-brand-900" />
-              Melhor Valor
+            <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-white text-brand-900 text-xs font-extrabold px-5 py-1.5 rounded-full uppercase tracking-wider shadow-lg flex items-center gap-1 whitespace-nowrap">
+              🔥 Melhor custo-benefício
             </div>
             <div className="bg-white/95 dark:bg-[#050505]/95 backdrop-blur-xl rounded-[calc(2rem-4px)] p-8 flex flex-col h-full border border-white/5">
               <div className="space-y-4 mb-8">
