@@ -5,6 +5,7 @@ import Script from 'next/script'
 import SidebarLayout from '@/components/SidebarLayout'
 import InstallPWA from '@/components/mobile/InstallPWA'
 import { Analytics } from "@vercel/analytics/next"
+import FacebookPixel from '@/components/FacebookPixel'
 import './globals.css'
 
 const manrope = Manrope({
@@ -75,6 +76,7 @@ export default function RootLayout({
           </SidebarLayout>
           <InstallPWA />
           <Analytics />
+          <FacebookPixel />
         </ThemeProvider>
       </body>
     </html>

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { registerUser } from '@/services/user.service'
 import { setSession } from '@/lib/auth'
 import { createTransaction } from '@/services/abacatepay.service'
+import { FacebookService } from '@/services/facebook.service'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -18,6 +19,19 @@ export async function POST(request: NextRequest) {
     const { name, email, password, document, planTier } = registerSchema.parse(body)
 
     const result = await registerUser({ name, email, password, document, planTier })
+    
+    // Dispara o evento de CompleteRegistration no CAPI (não bloqueia o fluxo em caso de falha)
+    try {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip') ?? undefined
+      const userAgent = request.headers.get('user-agent') ?? undefined
+      await FacebookService.sendEvent('CompleteRegistration', {
+        email: result.user.email,
+        clientIpAddress: ip,
+        clientUserAgent: userAgent,
+      }, request.url)
+    } catch (e) {
+      console.error('[Auth/Register] Falha ao enviar evento pro Meta CAPI:', e)
+    }
     
     // ── Check if user can access (same logic as login) ──────────────────
     const isPaidActive = result.user.subscriptionStatus === 'ACTIVE'

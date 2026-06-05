@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient, UserSubscriptionStatus } from '@prisma/client'
 import { activateVipAccess } from '@/services/subscription.service'
+import { FacebookService } from '@/services/facebook.service'
 import crypto from 'crypto'
 
 const prisma = new PrismaClient()
@@ -166,13 +167,31 @@ export async function POST(req: Request) {
         })
         
         // Also update billing provider info
-        await prisma.user.update({
+        const updatedUser = await prisma.user.update({
           where: { id: userId },
           data: {
             billingProvider: 'abacatepay',
             subscriptionStatus: UserSubscriptionStatus.ACTIVE,
           }
         })
+        
+        // Dispara o evento de Purchase no CAPI
+        try {
+          // Extraindo IP e User Agent da requisição (nota: em webhooks, isso geralmente representa o servidor do gateway, 
+          // mas estamos extraindo conforme solicitado para manter o padrão de leitura dos headers)
+          const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? req.headers.get('x-real-ip') ?? undefined
+          const userAgent = req.headers.get('user-agent') ?? undefined
+          
+          await FacebookService.sendEvent('Purchase', {
+            email: updatedUser.email,
+            value: amountCents / 100,
+            currency: 'BRL',
+            clientIpAddress: ip,
+            clientUserAgent: userAgent,
+          }, req.url)
+        } catch (e) {
+          console.error('[AbacatePay Webhook] Falha ao enviar evento Purchase pro Meta CAPI:', e)
+        }
       }
     }
 
