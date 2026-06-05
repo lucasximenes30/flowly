@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { loginUser } from '@/services/user.service'
 import { setSession } from '@/lib/auth'
+import { FacebookService } from '@/services/facebook.service'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email'),
@@ -14,6 +15,19 @@ export async function POST(request: NextRequest) {
     const { email, password } = loginSchema.parse(body)
 
     const result = await loginUser({ email, password })
+    
+    // Dispara o evento de Lead no CAPI (não bloqueia o fluxo em caso de falha)
+    try {
+      const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? request.headers.get('x-real-ip') ?? undefined
+      const userAgent = request.headers.get('user-agent') ?? undefined
+      await FacebookService.sendEvent('Lead', {
+        email: result.user.email,
+        clientIpAddress: ip,
+        clientUserAgent: userAgent,
+      }, request.url)
+    } catch (e) {
+      console.error('[Auth/Login] Falha ao enviar evento Lead pro Meta CAPI:', e)
+    }
     
     // ── Check account status before setting session ──────────────────────
     const isPaidActive = result.user.subscriptionStatus === 'ACTIVE'
