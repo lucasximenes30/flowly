@@ -25,6 +25,13 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   // Track if user is currently on the inactive screen
   const [isInactive, setIsInactive] = useState(searchParams.get('error') === 'inactive')
 
+  // Redirect to plans if registering without a plan
+  useEffect(() => {
+    if (mode === 'register' && !planTier) {
+      router.push('/#planos')
+    }
+  }, [mode, planTier, router])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -518,7 +525,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           {mode === 'login' ? (
             <p className="text-[1.03rem] text-surface-400">
               Ainda não tem acesso?{' '}
-              <Link href="/register" className="font-semibold text-brand-300 hover:text-brand-200 transition-colors">
+              <Link href="/#planos" className="font-semibold text-brand-300 hover:text-brand-200 transition-colors">
                 Criar conta
               </Link>
             </p>
