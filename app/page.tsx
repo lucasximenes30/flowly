@@ -95,7 +95,7 @@ export default function LandingPage() {
               <div className="flex flex-col items-center justify-center">
                 <SmartCTA />
                 <p className="mt-6 text-sm text-surface-500 font-medium tracking-wide">
-                  Milhares de decisões. Um só lugar para controlá-las.
+                  48h grátis • Sem cartão de crédito • Cancele quando quiser
                 </p>
               </div>
             </ScrollReveal>
@@ -427,8 +427,8 @@ export default function LandingPage() {
             <ScrollReveal delay={0.1}>
               <div className="rounded-[2rem] bg-surface-900/50 border border-white/5 p-8 md:p-10 flex flex-col h-full hover:border-white/10 transition-colors">
                 <div className="mb-8">
-                  <h3 className="text-2xl font-bold text-white mb-2">VIP</h3>
-                  <p className="text-surface-400 text-sm mb-4">Para pessoas que querem controle financeiro imediato.</p>
+                  <h3 className="text-2xl font-bold text-white mb-2">Financeiro</h3>
+                  <p className="text-surface-400 text-sm mb-4">Para quem quer foco total no controle do dinheiro.</p>
                   <div className="flex items-end gap-2 mb-4">
                     <span className="text-5xl font-display font-semibold text-white">R$ 19,90</span>
                     <span className="text-surface-400 mb-1">/mês</span>
@@ -451,7 +451,7 @@ export default function LandingPage() {
                 <div className="flex flex-col items-center gap-3">
                   <MagneticButton href="/register?plan=vip" intensity={0.2}>
                     <div className="w-full flex justify-center items-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-4 font-bold transition-all">
-                      Desbloquear VIP
+                      Desbloquear Financeiro
                     </div>
                   </MagneticButton>
                   <span className="text-xs text-surface-500 font-medium tracking-wide text-center">Sem fidelidade • Cancele quando quiser</span>
@@ -474,7 +474,7 @@ export default function LandingPage() {
                 <ul className="space-y-4 mb-10 flex-1 relative z-10">
                   <li className="flex items-start gap-3 text-white">
                     <CheckCircle2 className="w-5 h-5 text-surface-400 shrink-0 mt-0.5" strokeWidth={2} />
-                    <span className="font-bold text-sm md:text-base leading-snug">Tudo do plano VIP, e também:</span>
+                    <span className="font-bold text-sm md:text-base leading-snug">Tudo do plano Financeiro, e também:</span>
                   </li>
                   {['Gestão de Metas e Alvos', 'Agenda e Calendário Pessoal', 'Segundo Cérebro (Notas)'].map((item, i) => (
                     <li key={i} className="flex items-start gap-3 text-surface-200">
@@ -545,7 +545,7 @@ export default function LandingPage() {
         {/* Final CTA & Footer */}
         <footer className="py-32 text-center flex flex-col items-center border-t border-white/5 space-y-16">
             <ScrollReveal>
-              <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-4xl leading-[1.1]">Sua vida não vai se organizar sozinha. Cada dia de procrastinação é um dia a menos de evolução.</h2>
+              <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-4xl leading-[1.1]">Seu trial de 48h começa agora. Sem cartão, sem compromisso. Depois disso: R$ 29,90/mês ou R$ 16,50/mês no plano anual.</h2>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
               <MagneticButton href="#planos" intensity={0.3}>

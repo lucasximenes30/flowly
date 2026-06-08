@@ -31,8 +31,8 @@ export async function registerUser(input: RegisterInput) {
     if (input.planTier === 'trial') {
       plan = 'FREE_TRIAL'
       subscriptionStatus = 'ACTIVE'
-      // 1 day from now
-      subscriptionExpiresAt = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)
+      // 2 days from now
+      subscriptionExpiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
     } else if (input.planTier === 'pro' || input.planTier === 'pro_yearly') {
       plan = input.planTier === 'pro_yearly' ? 'PRO_YEARLY' : 'PRO'
       subscriptionStatus = 'INACTIVE'
