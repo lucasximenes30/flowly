@@ -14,7 +14,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (email === 'admin' && password === adminPassword) {
+    if (email === 'admin' && password === process.env.ADMIN_PASSWORD) {
       const payload: JWTPayload = {
         userId: 'admin-system',
         email: 'admin@vynta.com',

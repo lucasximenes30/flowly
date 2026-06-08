@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import OnboardingClient from '@/components/OnboardingClient'
@@ -10,14 +10,7 @@ interface Session {
   userId: string
   email: string
   name: string
-  plan?: string
-  createdAt?: string | null
-  subscriptionExpiresAt?: string | null
-  canUseGoals?: boolean
-  canUseNotes?: boolean
-  canUseAgenda?: boolean
 }
-
 
 interface DashboardClientProps {
   session: Session
@@ -28,6 +21,8 @@ interface DashboardClientProps {
   }
   habitsCount: number
   activeWorkoutPlanName: string | null
+  plan: string
+  subscriptionExpiresAt: string | null
 }
 
 export default function DashboardClient({
@@ -35,54 +30,25 @@ export default function DashboardClient({
   balance,
   habitsCount,
   activeWorkoutPlanName,
+  plan,
+  subscriptionExpiresAt,
 }: DashboardClientProps) {
   const router = useRouter()
   const [profileName, setProfileName] = useState(session.name)
-  const [loadingPayment, setLoadingPayment] = useState(false)
+  const [trialHoursRemaining, setTrialHoursRemaining] = useState<number | null>(null)
 
-  const handleUpgrade = async (tier: 'vip' | 'pro' | 'pro_yearly') => {
-    setLoadingPayment(true)
-    try {
-      const res = await fetch('/api/payments/create', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planTier: tier })
-      })
-      const data = await res.json()
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl
+  useEffect(() => {
+    if (plan === 'FREE_TRIAL' && subscriptionExpiresAt) {
+      const expiresAt = new Date(subscriptionExpiresAt)
+      const now = new Date()
+      const diffMs = expiresAt.getTime() - now.getTime()
+      if (diffMs > 0) {
+        setTrialHoursRemaining(Math.ceil(diffMs / (1000 * 60 * 60)))
       } else {
-        setLoadingPayment(false)
-        alert(data.error || 'Erro ao gerar pagamento')
+        setTrialHoursRemaining(0)
       }
-    } catch (err) {
-      console.error(err)
-      setLoadingPayment(false)
-      alert('Erro de rede. Tente novamente.')
     }
-  }
-
-  const isTrial = session.plan === 'FREE_TRIAL'
-  let trialRemainingHours = 0
-  let trialRemainingMinutes = 0
-  let showTrialBanner = false
-
-  if (isTrial) {
-    const now = Date.now()
-    let expirationTime = 0
-    if (session.subscriptionExpiresAt) {
-      expirationTime = new Date(session.subscriptionExpiresAt).getTime()
-    } else if (session.createdAt) {
-      expirationTime = new Date(session.createdAt).getTime() + 24 * 60 * 60 * 1000
-    }
-    
-    const remainingMs = expirationTime - now
-    if (remainingMs > 0) {
-      showTrialBanner = true
-      trialRemainingHours = Math.floor(remainingMs / (1000 * 60 * 60))
-      trialRemainingMinutes = Math.floor((remainingMs % (1000 * 60 * 60)) / (1000 * 60))
-    }
-  }
+  }, [plan, subscriptionExpiresAt])
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
@@ -107,9 +73,9 @@ export default function DashboardClient({
     { label: 'Finanças', icon: Lucide.Wallet, href: '/finances', color: 'text-brand-500 bg-brand-500/10' },
     { label: 'Hábitos', icon: Lucide.CheckSquare, href: '/habits', color: 'text-emerald-500 bg-emerald-500/10' },
     { label: 'Treinos', icon: Lucide.Dumbbell, href: '/workout', color: 'text-orange-500 bg-orange-500/10' },
-    { label: 'Agenda', icon: Lucide.CalendarDays, href: '/calendar', color: 'text-pink-500 bg-pink-500/10', locked: !session.canUseAgenda },
-    { label: 'Metas', icon: Lucide.Target, href: '/goals', color: 'text-blue-500 bg-blue-500/10', locked: !session.canUseGoals },
-    { label: 'Notas', icon: Lucide.StickyNote, href: '/notes', color: 'text-yellow-500 bg-yellow-500/10', locked: !session.canUseNotes },
+    { label: 'Agenda', icon: Lucide.CalendarDays, href: '/calendar', color: 'text-pink-500 bg-pink-500/10' },
+    { label: 'Metas', icon: Lucide.Target, href: '/goals', color: 'text-blue-500 bg-blue-500/10' },
+    { label: 'Notas', icon: Lucide.StickyNote, href: '/notes', color: 'text-yellow-500 bg-yellow-500/10' },
   ]
 
   return (
@@ -153,36 +119,6 @@ export default function DashboardClient({
 
         <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8 space-y-6">
           
-          {/* Trial Banner */}
-          {showTrialBanner && (
-            <div className="rounded-3xl bg-surface-50 dark:bg-brand-900/10 border border-brand-500/20 dark:border-brand-500/30 p-5 sm:p-6 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 shadow-sm">
-              <div className="flex items-start gap-4">
-                <div className="text-3xl mt-1">🎁</div>
-                <div>
-                  <h3 className="font-display font-semibold text-surface-900 dark:text-brand-300 text-xl">
-                    Você está usando o teste grátis do Vynta
-                  </h3>
-                  <p className="text-surface-600 dark:text-brand-200/80 text-sm mt-1.5 font-medium">
-                    {trialRemainingHours > 0 
-                      ? `Restam ${trialRemainingHours} hora${trialRemainingHours !== 1 ? 's' : ''} para experimentar todos os recursos.`
-                      : `Restam ${trialRemainingMinutes} minuto${trialRemainingMinutes !== 1 ? 's' : ''} para experimentar todos os recursos.`}
-                  </p>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto shrink-0">
-                <button disabled={loadingPayment} onClick={() => handleUpgrade('vip')} className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white dark:bg-white/10 text-surface-900 dark:text-white font-semibold text-sm border border-surface-200 dark:border-white/10 hover:bg-surface-100 dark:hover:bg-white/20 transition-all shadow-sm active:scale-95 disabled:opacity-50">
-                  Assinar VIP — R$19,90
-                </button>
-                <button disabled={loadingPayment} onClick={() => handleUpgrade('pro')} className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-600 text-white font-semibold text-sm hover:bg-brand-500 transition-all shadow-sm active:scale-95 disabled:opacity-50">
-                  Assinar PRO — R$29,90
-                </button>
-                <button disabled={loadingPayment} onClick={() => handleUpgrade('pro_yearly')} className="relative overflow-hidden w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-brand-600 text-white font-bold text-sm hover:from-purple-500 hover:to-brand-500 transition-all shadow-md active:scale-95 disabled:opacity-50">
-                  Assinar PRO Anual — R$239,90
-                </button>
-              </div>
-            </div>
-          )}
-
           {/* Welcome Banner */}
           <div className="rounded-3xl bg-gradient-to-br from-brand-600 via-brand-700 to-purple-800 p-6 sm:p-8 text-white shadow-xl dark:shadow-brand-500/10 border border-white/10 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
@@ -214,27 +150,35 @@ export default function DashboardClient({
             </div>
           </div>
 
+          {/* Trial Expiration Banner */}
+          {plan === 'FREE_TRIAL' && trialHoursRemaining !== null && trialHoursRemaining > 0 && (
+            <div className="rounded-2xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 p-4 sm:p-6 flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                  <Lucide.Clock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                    Período de Teste
+                  </h3>
+                  <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                    Seu plano acaba em <strong className="font-bold text-amber-600 dark:text-amber-400">{trialHoursRemaining} horas</strong>.
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/settings')}
+                className="w-full sm:w-auto px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm shadow-amber-500/20 active:scale-95 flex items-center justify-center gap-2"
+              >
+                Faça o upgrade agora!
+                <Lucide.ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+
           {/* Grid Layout of Pillars */}
           <div className="grid gap-6 md:grid-cols-12">
             
-            {/* Quick Upgrade CTA (Only for Trial Users) */}
-            {isTrial && (
-              <div className="card md:col-span-12 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 bg-gradient-to-r from-surface-100 to-surface-50 dark:from-surface-900/80 dark:to-surface-900/40 border border-brand-500/20 group">
-                <div>
-                  <h3 className="font-display font-semibold text-lg text-surface-900 dark:text-white flex items-center gap-2">
-                    <Lucide.Star className="w-5 h-5 text-brand-500" />
-                    Gostando do Vynta?
-                  </h3>
-                  <p className="text-sm text-surface-600 dark:text-surface-400 mt-1">
-                    Desbloqueie acesso permanente e continue usando todos os recursos.
-                  </p>
-                </div>
-                <button onClick={() => router.push('/subscription')} className="w-full sm:w-auto px-6 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl transition-all shadow-md active:scale-95 whitespace-nowrap">
-                  Fazer Upgrade
-                </button>
-              </div>
-            )}
-
             {/* Finances Module */}
             <div className="card md:col-span-8 relative overflow-hidden group hover:scale-[1.005] transition-all duration-300">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-transparent pointer-events-none" />
@@ -357,23 +301,19 @@ export default function DashboardClient({
             </div>
 
             {/* Calendar Module */}
-            <div className={`card md:col-span-4 flex flex-col justify-between transition-transform duration-300 ${!session.canUseAgenda ? 'opacity-50 grayscale pointer-events-none' : 'group hover:scale-[1.01]'}`}>
+            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h3 className="font-display text-base font-semibold flex items-center gap-2">
                     <Lucide.CalendarDays className="w-5 h-5 text-pink-500" />
                     <span>Agenda</span>
                   </h3>
-                  {!session.canUseAgenda ? (
-                    <Lucide.Lock className="w-4 h-4 text-surface-400" />
-                  ) : (
-                    <button
-                      onClick={() => router.push('/calendar')}
-                      className="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                    >
-                      <Lucide.ChevronRight className="w-4 h-4 text-surface-400" />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => router.push('/calendar')}
+                    className="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                  >
+                    <Lucide.ChevronRight className="w-4 h-4 text-surface-400" />
+                  </button>
                 </div>
 
                 <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
@@ -385,22 +325,17 @@ export default function DashboardClient({
                 onClick={() => router.push('/calendar')}
                 className="w-full mt-4 py-2 bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-400 text-xs font-semibold rounded-xl transition-colors border border-pink-500/10"
               >
-                {!session.canUseAgenda ? 'Bloqueado no seu plano' : 'Abrir Minha Agenda'}
+                Abrir Minha Agenda
               </button>
             </div>
 
             {/* Goals & Notes Module */}
-            <div className={`card md:col-span-4 flex flex-col justify-between transition-transform duration-300 ${(!session.canUseGoals && !session.canUseNotes) ? 'opacity-50 grayscale pointer-events-none' : 'group hover:scale-[1.01]'}`}>
+            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300">
               <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-display text-base font-semibold flex items-center gap-2">
-                    <Lucide.Target className="w-5 h-5 text-blue-500" />
-                    <span>Objetivos & Notas</span>
-                  </h3>
-                  {(!session.canUseGoals && !session.canUseNotes) && (
-                    <Lucide.Lock className="w-4 h-4 text-surface-400" />
-                  )}
-                </div>
+                <h3 className="font-display text-base font-semibold flex items-center gap-2">
+                  <Lucide.Target className="w-5 h-5 text-blue-500" />
+                  <span>Objetivos & Notas</span>
+                </h3>
 
                 <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
                   Defina metas pessoais, registre notas rápidas e mantenha suas ideias bem organizadas.
@@ -410,17 +345,15 @@ export default function DashboardClient({
               <div className="grid grid-cols-2 gap-2 mt-4">
                 <button
                   onClick={() => router.push('/goals')}
-                  disabled={!session.canUseGoals}
-                  className={`py-2 text-xs font-semibold rounded-xl transition-colors border ${!session.canUseGoals ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 border-surface-200 dark:border-surface-700 opacity-70' : 'bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/10'}`}
+                  className="py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-xl transition-colors border border-blue-500/10"
                 >
-                  {!session.canUseGoals ? 'Metas (Bloqueado)' : 'Metas'}
+                  Metas
                 </button>
                 <button
                   onClick={() => router.push('/notes')}
-                  disabled={!session.canUseNotes}
-                  className={`py-2 text-xs font-semibold rounded-xl transition-colors border ${!session.canUseNotes ? 'bg-surface-100 dark:bg-surface-800 text-surface-400 border-surface-200 dark:border-surface-700 opacity-70' : 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 border-yellow-500/10'}`}
+                  className="py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-semibold rounded-xl transition-colors border border-yellow-500/10"
                 >
-                  {!session.canUseNotes ? 'Notas (Bloqueado)' : 'Notas'}
+                  Notas
                 </button>
               </div>
             </div>
@@ -435,15 +368,10 @@ export default function DashboardClient({
                 <button
                   key={i}
                   onClick={() => router.push(action.href)}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-50 border transition-all duration-200 ${action.locked ? 'opacity-50 grayscale pointer-events-none border-surface-200 dark:bg-surface-800/40 dark:border-surface-800' : 'hover:bg-surface-100 dark:bg-surface-900/60 dark:hover:bg-surface-800 border-surface-150 dark:border-surface-800 hover:scale-105 active:scale-95'}`}
+                  className="flex flex-col items-center gap-2 p-3 rounded-2xl bg-surface-50 hover:bg-surface-100 dark:bg-surface-900/60 dark:hover:bg-surface-800 border border-surface-150 dark:border-surface-800 transition-all hover:scale-105 active:scale-95 duration-200"
                 >
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center relative ${action.color}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${action.color}`}>
                     <action.icon className="w-5 h-5" />
-                    {action.locked && (
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-surface-200 dark:bg-surface-700 rounded-full flex items-center justify-center border-2 border-surface-50 dark:border-surface-900">
-                        <Lucide.Lock className="w-2.5 h-2.5 text-surface-500 dark:text-surface-400" />
-                      </div>
-                    )}
                   </div>
                   <span className="text-xs font-medium text-surface-700 dark:text-surface-300">{action.label}</span>
                 </button>

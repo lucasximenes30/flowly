@@ -98,7 +98,7 @@ export default function ChangeAccessModal({
 
   const applyDefaults = (selectedPlan: string) => {
     setPlan(selectedPlan)
-    if (selectedPlan === 'PRO' || selectedPlan === 'ADMIN' || selectedPlan === 'COURTESY') {
+    if (selectedPlan === 'PRO' || selectedPlan === 'PRO_YEARLY' || selectedPlan === 'ADMIN' || selectedPlan === 'COURTESY') {
       setFeatures({ canUseFinance: true, canUseHabits: true, canUseWorkout: true, canUseGoals: true, canUseNotes: true, canUseAgenda: true })
     } else if (selectedPlan === 'VIP' || selectedPlan === 'FREE_TRIAL') {
       setFeatures({ canUseFinance: true, canUseHabits: true, canUseWorkout: true, canUseGoals: false, canUseNotes: false, canUseAgenda: false })
@@ -149,7 +149,7 @@ export default function ChangeAccessModal({
               <div>
                 <h3 className="text-sm font-semibold uppercase tracking-wider text-surface-500 mb-3">Plano</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                  {['PRO', 'VIP', 'FREE_TRIAL', 'COURTESY', 'ADMIN', 'FREE'].map((p) => (
+                  {['PRO', 'PRO_YEARLY', 'VIP', 'FREE_TRIAL', 'COURTESY', 'ADMIN', 'FREE'].map((p) => (
                     <button
                       key={p}
                       onClick={() => applyDefaults(p)}
@@ -159,7 +159,7 @@ export default function ChangeAccessModal({
                           : 'border-surface-200 dark:border-surface-700 text-surface-600 dark:text-surface-400 hover:bg-surface-50 dark:hover:bg-surface-800'
                       }`}
                     >
-                      {p === 'FREE_TRIAL' ? 'TRIAL' : p}
+                      {p === 'FREE_TRIAL' ? 'TRIAL' : p === 'PRO_YEARLY' ? 'PRO ANUAL' : p}
                     </button>
                   ))}
                 </div>
