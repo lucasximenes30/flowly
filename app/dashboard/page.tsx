@@ -44,11 +44,40 @@ export default async function DashboardPage() {
   }
 
   // Fetch unified stats in parallel
-  const [balance, habits, workoutPlan] = await Promise.all([
+  const now = new Date()
+  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999)
+
+  const [balance, habits, workoutPlan, events, weekCheckins] = await Promise.all([
     getUserBalance(session.userId).catch(() => ({ income: 0, expense: 0, balance: 0 })),
     getHabitsByUser(session.userId).catch(() => []),
     getActiveWorkoutPlanByUser(session.userId).catch(() => null),
+    prisma.calendarEvent.findMany({
+      where: {
+        userId: session.userId,
+        date: { gte: startMonth, lte: endMonth }
+      },
+      orderBy: { date: 'asc' }
+    }).catch(() => []),
+    prisma.habitCheckin.findMany({
+      where: { habit: { userId: session.userId, isActive: true } },
+      orderBy: { date: 'desc' },
+      take: 500 // Enough for the last week or two for active habits
+    }).catch(() => [])
   ])
+
+  // Parse events dates to ISO strings for client component
+  const serializedEvents = events.map((e: any) => ({
+    id: e.id,
+    title: e.title,
+    description: e.description,
+    date: e.date.toISOString(),
+    startTime: e.startTime,
+    endTime: e.endTime,
+    isAllDay: e.isAllDay,
+    category: e.category,
+    color: e.color
+  }))
 
   return (
     <DashboardClient
@@ -58,7 +87,9 @@ export default async function DashboardPage() {
         expense: Number(balance.expense),
         balance: Number(balance.balance),
       }}
-      habitsCount={habits.length}
+      habits={habits}
+      checkins={weekCheckins.map(c => ({ habitId: c.habitId, date: c.date, completed: c.completed }))}
+      events={serializedEvents}
       activeWorkoutPlanName={workoutPlan?.name || null}
       plan={user.plan}
       subscriptionExpiresAt={user.subscriptionExpiresAt ? user.subscriptionExpiresAt.toISOString() : null}

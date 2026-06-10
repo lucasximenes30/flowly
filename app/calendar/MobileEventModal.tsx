@@ -13,6 +13,10 @@ const COLORS = [
   { value: 'bg-yellow-500', label: 'Amarelo' },
   { value: 'bg-red-500', label: 'Vermelho' },
   { value: 'bg-surface-500', label: 'Cinza' },
+  { value: 'bg-indigo-500', label: 'Índigo' },
+  { value: 'bg-violet-500', label: 'Violeta' },
+  { value: 'bg-cyan-500', label: 'Ciano' },
+  { value: 'bg-teal-500', label: 'Teal' },
 ]
 
 const CATEGORIES = ['Trabalho', 'Pessoal', 'Estudos', 'Saúde', 'Finanças', 'Outros']

@@ -47,6 +47,10 @@ const HABIT_COLORS = [
   { id: 'green', hex: '#22c55e', label: 'Verde' },
   { id: 'teal', hex: '#14b8a6', label: 'Teal' },
   { id: 'yellow', hex: '#eab308', label: 'Amarelo' },
+  { id: 'indigo', hex: '#6366f1', label: 'Índigo' },
+  { id: 'violet', hex: '#8b5cf6', label: 'Violeta' },
+  { id: 'cyan', hex: '#06b6d4', label: 'Ciano' },
+  { id: 'fuchsia', hex: '#d946ef', label: 'Fúcsia' },
 ]
 
 const HABIT_ICON_NAMES = [

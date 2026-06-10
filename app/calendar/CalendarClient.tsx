@@ -155,7 +155,7 @@ export default function CalendarClient() {
         const isToday = isSameDay(day, new Date())
         
         // Find events for this day
-        const dayEvents = events.filter(e => isSameDay(parseISO(e.date), cloneDay))
+        const dayEvents = events.filter(e => e.date.substring(0, 10) === format(cloneDay, 'yyyy-MM-dd'))
 
         days.push(
           <div
@@ -213,7 +213,7 @@ export default function CalendarClient() {
   }
 
   // Selected Day Events
-  const selectedDayEvents = events.filter(e => isSameDay(parseISO(e.date), selectedDate)).sort((a, b) => {
+  const selectedDayEvents = events.filter(e => e.date.substring(0, 10) === format(selectedDate, 'yyyy-MM-dd')).sort((a, b) => {
     if (a.isAllDay) return -1
     if (b.isAllDay) return 1
     return (a.startTime || '00:00').localeCompare(b.startTime || '00:00')

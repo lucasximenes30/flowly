@@ -11,6 +11,10 @@ const COLORS = [
   { value: 'bg-orange-500', label: 'Laranja' },
   { value: 'bg-pink-500', label: 'Rosa' },
   { value: 'bg-yellow-500', label: 'Amarelo' },
+  { value: 'bg-indigo-500', label: 'Índigo' },
+  { value: 'bg-violet-500', label: 'Violeta' },
+  { value: 'bg-cyan-500', label: 'Ciano' },
+  { value: 'bg-teal-500', label: 'Teal' },
 ]
 
 const CATEGORIES = ['Viagem', 'Reserva de Emergência', 'Educação', 'Investimento', 'Veículo', 'Imóvel', 'Geral']

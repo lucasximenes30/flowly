@@ -2,7 +2,7 @@ import { Metadata } from 'next'
 import CalendarClient from './CalendarClient'
 
 export const metadata: Metadata = {
-  title: 'Agenda | Vynta',
+  title: 'Agenda',
   description: 'Organize seus eventos e rotina no Vynta.',
 }
 

@@ -12,6 +12,30 @@ interface Session {
   name: string
 }
 
+interface HabitDTO {
+  id: string
+  title: string
+  color: string
+}
+
+interface CheckinDTO {
+  habitId: string
+  date: string
+  completed: boolean
+}
+
+interface CalendarEventDTO {
+  id: string
+  title: string
+  description?: string
+  date: string
+  startTime?: string
+  endTime?: string
+  isAllDay: boolean
+  category?: string
+  color: string
+}
+
 interface DashboardClientProps {
   session: Session
   balance: {
@@ -19,7 +43,9 @@ interface DashboardClientProps {
     expense: number
     balance: number
   }
-  habitsCount: number
+  habits: HabitDTO[]
+  checkins: CheckinDTO[]
+  events: CalendarEventDTO[]
   activeWorkoutPlanName: string | null
   plan: string
   subscriptionExpiresAt: string | null
@@ -28,7 +54,9 @@ interface DashboardClientProps {
 export default function DashboardClient({
   session,
   balance,
-  habitsCount,
+  habits,
+  checkins,
+  events,
   activeWorkoutPlanName,
   plan,
   subscriptionExpiresAt,
@@ -179,8 +207,138 @@ export default function DashboardClient({
           {/* Grid Layout of Pillars */}
           <div className="grid gap-6 md:grid-cols-12">
             
+            {/* Daily Progress Module (New Redesign) */}
+            <div className="card md:col-span-12 lg:col-span-6 bg-surface-50 dark:bg-surface-900/40 border border-surface-200/50 dark:border-surface-800/80 rounded-3xl p-6 sm:p-8">
+              <h3 className="font-display text-base font-bold mb-6 text-surface-900 dark:text-white">Progresso do dia</h3>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-8">
+                {/* Ring */}
+                <div className="relative flex-shrink-0">
+                  {(() => {
+                    const todayLocal = new Date()
+                    const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`
+                    const todayCheckins = checkins.filter(c => c.date === todayStr && c.completed).length
+                    const habitsTotal = habits.length
+                    const percent = habitsTotal > 0 ? Math.round((todayCheckins / habitsTotal) * 100) : 0
+                    
+                    const radius = 54
+                    const circumference = 2 * Math.PI * radius
+                    const strokeDashoffset = circumference - (percent / 100) * circumference
+
+                    return (
+                      <>
+                        <svg className="w-32 h-32 transform -rotate-90">
+                          <circle cx="64" cy="64" r={radius} stroke="currentColor" strokeWidth="10" fill="transparent" className="text-surface-200 dark:text-surface-800" />
+                          <circle cx="64" cy="64" r={radius} stroke="currentColor" strokeWidth="10" fill="transparent" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} className="text-brand-500 transition-all duration-1000 ease-out" strokeLinecap="round" />
+                        </svg>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-3xl font-bold text-surface-900 dark:text-white">{percent}%</span>
+                          <span className="text-[10px] font-medium text-surface-500 uppercase tracking-wider mt-0.5">concluído</span>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+
+                {/* Bars */}
+                <div className="flex-1 w-full space-y-5">
+                  {(() => {
+                    const todayLocal = new Date()
+                    const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`
+                    const todayCheckins = checkins.filter(c => c.date === todayStr && c.completed).length
+                    const habitsTotal = habits.length
+                    const todayEvents = events.filter(e => e.date.substring(0, 10) === todayStr).length
+
+                    return (
+                      <>
+                        <div>
+                          <div className="flex justify-between text-sm font-semibold mb-2">
+                            <span className="text-surface-700 dark:text-surface-300">Hábitos</span>
+                            <span className="text-brand-600 dark:text-brand-400">{todayCheckins} / {habitsTotal}</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-brand-500 rounded-full transition-all duration-1000" style={{ width: habitsTotal > 0 ? `${(todayCheckins / habitsTotal) * 100}%` : '0%' }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-sm font-semibold mb-2">
+                            <span className="text-surface-700 dark:text-surface-300">Agenda</span>
+                            <span className="text-pink-600 dark:text-pink-400">{todayEvents} eventos</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-pink-500 rounded-full transition-all duration-1000" style={{ width: todayEvents > 0 ? '100%' : '0%' }} />
+                          </div>
+                        </div>
+
+                        <div>
+                          <div className="flex justify-between text-sm font-semibold mb-2">
+                            <span className="text-surface-700 dark:text-surface-300">Treino</span>
+                            <span className="text-orange-600 dark:text-orange-400">{activeWorkoutPlanName ? 'Ativo' : 'Nenhum'}</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-surface-200 dark:bg-surface-800 rounded-full overflow-hidden">
+                            <div className="h-full bg-orange-500 rounded-full transition-all duration-1000" style={{ width: activeWorkoutPlanName ? '100%' : '0%' }} />
+                          </div>
+                        </div>
+                      </>
+                    )
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Appointments Module (New Redesign) */}
+            <div className="card md:col-span-12 lg:col-span-6 bg-surface-50 dark:bg-surface-900/40 border border-surface-200/50 dark:border-surface-800/80 rounded-3xl p-6 sm:p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-display text-base font-bold text-surface-900 dark:text-white">Próximos compromissos</h3>
+                <button
+                  onClick={() => router.push('/calendar')}
+                  className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:text-brand-700 flex items-center gap-1 transition-colors"
+                >
+                  Abrir Agenda <Lucide.ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <div className="space-y-0 relative before:absolute before:inset-0 before:ml-[3.25rem] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-surface-200 dark:before:via-surface-800 before:to-transparent">
+                {(() => {
+                  const todayLocal = new Date()
+                  const todayStr = `${todayLocal.getFullYear()}-${String(todayLocal.getMonth() + 1).padStart(2, '0')}-${String(todayLocal.getDate()).padStart(2, '0')}`
+                  const todayEvents = events.filter(e => e.date.substring(0, 10) === todayStr).sort((a, b) => {
+                    if (a.isAllDay) return -1
+                    if (b.isAllDay) return 1
+                    return (a.startTime || '00:00').localeCompare(b.startTime || '00:00')
+                  })
+
+                  if (todayEvents.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-6 text-center text-surface-500 dark:text-surface-400">
+                        <Lucide.CalendarX2 className="w-10 h-10 mb-3 opacity-50" />
+                        <p className="text-sm font-medium">Você está livre hoje!</p>
+                      </div>
+                    )
+                  }
+
+                  return todayEvents.slice(0, 4).map((e, idx) => (
+                    <div key={e.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active py-3">
+                      <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white dark:border-surface-900 bg-brand-500 text-white shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow shadow-brand-500/20 z-10 mx-2 sm:mx-4">
+                        <Lucide.Calendar className="w-4 h-4" />
+                      </div>
+                      
+                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] bg-white dark:bg-surface-800/80 p-4 rounded-2xl shadow-sm border border-surface-100 dark:border-surface-700/50">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-bold text-surface-900 dark:text-white text-sm">{e.title}</span>
+                          <span className="text-xs font-bold text-brand-600 dark:text-brand-400">{e.isAllDay ? 'All' : e.startTime || '--:--'}</span>
+                        </div>
+                        <p className="text-xs font-medium text-surface-500 dark:text-surface-400 truncate">{e.category || 'Pessoal'}</p>
+                      </div>
+                    </div>
+                  ))
+                })()}
+              </div>
+            </div>
+
             {/* Finances Module */}
-            <div className="card md:col-span-8 relative overflow-hidden group hover:scale-[1.005] transition-all duration-300">
+            <div className="card md:col-span-8 relative overflow-hidden group hover:scale-[1.005] transition-all duration-300 bg-surface-50 dark:bg-surface-900/40 border-surface-200/50 dark:border-surface-800/80">
               <div className="absolute inset-0 bg-gradient-to-br from-brand-500/5 to-transparent pointer-events-none" />
               <div className="relative space-y-6">
                 <div className="flex justify-between items-center">
@@ -199,19 +357,19 @@ export default function DashboardClient({
 
                 {/* Balance display */}
                 <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border border-surface-150 dark:border-surface-800">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-surface-800/40 border border-surface-150 dark:border-surface-700/50">
                     <p className="text-xs font-medium text-surface-500 dark:text-surface-400">Saldo Geral</p>
                     <p className="text-xl font-bold mt-1 text-surface-900 dark:text-white truncate">
                       {formatCurrency(balance.balance)}
                     </p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border border-surface-150 dark:border-surface-800">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-surface-800/40 border border-surface-150 dark:border-surface-700/50">
                     <p className="text-xs font-medium text-surface-500 dark:text-surface-400">Receitas</p>
                     <p className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400 truncate">
                       {formatCurrency(balance.income)}
                     </p>
                   </div>
-                  <div className="p-4 rounded-2xl bg-surface-50 dark:bg-surface-800/40 border border-surface-150 dark:border-surface-800">
+                  <div className="p-4 rounded-2xl bg-white dark:bg-surface-800/40 border border-surface-150 dark:border-surface-700/50">
                     <p className="text-xs font-medium text-surface-500 dark:text-surface-400">Despesas</p>
                     <p className="text-xl font-bold mt-1 text-rose-600 dark:text-rose-400 truncate">
                       {formatCurrency(balance.expense)}
@@ -221,140 +379,31 @@ export default function DashboardClient({
               </div>
             </div>
 
-            {/* Habits Module */}
-            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300">
+            {/* Quick Note Module */}
+            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300 bg-surface-50 dark:bg-surface-900/40 border-surface-200/50 dark:border-surface-800/80">
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
-                  <h3 className="font-display text-base font-semibold flex items-center gap-2">
-                    <Lucide.CheckSquare className="w-5 h-5 text-emerald-500" />
-                    <span>Hábitos</span>
+                  <h3 className="font-display text-base font-semibold flex items-center gap-2 text-surface-900 dark:text-white">
+                    <Lucide.StickyNote className="w-5 h-5 text-yellow-500" />
+                    <span>Anotações rápidas</span>
                   </h3>
                   <button
-                    onClick={() => router.push('/habits')}
-                    className="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
+                    onClick={() => router.push('/notes')}
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand-500/10 hover:bg-brand-500/20 text-brand-600 dark:text-brand-400 transition-colors text-xs font-bold"
                   >
-                    <Lucide.ChevronRight className="w-4 h-4 text-surface-400" />
+                    <Lucide.Plus className="w-3.5 h-3.5" />
+                    Nova nota
                   </button>
                 </div>
 
-                <div className="space-y-2">
-                  <p className="text-2xl font-bold text-surface-900 dark:text-white">
-                    {habitsCount} ativos
+                <div className="p-4 rounded-2xl bg-white dark:bg-surface-800/60 border border-surface-150 dark:border-surface-700/50 border-dashed">
+                  <p className="text-sm font-medium text-surface-700 dark:text-surface-300">
+                    Focar no que importa.
                   </p>
-                  <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
-                    Mantenha a consistência hoje! Monitore sua rotina diária para criar conexões saudáveis.
-                  </p>
-                </div>
-              </div>
-
-              <button
-                onClick={() => router.push('/habits')}
-                className="w-full mt-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-xs font-semibold rounded-xl transition-colors border border-emerald-500/10"
-              >
-                Ver meus Hábitos
-              </button>
-            </div>
-
-            {/* Workouts Module */}
-            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-display text-base font-semibold flex items-center gap-2">
-                    <Lucide.Dumbbell className="w-5 h-5 text-orange-500" />
-                    <span>Treinos</span>
-                  </h3>
-                  <button
-                    onClick={() => router.push('/workout')}
-                    className="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                  >
-                    <Lucide.ChevronRight className="w-4 h-4 text-surface-400" />
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {activeWorkoutPlanName ? (
-                    <>
-                      <p className="text-sm font-semibold text-surface-800 dark:text-surface-200">
-                        Plano Ativo:
-                      </p>
-                      <p className="text-lg font-bold text-orange-500 truncate">
-                        {activeWorkoutPlanName}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-sm text-surface-500 dark:text-surface-400 font-medium">
-                      Nenhum plano ativo no momento.
-                    </p>
-                  )}
-                  <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
-                    Consulte seu plano de exercícios estruturado para hoje.
+                  <p className="text-xs text-surface-500 dark:text-surface-400 mt-1">
+                    Menos é mais, mas consistente.
                   </p>
                 </div>
-              </div>
-
-              <button
-                onClick={() => router.push('/workout')}
-                className="w-full mt-4 py-2 bg-orange-500/10 hover:bg-orange-500/20 text-orange-600 dark:text-orange-400 text-xs font-semibold rounded-xl transition-colors border border-orange-500/10"
-              >
-                Acessar meus Treinos
-              </button>
-            </div>
-
-            {/* Calendar Module */}
-            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-display text-base font-semibold flex items-center gap-2">
-                    <Lucide.CalendarDays className="w-5 h-5 text-pink-500" />
-                    <span>Agenda</span>
-                  </h3>
-                  <button
-                    onClick={() => router.push('/calendar')}
-                    className="p-1 rounded-lg hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors"
-                  >
-                    <Lucide.ChevronRight className="w-4 h-4 text-surface-400" />
-                  </button>
-                </div>
-
-                <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
-                  Consulte sua programação pessoal, compromissos e lembretes integrados para o mês de Julho.
-                </p>
-              </div>
-
-              <button
-                onClick={() => router.push('/calendar')}
-                className="w-full mt-4 py-2 bg-pink-500/10 hover:bg-pink-500/20 text-pink-600 dark:text-pink-400 text-xs font-semibold rounded-xl transition-colors border border-pink-500/10"
-              >
-                Abrir Minha Agenda
-              </button>
-            </div>
-
-            {/* Goals & Notes Module */}
-            <div className="card md:col-span-4 flex flex-col justify-between group hover:scale-[1.01] transition-transform duration-300">
-              <div className="space-y-4">
-                <h3 className="font-display text-base font-semibold flex items-center gap-2">
-                  <Lucide.Target className="w-5 h-5 text-blue-500" />
-                  <span>Objetivos & Notas</span>
-                </h3>
-
-                <p className="text-xs text-surface-500 dark:text-surface-400 leading-relaxed">
-                  Defina metas pessoais, registre notas rápidas e mantenha suas ideias bem organizadas.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 mt-4">
-                <button
-                  onClick={() => router.push('/goals')}
-                  className="py-2 bg-blue-500/10 hover:bg-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-semibold rounded-xl transition-colors border border-blue-500/10"
-                >
-                  Metas
-                </button>
-                <button
-                  onClick={() => router.push('/notes')}
-                  className="py-2 bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 text-xs font-semibold rounded-xl transition-colors border border-yellow-500/10"
-                >
-                  Notas
-                </button>
               </div>
             </div>
 
