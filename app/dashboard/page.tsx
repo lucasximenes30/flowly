@@ -88,7 +88,7 @@ export default async function DashboardPage() {
         balance: Number(balance.balance),
       }}
       habits={habits}
-      checkins={weekCheckins.map(c => ({ habitId: c.habitId, date: c.date, completed: c.completed }))}
+      checkins={weekCheckins.map((c: any) => ({ habitId: c.habitId, date: c.date, completed: c.completed }))}
       events={serializedEvents}
       activeWorkoutPlanName={workoutPlan?.name || null}
       plan={user.plan}
