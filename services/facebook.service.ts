@@ -56,7 +56,8 @@ export class FacebookService {
       .setActionSource('website');
 
     const eventsData = [serverEvent];
-    const eventRequest = new EventRequest(pixelId, eventsData);
+    const accessToken = process.env.FACEBOOK_ACCESS_TOKEN as string;
+    const eventRequest = new EventRequest(accessToken, pixelId, eventsData);
 
     try {
       const response = await eventRequest.execute();
