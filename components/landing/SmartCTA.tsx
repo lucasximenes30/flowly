@@ -2,6 +2,7 @@
 
 import { ArrowRight } from 'lucide-react'
 import MagneticButton from './MagneticButton'
+import { trackFunnelEvent } from '@/lib/funnel'
 
 export default function SmartCTA() {
   return (
@@ -9,6 +10,7 @@ export default function SmartCTA() {
       <MagneticButton 
         intensity={0.4}
         href="/register?plan=trial"
+        onClick={() => trackFunnelEvent('cta_click', { component: 'SmartCTA' })}
       >
         <div className="group w-full sm:w-auto inline-flex justify-between items-center rounded-full bg-white text-[#050505] px-6 sm:px-8 py-4 font-bold shadow-lg text-sm sm:text-base cursor-pointer">
           <span>Testar grátis</span>

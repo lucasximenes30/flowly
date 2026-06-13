@@ -24,6 +24,8 @@ export default async function DashboardPage() {
       subscriptionExpiresAt: true,
       role: true,
       plan: true,
+      createdAt: true,
+      hasSeenDashboard: true,
     },
   })
 
@@ -79,6 +81,16 @@ export default async function DashboardPage() {
     color: e.color
   }))
 
+  const isNewUser = !user.hasSeenDashboard
+
+  if (isNewUser) {
+    // Marcar como visto para que nas próximas vezes não dispare mais
+    await prisma.user.update({
+      where: { id: session.userId },
+      data: { hasSeenDashboard: true }
+    })
+  }
+
   return (
     <DashboardClient
       session={session}
@@ -93,6 +105,7 @@ export default async function DashboardPage() {
       activeWorkoutPlanName={workoutPlan?.name || null}
       plan={user.plan}
       subscriptionExpiresAt={user.subscriptionExpiresAt ? user.subscriptionExpiresAt.toISOString() : null}
+      isNewUser={isNewUser}
     />
   )
 }

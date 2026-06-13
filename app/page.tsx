@@ -6,6 +6,7 @@ import ScrollReveal from '@/components/landing/ScrollReveal'
 import MagneticButton from '@/components/landing/MagneticButton'
 import SmartCTA from '@/components/landing/SmartCTA'
 import HeaderActions from '@/components/landing/HeaderActions'
+import FunnelTracker from '@/components/FunnelTracker'
 
 // Layout Helpers
 function BezelImage({ src, mobileSrc, alt, className, priority = false }: { src: string, mobileSrc?: string, alt: string, className?: string, priority?: boolean }) {
@@ -56,6 +57,7 @@ function SectionHeading({ title, subtitle, eyebrow }: { title: string, subtitle?
 export default function LandingPage() {
   return (
     <main className="min-h-[100dvh] bg-[#050505] text-surface-200 selection:bg-brand-500/30 overflow-x-hidden relative font-sans">
+      <FunnelTracker eventName="landing_view" />
       
       {/* Background Radiance */}
       <div className="absolute inset-0 z-0 pointer-events-none flex justify-center items-start opacity-40 overflow-hidden">

@@ -53,10 +53,14 @@ export async function POST(req: NextRequest) {
     
     // Attempt to parse body for planTier
     let planTier: 'vip' | 'pro' | 'pro_yearly' | 'promo' = 'vip'
+    let sessionId: string | null = null
     try {
       const body = await req.json()
       if (['vip', 'pro', 'pro_yearly', 'promo'].includes(body.planTier)) {
         planTier = body.planTier
+      }
+      if (body.sessionId) {
+        sessionId = body.sessionId
       }
     } catch (e) {
       // Body might be empty, ignore
@@ -73,6 +77,7 @@ export async function POST(req: NextRequest) {
       ip,
       planTier,
       appUrl,
+      sessionId,
     })
 
     console.log('[Payments/Create] ✓ Payment created successfully, returning redirect URL')

@@ -38,6 +38,7 @@ model User {
   canUseNotes           Boolean                @default(false)
   canUseAgenda          Boolean                @default(false)
   usedUpgradeOffer      Boolean                @default(false)
+  hasSeenDashboard      Boolean                @default(false)
 
   cards                 Card[]
   customCategories      Category[]
@@ -570,4 +571,17 @@ model Note {
 
   @@index([userId])
   @@map("notes")
+}
+
+model FunnelEvent {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId  String
+  userId     String?  @db.Uuid
+  eventName  String
+  metadata   Json?
+  createdAt  DateTime @default(now()) @db.Timestamptz
+
+  @@index([sessionId])
+  @@index([eventName])
+  @@map("funnel_events")
 }

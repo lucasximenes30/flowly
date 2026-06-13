@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import { JWTPayload } from '@/lib/auth'
+import FunnelTracker from '@/components/FunnelTracker'
+import { trackFunnelEvent, getOrCreateSessionId } from '@/lib/funnel'
 
 interface SubscriptionClientProps {
   session: JWTPayload
@@ -15,13 +17,18 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
   const [error, setError] = useState('')
 
   const handleUpgrade = async (tier: 'vip' | 'pro' | 'pro_yearly') => {
+    trackFunnelEvent('checkout_started', { planTier: tier })
+    
     setLoading(true)
     setError('')
     try {
+      trackFunnelEvent('payment_attempted', { planTier: tier })
+      const sessionId = getOrCreateSessionId()
+      
       const res = await fetch('/api/payments/create', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planTier: tier })
+        body: JSON.stringify({ planTier: tier, sessionId })
       })
       const data = await res.json()
 
@@ -46,6 +53,7 @@ export default function SubscriptionClient({ session }: SubscriptionClientProps)
 
   return (
     <div className="min-h-screen bg-surface-50 dark:bg-surface-950 text-surface-900 dark:text-surface-100 transition-colors duration-300 animate-dashboard-fade">
+      <FunnelTracker eventName="plan_viewed" onceKey="plan_viewed" />
       {/* Header */}
       <header className="border-b border-surface-200/80 bg-white dark:bg-surface-900 dark:border-surface-800 transition-colors duration-300">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">

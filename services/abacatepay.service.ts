@@ -31,6 +31,8 @@ export interface CreateTransactionInput {
   planTier?: 'vip' | 'pro' | 'promo' | 'pro_yearly'
   /** The base URL of the application */
   appUrl: string
+  /** The frontend funnel session ID */
+  sessionId?: string | null
 }
 
 /**
@@ -101,7 +103,7 @@ export async function createTransaction(user: CreateTransactionInput) {
 
     const appUrl = user.appUrl
 
-    const checkoutExternalId = `${user.id}_${Date.now()}`
+    const checkoutExternalId = `${user.id}_${Date.now()}_${user.sessionId || 'none'}`
 
     // 3. Create the checkout
     const checkout = await abacate.checkouts.create({
