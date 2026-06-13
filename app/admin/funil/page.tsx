@@ -1,14 +1,12 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import FunnelClient from './FunnelClient'
 
 export const metadata: Metadata = {
   title: 'Funil de Conversão - Vynta Ops',
 }
-
-const prisma = new PrismaClient()
 
 export default async function FunnelPage() {
   const session = await getSession()

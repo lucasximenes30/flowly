@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { createTransaction } from '@/services/abacatepay.service'
-
-const prisma = new PrismaClient()
 
 /** Extract best-effort client IP from Next.js request headers */
 function getClientIp(req: NextRequest): string | null {
