@@ -63,8 +63,8 @@ export default function LandingPage() {
       
       {/* Background Radiance */}
       <div className="absolute inset-0 z-0 pointer-events-none flex justify-center items-start opacity-40 overflow-hidden">
-        <div className="w-[800px] h-[800px] bg-brand-600/20 rounded-full blur-[140px] mix-blend-screen -translate-y-[40%] -translate-x-[20%]" />
-        <div className="w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[140px] mix-blend-screen -translate-y-[20%] translate-x-[20%]" />
+        <div className="w-[800px] h-[800px] bg-brand-600/20 rounded-full blur-[60px] mix-blend-screen -translate-y-[40%] -translate-x-[20%]" />
+        <div className="w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[60px] mix-blend-screen -translate-y-[20%] translate-x-[20%]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6">
@@ -81,7 +81,7 @@ export default function LandingPage() {
         <section className="py-24 md:py-32 flex flex-col items-center text-center max-w-4xl mx-auto">
           <div className="space-y-8">
             <ScrollReveal delay={0.1}>
-              <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-md">
+              <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-sm">
                 SISTEMA PESSOAL DE GESTÃO
               </span>
             </ScrollReveal>
@@ -195,14 +195,14 @@ export default function LandingPage() {
               </ScrollReveal>
             </div>
             <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/Finanças V2.png" mobileSrc="/images/Finanças Mobile V2.jpeg" alt="Controle Financeiro Vynta" />
+              <BezelImage src="/images/Finanças V2.webp" mobileSrc="/images/Finanças Mobile V2.webp" alt="Controle Financeiro Vynta" />
             </div>
           </div>
 
           {/* Metas Financeiras */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
             <div className="relative w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/Metas V2.png" mobileSrc="/images/Metas Mobile V2.jpeg" alt="Gestão de Metas Vynta" />
+              <BezelImage src="/images/Metas V2.webp" mobileSrc="/images/Metas Mobile V2.webp" alt="Gestão de Metas Vynta" />
             </div>
             <div className="space-y-6">
               <SectionHeading 
@@ -247,14 +247,14 @@ export default function LandingPage() {
               </ScrollReveal>
             </div>
             <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/Agenda V2.png" mobileSrc="/images/Agenda Mobile V2.jpeg" alt="Agenda Vynta" />
+              <BezelImage src="/images/Agenda V2.webp" mobileSrc="/images/Agenda Mobile V2.webp" alt="Agenda Vynta" />
             </div>
           </div>
 
           {/* Hábitos */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
             <div className="relative w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/Hábitos V2.png" mobileSrc="/images/Hábitos Mobile V2.jpeg" alt="Gestão de Hábitos Vynta" />
+              <BezelImage src="/images/Hábitos V2.webp" mobileSrc="/images/Hábitos Mobile V2.webp" alt="Gestão de Hábitos Vynta" />
             </div>
             <div className="space-y-6">
               <SectionHeading 
@@ -299,14 +299,14 @@ export default function LandingPage() {
               </ScrollReveal>
             </div>
             <div className="relative order-1 lg:order-2 w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/Notas V2.png" mobileSrc="/images/Notas Mobile V2.jpeg" alt="Notas Vynta" />
+              <BezelImage src="/images/Notas V2.webp" mobileSrc="/images/Notas Mobile V2.webp" alt="Notas Vynta" />
             </div>
           </div>
 
           {/* Treinos (Optional Addon) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
             <div className="relative w-full max-w-md md:max-w-full mx-auto">
-              <BezelImage src="/images/Treino V2.png" mobileSrc="/images/Treino Mobile V2.jpeg" alt="Módulo de Treino Vynta" />
+              <BezelImage src="/images/Treino V2.webp" mobileSrc="/images/Treino Mobile V2.webp" alt="Módulo de Treino Vynta" />
             </div>
             <div className="space-y-6">
               <SectionHeading 
@@ -347,7 +347,7 @@ export default function LandingPage() {
               { icon: Target, title: "De Estagnado para Imparável", text: "Troque a frustração amarga de não evoluir pelo vício incrível da disciplina recompensada e crescimento visível." }
             ].map((Benefit, i) => (
               <ScrollReveal key={i} delay={i * 0.1}>
-                <div className="bg-surface-900/40 backdrop-blur-md border border-white/5 hover:border-white/10 hover:bg-surface-800/40 transition-all rounded-[2rem] p-8 text-center space-y-6 group h-full">
+                <div className="bg-surface-900/40 backdrop-blur-sm border border-white/5 hover:border-white/10 hover:bg-surface-800/40 transition-all rounded-[2rem] p-8 text-center space-y-6 group h-full">
                   <div className="w-14 h-14 rounded-full bg-brand-500/10 border border-brand-500/20 flex items-center justify-center mx-auto mb-6 transition-transform duration-300 group-hover:scale-110">
                     <Benefit.icon className="w-6 h-6 text-brand-400" strokeWidth={1.5}/>
                   </div>

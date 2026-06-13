@@ -18,15 +18,15 @@ export default function ScrollReveal({
   yOffset?: number
 }) {
   const ref = useRef<HTMLDivElement>(null)
-  const isInView = useInView(ref, { once, margin: '-15%' })
+  const isInView = useInView(ref, { once, margin: '-100px' })
 
   return (
     <motion.div
       ref={ref}
-      initial={{ y: yOffset, filter: 'blur(12px)', opacity: 0 }}
-      animate={isInView ? { y: 0, filter: 'blur(0px)', opacity: 1 } : { y: yOffset, filter: 'blur(12px)', opacity: 0 }}
+      initial={{ y: yOffset, opacity: 0 }}
+      animate={isInView ? { y: 0, opacity: 1 } : { y: yOffset, opacity: 0 }}
       transition={{
-        duration: 0.9,
+        duration: 0.4,
         ease: [0.32, 0.72, 0, 1], // Custom agency-tier cubic bezier
         delay: delay,
       }}
