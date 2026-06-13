@@ -27,24 +27,31 @@ export default async function FunnelPage() {
     return acc
   }, {} as Record<string, Set<string>>)
 
-  const steps = [
+  const acquisitionSteps = [
     { name: 'landing_view', label: '1. Landing Page' },
     { name: 'cta_click', label: '2. Clique CTA' },
-    { name: 'signup_started', label: '3. Início Cadastro' },
-    { name: 'signup_completed', label: '4. Fim Cadastro' },
-    { name: 'dashboard_first_view', label: '5. Dashboard' },
-    { name: 'plan_viewed', label: '6. Ver Planos' },
-    { name: 'checkout_started', label: '7. Iniciar Checkout' },
-    { name: 'payment_attempted', label: '8. Pagar' },
-    { name: 'purchase', label: '9. Compra' },
+    { name: 'plan_viewed', label: '3. Ver Planos' },
+    { name: 'checkout_started', label: '4. Iniciar Checkout' },
+    { name: 'signup_started', label: '5. Início Cadastro' },
+    { name: 'signup_completed', label: '6. Fim Cadastro' },
+    { name: 'payment_attempted', label: '7. Tentar Pagar' },
+    { name: 'purchase', label: '8. Compra' },
   ]
 
-  const funnelData = steps.map(step => {
-    return {
-      name: step.label,
-      value: uniqueSessionsPerStep[step.name] ? uniqueSessionsPerStep[step.name].size : 0
-    }
-  })
+  const activationSteps = [
+    { name: 'purchase', label: '1. Compra' },
+    { name: 'dashboard_first_view', label: '2. Primeiro Acesso Dashboard' },
+  ]
 
-  return <FunnelClient data={funnelData} />
+  const funnel1Data = acquisitionSteps.map(step => ({
+    name: step.label,
+    value: uniqueSessionsPerStep[step.name] ? uniqueSessionsPerStep[step.name].size : 0
+  }))
+
+  const funnel2Data = activationSteps.map(step => ({
+    name: step.label,
+    value: uniqueSessionsPerStep[step.name] ? uniqueSessionsPerStep[step.name].size : 0
+  }))
+
+  return <FunnelClient funnel1Data={funnel1Data} funnel2Data={funnel2Data} />
 }

@@ -7,6 +7,8 @@ import MagneticButton from '@/components/landing/MagneticButton'
 import SmartCTA from '@/components/landing/SmartCTA'
 import HeaderActions from '@/components/landing/HeaderActions'
 import FunnelTracker from '@/components/FunnelTracker'
+import PricingTracker from '@/components/landing/PricingTracker'
+import PlanButton from '@/components/landing/PlanButton'
 
 // Layout Helpers
 function BezelImage({ src, mobileSrc, alt, className, priority = false }: { src: string, mobileSrc?: string, alt: string, className?: string, priority?: boolean }) {
@@ -412,6 +414,7 @@ export default function LandingPage() {
 
         {/* Pricing Section */}
         <section id="planos" className="py-20 md:py-32 px-4 md:px-0">
+          <PricingTracker />
           <ScrollReveal>
             <div className="text-center mb-16 space-y-4">
               <span className="inline-block rounded-full px-4 py-1.5 bg-brand-500/10 border border-brand-500/20 text-brand-400 text-xs uppercase tracking-[0.2em] font-bold">
@@ -451,11 +454,11 @@ export default function LandingPage() {
                 </ul>
 
                 <div className="flex flex-col items-center gap-3">
-                  <MagneticButton href="/register?plan=vip" intensity={0.2}>
+                  <PlanButton href="/register?plan=vip" intensity={0.2} tier="vip">
                     <div className="w-full flex justify-center items-center rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white px-6 py-4 font-bold transition-all">
                       Desbloquear Financeiro
                     </div>
-                  </MagneticButton>
+                  </PlanButton>
                   <span className="text-xs text-surface-500 font-medium tracking-wide text-center">Sem fidelidade • Cancele quando quiser</span>
                 </div>
               </div>
@@ -487,11 +490,11 @@ export default function LandingPage() {
                 </ul>
 
                 <div className="flex flex-col items-center gap-3">
-                  <MagneticButton href="/register?plan=pro" intensity={0.2}>
+                  <PlanButton href="/register?plan=pro" intensity={0.2} tier="pro">
                     <div className="relative z-10 w-full flex justify-center items-center rounded-full bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-4 font-bold transition-all group">
                       <span>Desbloquear PRO</span>
                     </div>
-                  </MagneticButton>
+                  </PlanButton>
                   <span className="text-xs text-surface-500 font-medium tracking-wide text-center">Sem fidelidade • Cancele quando quiser</span>
                 </div>
               </div>
@@ -530,14 +533,14 @@ export default function LandingPage() {
                   ))}
                 </ul>
 
-                <MagneticButton href="/register?plan=pro_yearly" intensity={0.2}>
+                <PlanButton href="/register?plan=pro_yearly" intensity={0.2} tier="pro_yearly">
                   <div className="relative z-10 w-full flex justify-between items-center rounded-full bg-white text-[#050505] px-6 py-4 font-bold shadow-[0_0_30px_-5px_rgba(255,255,255,0.3)] hover:shadow-[0_0_40px_-5px_rgba(255,255,255,0.5)] transition-all group">
                     <span>Desbloquear PRO Anual</span>
                     <span className="w-8 h-8 rounded-full bg-black/5 flex items-center justify-center shrink-0 transition-transform group-hover:translate-x-1 group-hover:-translate-y-[1px]">
                        <ArrowRight className="w-4 h-4 text-black" strokeWidth={2.5} />
                     </span>
                   </div>
-                </MagneticButton>
+                </PlanButton>
               </div>
             </ScrollReveal>
 
