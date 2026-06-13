@@ -78,7 +78,7 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <section className="py-24 md:py-32 flex flex-col items-center text-center max-w-4xl mx-auto">
+        <section className="py-16 md:py-20 flex flex-col items-center text-center max-w-4xl mx-auto">
           <div className="space-y-8">
             <ScrollReveal delay={0.1}>
               <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-sm">
@@ -92,7 +92,7 @@ export default function LandingPage() {
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[55ch] mx-auto font-light">
-                Sua vida não precisa ser uma coleção de abas abertas, contas surpresa e metas abandonadas. A clareza que você precisa para parar de apagar incêndios e começar a viver de forma intencional.
+                O Vynta organiza suas finanças, hábitos e agenda em um único Sistema — pra você parar de abrir 7 outros sem nenhuma resposta sobre pra onde o dinheiro e o tempo foram.
               </p>
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
@@ -107,8 +107,8 @@ export default function LandingPage() {
         </section>
 
         {/* Problem Section */}
-        <section className="py-32 border-t border-white/5">
-          <div className="max-w-5xl mx-auto space-y-16">
+        <section className="py-16 md:py-24 border-t border-white/5">
+          <div className="max-w-5xl mx-auto space-y-10 md:space-y-12">
             <ScrollReveal>
               <div className="text-center px-4">
                 <span className="inline-block rounded-full px-4 py-1.5 mb-6 bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs uppercase tracking-[0.2em] font-bold">A raiz do problema</span>
@@ -157,7 +157,7 @@ export default function LandingPage() {
         </section>
 
         {/* Solution Section */}
-        <section id="solucao" className="py-24 md:py-32">
+        <section id="solucao" className="py-16 md:py-20">
           <ScrollReveal>
             <div className="max-w-4xl mx-auto text-center space-y-8 md:space-y-10 px-4">
               <h2 className="font-display text-4xl md:text-5xl lg:text-7xl font-semibold tracking-tighter text-white">
@@ -171,7 +171,7 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section - Comprehensive Rewrite */}
-        <section className="py-24 space-y-32 md:space-y-40">
+        <section className="py-16 space-y-16 md:space-y-20">
           
           {/* Controle Financeiro (The Core) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-24 items-center px-4 md:px-0">
@@ -332,7 +332,7 @@ export default function LandingPage() {
         </section>
 
         {/* Benefits Section */}
-        <section className="py-32 border-t border-white/5 space-y-20">
+        <section className="py-16 md:py-20 border-t border-white/5 space-y-10">
           <ScrollReveal>
             <div className="text-center">
               <h2 className="font-display text-4xl md:text-5xl lg:text-6xl font-semibold text-white tracking-tighter">Deixe o caos no passado. Viva com clareza absoluta.</h2>
@@ -360,7 +360,7 @@ export default function LandingPage() {
         </section>
 
         {/* Objection Handling Section */}
-        <section className="py-20 md:py-24 border-t border-white/5 space-y-12 md:space-y-16">
+        <section className="py-16 md:py-20 border-t border-white/5 space-y-8 md:space-y-10">
           <div className="text-center px-4 max-w-2xl mx-auto mb-12">
              <h2 className="font-display text-3xl md:text-4xl font-semibold text-white tracking-tighter">A verdade nua e crua.</h2>
           </div>
@@ -413,7 +413,7 @@ export default function LandingPage() {
         </section>
 
         {/* Pricing Section */}
-        <section id="planos" className="py-20 md:py-32 px-4 md:px-0">
+        <section id="planos" className="py-16 md:py-20 px-4 md:px-0">
           <PricingTracker />
           <ScrollReveal>
             <div className="text-center mb-16 space-y-4">
@@ -548,7 +548,7 @@ export default function LandingPage() {
         </section>
 
         {/* Final CTA & Footer */}
-        <footer className="py-32 text-center flex flex-col items-center border-t border-white/5 space-y-16">
+        <footer className="py-16 md:py-20 text-center flex flex-col items-center border-t border-white/5 space-y-8">
             <ScrollReveal>
               <h2 className="font-display text-5xl md:text-6xl font-semibold text-white tracking-tighter max-w-4xl leading-[1.1]">Seu trial de 48h começa agora. Sem cartão, sem compromisso. Depois disso: R$ 29,90/mês ou R$ 16,50/mês no plano anual.</h2>
             </ScrollReveal>
