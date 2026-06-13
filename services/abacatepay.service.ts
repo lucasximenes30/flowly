@@ -1,7 +1,5 @@
 import { AbacatePay } from '@abacatepay/sdk'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { prisma } from '@/lib/prisma'
 
 const PLAN_PRICES = {
   vip: 1990,
