@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import * as Lucide from 'lucide-react'
 import OnboardingClient from '@/components/OnboardingClient'
-
+import FunnelTracker from '@/components/FunnelTracker'
 
 interface Session {
   userId: string
@@ -49,6 +49,7 @@ interface DashboardClientProps {
   activeWorkoutPlanName: string | null
   plan: string
   subscriptionExpiresAt: string | null
+  isNewUser?: boolean
 }
 
 export default function DashboardClient({
@@ -60,6 +61,7 @@ export default function DashboardClient({
   activeWorkoutPlanName,
   plan,
   subscriptionExpiresAt,
+  isNewUser,
 }: DashboardClientProps) {
   const router = useRouter()
   const [profileName, setProfileName] = useState(session.name)
@@ -109,6 +111,7 @@ export default function DashboardClient({
   return (
     <>
       <OnboardingClient />
+      {isNewUser && <FunnelTracker eventName="dashboard_first_view" onceKey="dashboard_first_view" />}
       <div className="min-h-screen bg-surface-50 dark:bg-surface-950 transition-colors duration-300 animate-dashboard-fade">
         
         {/* Top Header */}

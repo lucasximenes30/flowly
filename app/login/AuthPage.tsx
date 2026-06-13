@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import BrandLogo from '@/components/BrandLogo'
 import { QRCodeSVG } from 'qrcode.react'
+import { trackFunnelEvent } from '@/lib/funnel'
 
 export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter()
@@ -24,6 +25,17 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
 
   // Track if user is currently on the inactive screen
   const [isInactive, setIsInactive] = useState(searchParams.get('error') === 'inactive')
+
+  // Signup started tracking
+  useEffect(() => {
+    if (mode === 'register') {
+      const storageKey = 'vynta_funnel_signup_started'
+      if (!localStorage.getItem(storageKey)) {
+        localStorage.setItem(storageKey, 'true')
+        trackFunnelEvent('signup_started')
+      }
+    }
+  }, [mode])
 
   // Redirect to plans if registering without a plan
   useEffect(() => {
@@ -54,6 +66,10 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       if (!res.ok) {
         setError(data.error ?? 'Algo deu errado')
         return
+      }
+
+      if (mode === 'register') {
+        trackFunnelEvent('signup_completed')
       }
 
       // ── Handle AbacatePay Redirect ──────────────────────────────────────

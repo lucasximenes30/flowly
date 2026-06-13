@@ -81,13 +81,13 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
       }
 
-      // The externalId format is now: {userId}_{timestamp}
+      // The externalId format is now: {userId}_{timestamp}_{sessionId}
       const rawExternalId = checkout.externalId || ''
-      const userId = rawExternalId.split('_')[0]
+      const [userId, timestamp, sessionId] = rawExternalId.split('_')
       const transactionId = checkout.id
       const amountCents = checkout.amount || 0
       
-      console.log(`[AbacatePay Webhook] Payment confirmed for user: ${userId}, transaction: ${transactionId}`)
+      console.log(`[AbacatePay Webhook] Payment confirmed for user: ${userId}, transaction: ${transactionId}, session: ${sessionId}`)
 
       // Very important: Verify with AbacatePay API directly if the checkout is actually PAID
       // This protects against spoofed webhooks even if signature validation was bypassed
@@ -165,6 +165,23 @@ export async function POST(req: Request) {
           planTier,
           usedUpgradeOffer,
         })
+        
+        // Save Funnel Event
+        if (sessionId && sessionId !== 'none') {
+          await prisma.funnelEvent.create({
+            data: {
+              sessionId: sessionId,
+              userId: userId,
+              eventName: 'purchase',
+              metadata: {
+                transactionId,
+                amount: amountCents / 100,
+                planTier,
+                usedUpgradeOffer: usedUpgradeOffer || false
+              }
+            }
+          }).catch(err => console.error('[AbacatePay Webhook] Failed to save purchase funnel event', err))
+        }
         
         // Also update billing provider info
         const updatedUser = await prisma.user.update({
