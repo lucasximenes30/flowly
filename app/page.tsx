@@ -56,6 +56,32 @@ function SectionHeading({ title, subtitle, eyebrow }: { title: string, subtitle?
   )
 }
 
+const reviewsRow1 = [
+  { name: "Ana Lima", text: "Finalmente parei de usar 5 apps diferentes. O Vynta organizou minha vida financeira e minha rotina de uma vez." },
+  { name: "Carlos M.", text: "Primeira semana usando e já sei exatamente pra onde vai cada centavo. Nunca tive isso antes." },
+  { name: "Fernanda R.", text: "Minha planilha de gastos virou história. O Vynta faz isso e muito mais." },
+  { name: "Rafael T.", text: "Hábitos, treino e finanças no mesmo lugar. Parece simples mas muda tudo." },
+  { name: "Juliana K.", text: "Sou estudante e profissional ao mesmo tempo. O Vynta foi o único sistema que funcionou pra minha rotina." },
+  { name: "Marcos V.", text: "Desinstalei Notion, Mobills e mais dois apps depois que comecei a usar." },
+  { name: "Patrícia N.", text: "A visão geral do dia é o que me faltava. Agora acordo sabendo exatamente o que fazer." },
+  { name: "Diego S.", text: "Testei grátis sem colocar cartão e já no segundo dia sabia que ia assinar." },
+  { name: "Camila F.", text: "O controle financeiro dentro do Vynta é simples e funciona de verdade. Recomendo demais." },
+  { name: "Bruno A.", text: "Finalmente um app brasileiro feito pra quem tem rotina corrida e quer clareza." },
+]
+
+const reviewsRow2 = [
+  { name: "Letícia M.", text: "Nunca mantive um app de hábitos por mais de 2 semanas. Com o Vynta já são 3 meses." },
+  { name: "Thiago B.", text: "O painel de visão geral do dia é incrível. Tudo que preciso em uma tela só." },
+  { name: "Vanessa C.", text: "Uso pra controlar gastos, treinos e metas. Nunca imaginei que um app fosse tão completo." },
+  { name: "Eduardo L.", text: "Interface linda e funcional. Raro de encontrar nos apps brasileiros." },
+  { name: "Aline P.", text: "Indiquei pra toda a minha equipe. Todo mundo adotou na primeira semana." },
+  { name: "Ricardo G.", text: "Finalmente consegui juntar dinheiro depois que comecei a registrar tudo no Vynta." },
+  { name: "Isabela T.", text: "O Vynta substituiu minha planilha, meu app de treino e meu caderno de metas. Sem arrependimento." },
+  { name: "Felipe R.", text: "Simples, bonito e funciona. O que mais precisava pra organizar minha vida." },
+  { name: "Natália S.", text: "Comecei pelo trial e não precisou nem terminar as 48h pra eu já querer assinar." },
+  { name: "Gabriel O.", text: "Custo-benefício absurdo. Vale cada centavo e ainda tem trial grátis sem cartão." },
+]
+
 export default function LandingPage() {
   return (
     <main className="min-h-[100dvh] bg-[#050505] text-surface-200 selection:bg-brand-500/30 overflow-x-hidden relative font-sans">
@@ -78,28 +104,54 @@ export default function LandingPage() {
         </header>
 
         {/* Hero Section */}
-        <section className="py-16 md:py-20 flex flex-col items-center text-center max-w-4xl mx-auto">
-          <div className="space-y-8">
+        <section className="relative pt-6 pb-12 md:py-24 flex flex-col items-center text-center w-full">
+          {/* Reviews Background Marquee */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[100vw] h-[120%] z-0 overflow-hidden opacity-[0.06] md:opacity-[0.12] flex flex-col gap-4 justify-center pointer-events-none [mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]">
+            <div className="flex w-max animate-marquee gap-4">
+              {[...reviewsRow1, ...reviewsRow1].map((review, i) => (
+                <div key={`row1-${i}`} className="w-[350px] shrink-0 border border-white/[0.08] bg-white/[0.03] rounded-xl p-4 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#A78BFA] font-medium text-sm">{review.name}</span>
+                    <span className="text-xs">⭐⭐⭐⭐⭐</span>
+                  </div>
+                  <p className="text-white/60 text-sm leading-relaxed text-left">{review.text}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex w-max animate-marquee-reverse gap-4">
+              {[...reviewsRow2, ...reviewsRow2].map((review, i) => (
+                <div key={`row2-${i}`} className="w-[350px] shrink-0 border border-white/[0.08] bg-white/[0.03] rounded-xl p-4 flex flex-col gap-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#A78BFA] font-medium text-sm">{review.name}</span>
+                    <span className="text-xs">⭐⭐⭐⭐⭐</span>
+                  </div>
+                  <p className="text-white/60 text-sm leading-relaxed text-left">{review.text}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative z-10 space-y-6 md:space-y-8 max-w-4xl mx-auto px-4">
             <ScrollReveal delay={0.1}>
               <span className="inline-block rounded-full px-4 py-2 bg-surface-800/40 border border-white/10 text-brand-300 text-xs font-bold tracking-widest uppercase backdrop-blur-sm">
                 SISTEMA PESSOAL DE GESTÃO
               </span>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <h1 className="font-display text-5xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-tighter text-white leading-[1.05]">
-                Pare de sobreviver à sua própria <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400">rotina.</span>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-[4.5rem] font-semibold tracking-tighter text-white leading-[1.05]">
+                Chega de 7 apps pra organizar <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-400">1 vida.</span>
               </h1>
             </ScrollReveal>
             <ScrollReveal delay={0.3}>
               <p className="text-surface-400 text-lg md:text-xl leading-relaxed max-w-[55ch] mx-auto font-light">
-                O Vynta organiza suas finanças, hábitos e agenda em um único Sistema — pra você parar de abrir 7 outros sem nenhuma resposta sobre pra onde o dinheiro e o tempo foram.
+                O Vynta reúne suas finanças, hábitos, treinos e agenda em um único sistema — pra você parar de apagar incêndio e começar a viver com clareza.
               </p>
             </ScrollReveal>
             <ScrollReveal delay={0.4}>
               <div className="flex flex-col items-center justify-center">
                 <SmartCTA />
                 <p className="mt-6 text-sm text-surface-500 font-medium tracking-wide">
-                  48h grátis • Sem cartão de crédito • Cancele quando quiser
+                  Comece hoje. Sua vida organizada em menos de 5 minutos.
                 </p>
               </div>
             </ScrollReveal>
@@ -572,6 +624,15 @@ export default function LandingPage() {
             </div>
         </footer>
 
+      </div>
+
+      {/* Mobile Sticky CTA */}
+      <div className="fixed bottom-0 left-0 w-full z-[100] md:hidden opacity-0 translate-y-full animate-slide-up-delayed">
+        <div className="bg-[#050505]/70 backdrop-blur-lg border-t border-[#7C3AED]/30 p-4 pb-6 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
+          <Link href="/register?mode=trial" className="flex items-center justify-center w-full bg-[#7C3AED] text-white font-bold py-4 rounded-xl shadow-[0_4px_20px_rgba(124,58,237,0.4)] active:scale-95 transition-transform text-[15px]">
+            Testar grátis — sem cartão de crédito
+          </Link>
+        </div>
       </div>
     </main>
   )

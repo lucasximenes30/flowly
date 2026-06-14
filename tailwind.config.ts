@@ -45,6 +45,25 @@ const config: Config = {
         'card-hover': '0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04)',
         elevated: '0 10px 40px rgba(0,0,0,0.1)',
       },
+      keyframes: {
+        'slide-up': {
+          '0%': { transform: 'translateY(100%)', opacity: '0' },
+          '100%': { transform: 'translateY(0)', opacity: '1' },
+        },
+        'marquee': {
+          '0%': { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        'marquee-reverse': {
+          '0%': { transform: 'translateX(-50%)' },
+          '100%': { transform: 'translateX(0%)' },
+        }
+      },
+      animation: {
+        'slide-up-delayed': 'slide-up 0.5s ease-out 3s forwards',
+        'marquee': 'marquee 70s linear infinite',
+        'marquee-reverse': 'marquee-reverse 70s linear infinite',
+      }
     },
   },
   plugins: [],
