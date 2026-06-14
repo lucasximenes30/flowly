@@ -15,6 +15,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const [password, setPassword] = useState('')
   const [document, setDocument] = useState('')
   const planTier = searchParams.get('plan')
+  const flowMode = searchParams.get('mode')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [paymentData, setPaymentData] = useState<any>(null)
@@ -37,12 +38,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
     }
   }, [mode])
 
-  // Redirect to plans if registering without a plan
+  // Redirect to plans if registering without a plan and not trial
   useEffect(() => {
-    if (mode === 'register' && !planTier) {
+    if (mode === 'register' && flowMode !== 'trial' && !planTier) {
       router.push('/#planos')
     }
-  }, [mode, planTier, router])
+  }, [mode, planTier, flowMode, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,7 +54,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       const endpoint = mode === 'login' ? '/api/auth/login' : '/api/auth/register'
       const body = mode === 'login'
         ? { email, password }
-        : { name, email, password, document: document.replace(/\D/g, ''), planTier }
+        : { name, email, password, document: document.replace(/\D/g, ''), planTier: flowMode === 'trial' ? 'trial' : planTier }
 
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -426,10 +427,18 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             priority
           />
           <h1 className="mt-6 font-display text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-            {mode === 'login' ? 'Bem-vindo de volta' : 'Comece com tranquilidade'}
+            {mode === 'login' 
+              ? 'Bem-vindo de volta' 
+              : flowMode === 'trial'
+                ? 'Comece seu teste grátis de 48h'
+                : planTier
+                  ? `Desbloquear o plano ${planTier.toUpperCase().replace('_', ' ')}`
+                  : 'Comece com tranquilidade'}
           </h1>
           <p className="mx-auto mt-3 max-w-sm text-[1.03rem] leading-relaxed text-surface-200 sm:text-lg">
-            Organize sua vida com clareza, consistência e controle.
+            {mode === 'register' && flowMode === 'trial'
+              ? 'Organize sua vida com clareza, sem compromisso.'
+              : 'Organize sua vida com clareza, consistência e controle.'}
           </p>
         </div>
 
@@ -534,6 +543,12 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
               mode === 'login' ? 'Entrar' : 'Criar Conta'
             )}
           </button>
+          
+          {mode === 'register' && flowMode === 'trial' && (
+            <p className="text-center text-sm text-surface-400 mt-4">
+              48 horas grátis • Sem cartão de crédito • Cancele quando quiser
+            </p>
+          )}
         </form>
 
         {/* Form bottom links */}
