@@ -163,6 +163,19 @@ export default function FinancesClient({
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
 
+  // Goal allocation fields
+  const [goals, setGoals] = useState<any[]>([])
+  const [allocateToGoal, setAllocateToGoal] = useState(false)
+  const [goalId, setGoalId] = useState('')
+  const [goalAmount, setGoalAmount] = useState('')
+
+  useEffect(() => {
+    fetch('/api/goals').then(r => r.json()).then(data => {
+      if (Array.isArray(data)) setGoals(data)
+    }).catch(() => {})
+  }, [])
+
+
   // Installment fields
   const [isInstallment, setIsInstallment] = useState(false)
   const [totalInstallments, setTotalInstallments] = useState('')
@@ -220,6 +233,8 @@ export default function FinancesClient({
           recurringDay: isRecurring ? parseInt(recurringDay) : null,
           cardId: paymentMethod === 'credit_card' && selectedCardId ? selectedCardId : null,
           paymentMethod: paymentMethod === 'none' ? null : paymentMethod,
+          goalId: allocateToGoal && goalId ? goalId : null,
+          goalAmount: allocateToGoal && goalId ? (type === 'INCOME' && goalAmount ? parseFloat(goalAmount) : parseFloat(amount)) : null,
         }),
       })
 
@@ -234,6 +249,7 @@ export default function FinancesClient({
       setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(getLocalToday()); setDueDay('')
       setIsRecurring(false); setRecurringDay('')
       setPaymentMethod('none'); setSelectedCardId('')
+      setAllocateToGoal(false); setGoalId(''); setGoalAmount('')
       setShowForm(false)
       router.refresh()
     } catch {
@@ -647,6 +663,73 @@ export default function FinancesClient({
                   </>
                 )}
 
+                {/* Allocate to Goal toggle */}
+                <div className="sm:col-span-2 pt-1 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setAllocateToGoal(!allocateToGoal)}
+                    className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 transition-all duration-200 ${
+                      allocateToGoal
+                        ? 'border-brand-300 bg-brand-50 dark:border-brand-700/50 dark:bg-brand-900/20'
+                        : 'border-surface-200 dark:border-surface-700/60 bg-white dark:bg-surface-800 hover:bg-surface-50 dark:hover:bg-surface-700/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Lucide.Target className={`w-4 h-4 ${allocateToGoal ? 'text-brand-600 dark:text-brand-400' : 'text-surface-400'}`} />
+                      <span className="text-sm font-medium text-surface-700 dark:text-surface-200">
+                        {'Destinar parte a uma meta?'}
+                      </span>
+                    </div>
+                    <div className={`w-10 h-6 rounded-full transition-all duration-200 flex items-center ${
+                      allocateToGoal ? 'bg-brand-600 justify-end' : 'bg-surface-300 dark:bg-surface-600 justify-start'
+                    }`}>
+                      <div className="w-4 h-4 rounded-full bg-white mx-1 shadow-sm transition-transform" />
+                    </div>
+                  </button>
+                </div>
+                {/* Allocate to Goal fields */}
+                {allocateToGoal && (
+                  <div className="sm:col-span-2 grid gap-5 sm:grid-cols-2 bg-brand-50/50 dark:bg-brand-900/10 p-4 rounded-xl border border-brand-100 dark:border-brand-800/30">
+                    <div className="space-y-1.5">
+                      <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
+                        {'Qual meta?'}
+                      </label>
+                      {goals.length === 0 ? (
+                         <div className="text-sm text-surface-500 py-2">Nenhuma meta encontrada.</div>
+                      ) : (
+                        <select
+                          className="input-field"
+                          value={goalId}
+                          onChange={(e) => setGoalId(e.target.value)}
+                        >
+                          <option value="">Selecione uma meta</option>
+                          {goals.map(g => (
+                            <option key={g.id} value={g.id}>
+                              {g.title} ({formatCurrency(Number(g.currentAmount))} de {formatCurrency(Number(g.targetAmount))})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    {type === 'INCOME' && (
+                      <div className="space-y-1.5">
+                        <label className="block text-sm font-medium text-surface-600 dark:text-surface-300">
+                          {'Valor a destinar'}
+                        </label>
+                        <input
+                          type="number"
+                          min="0.01"
+                          step="0.01"
+                          className="input-field"
+                          placeholder="0,00"
+                          value={goalAmount}
+                          onChange={(e) => setGoalAmount(e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Recurring toggle */}
                 <div className="sm:col-span-2 pt-1 pb-1">
                   <button
@@ -752,7 +835,7 @@ export default function FinancesClient({
               <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3">
                 <button
                   type="button"
-                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(getLocalToday()); setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(getLocalToday()); setDueDay(''); }}
+                  onClick={() => { setShowForm(false); setTitle(''); setAmount(''); setCategory(''); setDate(getLocalToday()); setIsInstallment(false); setTotalInstallments(''); setPurchaseDate(getLocalToday()); setDueDay(''); setAllocateToGoal(false); setGoalId(''); setGoalAmount(''); }}
                   className="btn-secondary w-full sm:w-auto h-12 sm:h-auto text-base sm:text-sm font-semibold"
                   disabled={submitting}
                 >

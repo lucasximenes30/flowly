@@ -247,8 +247,8 @@ export default function GoalsClient() {
                         onClick={() => handleAddMoney(g)}
                         className="w-full relative z-10 py-3 rounded-xl border border-surface-200 dark:border-surface-700/80 bg-white dark:bg-surface-900 text-sm font-semibold text-surface-700 dark:text-surface-200 hover:bg-surface-50 dark:hover:bg-surface-800 transition-all duration-300 flex items-center justify-center gap-2 group-hover:border-surface-300 dark:group-hover:border-surface-600 active:scale-[0.98] shadow-sm hover:shadow"
                       >
-                        <Lucide.ArrowUpCircle strokeWidth={1.5} className="w-5 h-5 text-surface-500 dark:text-surface-400 group-hover:text-brand-500 transition-colors" />
-                        Guardar Dinheiro
+                        <Lucide.Sliders strokeWidth={1.5} className="w-5 h-5 text-surface-500 dark:text-surface-400 group-hover:text-brand-500 transition-colors" />
+                        Gerenciar
                       </button>
                     </div>
                   </motion.div>

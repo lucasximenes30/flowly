@@ -22,6 +22,29 @@ export async function DELETE(
       )
     }
 
+    const goalTxs = await prisma.goalTransaction.findMany({
+      where: { transactionId: id }
+    })
+
+    if (goalTxs.length > 0) {
+      for (const goalTx of goalTxs) {
+        if (goalTx.type === 'DEPOSIT') {
+          await prisma.financialGoal.update({
+            where: { id: goalTx.goalId },
+            data: { currentAmount: { decrement: goalTx.amount } }
+          })
+        } else if (goalTx.type === 'WITHDRAW') {
+          await prisma.financialGoal.update({
+            where: { id: goalTx.goalId },
+            data: { currentAmount: { increment: goalTx.amount } }
+          })
+        }
+      }
+      await prisma.goalTransaction.deleteMany({
+        where: { transactionId: id }
+      })
+    }
+
     await prisma.transaction.delete({ where: { id } })
 
     return NextResponse.json({ success: true })

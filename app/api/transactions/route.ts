@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { getSession } from '@/lib/auth'
 import { createTransaction, getTransactionsByUser, getUserBalance, getMonthlySummary } from '@/services/transaction.service'
 import { verifyCardOwnership } from '@/services/card.service'
-
+import { prisma } from '@/lib/prisma'
 
 const createSchema = z.object({
   title: z.string().min(1, 'Title is required'),
@@ -18,7 +18,9 @@ const createSchema = z.object({
   isRecurring: z.boolean().optional(),
   recurringDay: z.number().int().min(1).max(31).optional().nullable(),
   cardId: z.string().uuid().optional().nullable(),
-  paymentMethod: z.string().optional().nullable()
+  paymentMethod: z.string().optional().nullable(),
+  goalId: z.string().uuid().optional().nullable(),
+  goalAmount: z.number().positive('Goal amount must be positive').optional().nullable(),
 })
 
 export async function GET() {
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const data = createSchema.parse(body)
-    const { isInstallment, totalInstallments, purchaseDate, dueDay, isRecurring, recurringDay, cardId, ...rest } = data
+    const { isInstallment, totalInstallments, purchaseDate, dueDay, isRecurring, recurringDay, cardId, goalId, goalAmount, ...rest } = data
 
     // Security: verify the cardId belongs to this user before saving
     if (cardId) {
@@ -62,6 +64,46 @@ export async function POST(request: NextRequest) {
       ...(recurringDay && { recurringDay }),
       cardId: cardId ?? null,
     })
+
+    // Lógica para alocação de meta
+    if (goalId && goalAmount) {
+      const goal = await prisma.financialGoal.findUnique({ where: { id: goalId } })
+      if (goal && goal.userId === session.userId) {
+        await prisma.$transaction(async (tx) => {
+          // 1. Criar GoalTransaction (Depósito na meta)
+          await tx.goalTransaction.create({
+            data: {
+              goalId,
+              amount: goalAmount,
+              type: 'DEPOSIT',
+              description: `Alocado da transação: ${rest.title}`,
+              transactionId: transaction.id,
+            }
+          })
+          
+          // 2. Atualizar saldo da meta
+          const newTotal = parseFloat(goal.currentAmount.toString()) + goalAmount
+          await tx.financialGoal.update({
+            where: { id: goalId },
+            data: { currentAmount: newTotal }
+          })
+        })
+
+        // 3. Criar a Despesa (EXPENSE) espelho SOMENTE se a transação original for RECEITA
+        // Se a transação original for DESPESA, o valor já foi debitado do saldo principal.
+        if (rest.type === 'INCOME') {
+          await createTransaction({
+            title: `Alocação para Meta: ${goal.title}`,
+            amount: goalAmount,
+            type: 'EXPENSE',
+            category: 'Investment',
+            date: rest.date,
+            userId: session.userId,
+          })
+        }
+      }
+    }
+
     return NextResponse.json({ success: true, transaction })
   } catch (error: any) {
     const message = error instanceof z.ZodError

@@ -163,6 +163,17 @@ export async function GET(req: Request) {
 
     // Get the overall accumulated balance up to endDate using getUserBalance
     const overallBalanceData = await getUserBalance(session.userId, endDate)
+
+    // Fetch user goals
+    const goals = await prisma.financialGoal.findMany({
+      where: { userId: session.userId },
+      include: {
+        transactions: {
+          orderBy: { date: 'asc' }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
     
     return NextResponse.json({
       summary: {
@@ -171,6 +182,7 @@ export async function GET(req: Request) {
         balance: overallBalanceData.balance
       },
       extract: includeExtract ? extract : [],
+      goals,
       period: {
         type,
         year,

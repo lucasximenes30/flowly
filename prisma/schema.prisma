@@ -139,6 +139,7 @@ model Transaction {
   card              Card?           @relation(fields: [cardId], references: [id])
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   notes             Note[]
+  goalTransactions  GoalTransaction[]
 
   @@map("transactions")
 }
@@ -543,6 +544,8 @@ model GoalTransaction {
   date        DateTime      @default(now())
   description String?
   goal        FinancialGoal @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  transactionId String?
+  transaction   Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
 
   @@index([goalId])
   @@map("goal_transactions")

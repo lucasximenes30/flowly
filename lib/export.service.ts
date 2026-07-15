@@ -16,6 +16,20 @@ interface ExportData {
     paymentMethod: string | null
   }>
   period: { type: string; year: number; month: number | null }
+  goals?: Array<{
+    id: string
+    title: string
+    targetAmount: string | number
+    currentAmount: string | number
+    category: string | null
+    transactions: Array<{
+      id: string
+      amount: string | number
+      type: string
+      date: string
+      description: string | null
+    }>
+  }>
 }
 
 const formatCurrency = (val: number) => {
@@ -54,6 +68,14 @@ export const exportToCSV = (data: ExportData, fileName: string) => {
   csvContent += `Receitas,"${formatCurrency(data.summary.income)}"\n`
   csvContent += `Despesas,"${formatCurrency(data.summary.expense)}"\n`
   csvContent += `Saldo,"${formatCurrency(data.summary.balance)}"\n`
+
+  if (data.goals && data.goals.length > 0) {
+    csvContent += '\n\nMetas e Caixinhas\n'
+    csvContent += 'Título,Categoria,Acumulado,Objetivo\n'
+    data.goals.forEach(g => {
+      csvContent += `"${g.title.replace(/"/g, '""')}",${g.category || 'Geral'},"${formatCurrency(Number(g.currentAmount))}","${formatCurrency(Number(g.targetAmount))}"\n`
+    })
+  }
 
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
   saveAs(blob, `${fileName}.csv`)
@@ -126,6 +148,41 @@ export const exportToXLSX = async (data: ExportData, fileName: string) => {
       const amountCell = row.getCell('amount')
       amountCell.numFmt = 'R$ #,##0.00'
       amountCell.font = { color: { argb: item.type === 'INCOME' ? 'FF22C55E' : 'FFF43F5E' } }
+    })
+  }
+
+  if (data.goals && data.goals.length > 0) {
+    const goalsSheet = workbook.addWorksheet('Metas', {
+      views: [{ state: 'frozen', ySplit: 1 }]
+    })
+
+    goalsSheet.columns = [
+      { header: 'Título', key: 'title', width: 30 },
+      { header: 'Categoria', key: 'category', width: 20 },
+      { header: 'Acumulado', key: 'current', width: 15 },
+      { header: 'Objetivo', key: 'target', width: 15 },
+      { header: 'Progresso', key: 'progress', width: 15 }
+    ]
+
+    goalsSheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } }
+    goalsSheet.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } }
+
+    data.goals.forEach(g => {
+      const current = Number(g.currentAmount)
+      const target = Number(g.targetAmount)
+      const progress = target > 0 ? (current / target) : 0
+      
+      const row = goalsSheet.addRow({
+        title: g.title,
+        category: g.category || 'Geral',
+        current: current,
+        target: target,
+        progress: progress
+      })
+      
+      row.getCell('current').numFmt = 'R$ #,##0.00'
+      row.getCell('target').numFmt = 'R$ #,##0.00'
+      row.getCell('progress').numFmt = '0.0%'
     })
   }
 
@@ -219,6 +276,41 @@ export const exportToPDF = (data: ExportData, fileName: string) => {
           }
         }
       }
+    })
+  }
+
+  if (data.goals && data.goals.length > 0) {
+    // Adiciona uma nova página se já houver tabelas antes, ou ajusta o startY
+    if (data.extract.length > 0) {
+      doc.addPage()
+    }
+    
+    doc.setTextColor(15, 23, 42)
+    doc.setFontSize(14)
+    doc.setFont('helvetica', 'bold')
+    doc.text('Metas e Caixinhas', 14, 20)
+    
+    const goalsBody = data.goals.map(g => {
+      const current = Number(g.currentAmount)
+      const target = Number(g.targetAmount)
+      const progress = target > 0 ? ((current / target) * 100).toFixed(1) + '%' : '0%'
+      return [
+        g.title,
+        g.category || 'Geral',
+        formatCurrency(current),
+        formatCurrency(target),
+        progress
+      ]
+    })
+    
+    autoTable(doc, {
+      startY: 25,
+      head: [['Título', 'Categoria', 'Acumulado', 'Objetivo', 'Progresso']],
+      body: goalsBody,
+      theme: 'grid',
+      headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold' },
+      bodyStyles: { textColor: [51, 65, 85] },
+      alternateRowStyles: { fillColor: [248, 250, 252] },
     })
   }
 

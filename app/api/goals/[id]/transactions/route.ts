@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createTransaction } from '@/services/transaction.service'
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,7 +11,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     }
 
     const { id: goalId } = await params
-    const { amount, type = 'DEPOSIT', description } = await req.json()
+    const { amount, type = 'DEPOSIT', description, syncWithBalance } = await req.json()
 
     if (!amount || isNaN(parseFloat(amount))) {
       return NextResponse.json({ error: 'Valor inválido' }, { status: 400 })
@@ -54,10 +55,28 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         data: { currentAmount: newTotal }
       })
 
-      return goalTx
+      return { goalTx, goalTitle: goal.title }
     })
 
-    return NextResponse.json(result)
+    // Se o usuário marcou para descontar/adicionar do saldo principal, criamos uma transação em finanças.
+    // Criamos fora do prisma.$transaction principal porque createTransaction pode usar sua própria lógica.
+    if (syncWithBalance) {
+      const transactionType = type === 'DEPOSIT' ? 'EXPENSE' : 'INCOME'
+      const transactionTitle = type === 'DEPOSIT' 
+        ? `Depósito na Meta: ${result.goalTitle}`
+        : `Retirada da Meta: ${result.goalTitle}`
+        
+      await createTransaction({
+        title: transactionTitle,
+        amount: parsedAmount,
+        type: transactionType,
+        category: 'Investment', // Usando a categoria de Investimento acordada
+        date: new Date().toISOString().split('T')[0], // YYYY-MM-DD
+        userId: session.userId,
+      })
+    }
+
+    return NextResponse.json(result.goalTx)
   } catch (error: any) {
     console.error('Erro ao adicionar transação na meta:', error)
     if (error.message === 'Meta não encontrada') {
