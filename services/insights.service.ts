@@ -2,6 +2,12 @@
 
 import { prisma } from '@/lib/prisma'
 import { generateAIText } from '@/services/ai.service'
+import {
+  SupportedLocale,
+  CATEGORY_LABELS,
+  resolveCanonicalCategory,
+  localizeCategoryName,
+} from '@/lib/categories'
 
 export interface AIInsight {
   text: string
@@ -26,84 +32,10 @@ const CACHE_TTL = 24 * 60 * 60 * 1000 // 24h
 const MAX_AI_INSIGHTS = 4
 const MAX_INSIGHT_CHARS = 180
 
-type SupportedLocale = 'pt-BR' | 'en'
-
-const CATEGORY_LABELS: Record<string, Record<SupportedLocale, string>> = {
-  Salary: { 'pt-BR': 'Salário', en: 'Salary' },
-  Freelance: { 'pt-BR': 'Freelance', en: 'Freelance' },
-  Food: { 'pt-BR': 'Alimentação', en: 'Food' },
-  Transport: { 'pt-BR': 'Transporte', en: 'Transport' },
-  Entertainment: { 'pt-BR': 'Lazer', en: 'Entertainment' },
-  Shopping: { 'pt-BR': 'Compras', en: 'Shopping' },
-  Bills: { 'pt-BR': 'Contas', en: 'Bills' },
-  Health: { 'pt-BR': 'Saúde', en: 'Health' },
-  General: { 'pt-BR': 'Geral', en: 'General' },
-  Investment: { 'pt-BR': 'Investimento', en: 'Investment' },
-  Other: { 'pt-BR': 'Outro', en: 'Other' },
-  Restaurant: { 'pt-BR': 'Restaurante', en: 'Restaurant' },
-  Gym: { 'pt-BR': 'Academia', en: 'Gym' },
-  Home: { 'pt-BR': 'Casa', en: 'Home' },
-  Education: { 'pt-BR': 'Educação', en: 'Education' },
-}
-
-const CATEGORY_ALIASES: Record<string, string> = {
-  salario: 'Salary',
-  alimentação: 'Food',
-  alimentacao: 'Food',
-  transporte: 'Transport',
-  lazer: 'Entertainment',
-  entretenimento: 'Entertainment',
-  compras: 'Shopping',
-  contas: 'Bills',
-  saúde: 'Health',
-  saude: 'Health',
-  geral: 'General',
-  investimento: 'Investment',
-  outro: 'Other',
-  restaurante: 'Restaurant',
-  academia: 'Gym',
-  casa: 'Home',
-  educação: 'Education',
-  educacao: 'Education',
-}
-
 function normalizeLanguage(language: string): SupportedLocale {
   return language === 'en' ? 'en' : 'pt-BR'
 }
 
-function normalizeCategoryText(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-}
-
-function resolveCanonicalCategory(category: string): string | null {
-  if (category in CATEGORY_LABELS) return category
-
-  const normalized = normalizeCategoryText(category)
-  const fromAlias = CATEGORY_ALIASES[normalized]
-  if (fromAlias) return fromAlias
-
-  for (const [canonical, labels] of Object.entries(CATEGORY_LABELS)) {
-    if (
-      normalizeCategoryText(labels['pt-BR']) === normalized ||
-      normalizeCategoryText(labels.en) === normalized ||
-      normalizeCategoryText(canonical) === normalized
-    ) {
-      return canonical
-    }
-  }
-
-  return null
-}
-
-function localizeCategoryName(category: string, language: SupportedLocale): string {
-  const canonical = resolveCanonicalCategory(category)
-  if (!canonical) return category
-  return CATEGORY_LABELS[canonical][language]
-}
 
 function localizeTopCategories(
   categories: { category: string; amount: number }[],
@@ -499,7 +431,8 @@ export async function getWeeklyAnalysis(userId: string): Promise<WeeklyAnalysis[
     const topCategory = data.transactions
       .filter((t) => t.type === 'EXPENSE')
       .reduce<Map<string, number>>((acc, t) => {
-        acc.set(t.category, (acc.get(t.category) || 0) + Number(t.amount))
+        const localized = localizeCategoryName(t.category, 'pt-BR')
+        acc.set(localized, (acc.get(localized) || 0) + Number(t.amount))
         return acc
       }, new Map())
 
@@ -591,7 +524,8 @@ export async function calculateFinancialScore(userId: string, locale: string = '
   transactions
     .filter((t) => t.type === 'EXPENSE')
     .forEach((t) => {
-      expenseByCategory.set(t.category, (expenseByCategory.get(t.category) || 0) + Number(t.amount))
+      const localized = localizeCategoryName(t.category, locale as SupportedLocale)
+      expenseByCategory.set(localized, (expenseByCategory.get(localized) || 0) + Number(t.amount))
     })
 
   if (expenses > 0) {
@@ -765,7 +699,7 @@ export async function detectSpendingAnomalies(userId: string): Promise<SpendingA
     if (deviation > 2 && stats.amounts.length >= 3) {
       anomalies.push({
         date: t.date.toISOString(),
-        category: t.category,
+        category: localizeCategoryName(t.category, 'pt-BR'),
         amount,
         averageInCategory: Math.round(avg * 100) / 100,
         deviation: Math.round(deviation * 100) / 100,

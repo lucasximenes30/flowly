@@ -5,21 +5,14 @@ import { useRouter } from 'next/navigation'
 
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 import AdvancedReports from '@/components/AdvancedReports'
+import MonthlyGoalsReport from '@/components/MonthlyGoalsReport'
+import ExportModal from '@/components/ExportModal'
+import * as Lucide from 'lucide-react'
+import { localizeCategoryName } from '@/lib/categories'
 
 
 // Translation helper for category & month
-const categoryTranslations: Record<string, string> = {
-  'category.Food': 'Alimentação',
-  'category.Transport': 'Transporte',
-  'category.Entertainment': 'Lazer',
-  'category.Shopping': 'Compras',
-  'category.Bills': 'Contas',
-  'category.Health': 'Saúde',
-  'category.General': 'Geral',
-  'category.Salary': 'Salário',
-  'category.Freelance': 'Freelance',
-  'category.Investment': 'Investimento',
-  'category.Other': 'Outro',
+const monthTranslations: Record<string, string> = {
   'month.january': 'Janeiro',
   'month.february': 'Fevereiro',
   'month.march': 'Março',
@@ -35,7 +28,12 @@ const categoryTranslations: Record<string, string> = {
 }
 
 const t = (key: string): string => {
-  return categoryTranslations[key] || key.replace(/^(category|month)\./, '');
+  if (key.startsWith('category.')) {
+    const category = key.replace('category.', '');
+    const translated = localizeCategoryName(category, 'pt-BR');
+    return translated !== category ? translated : category;
+  }
+  return monthTranslations[key] || key.replace(/^(month)\./, '');
 }
 
 const locale = 'pt-BR';
@@ -191,6 +189,9 @@ export default function ReportsClient({
   comparison: Comparison
 }) {
   const router = useRouter()
+  
+  const [activeTab, setActiveTab] = useState<'geral' | 'metas'>('geral')
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false)
   
 
   const isBRL = true;
@@ -394,10 +395,43 @@ export default function ReportsClient({
                 return <option key={m} value={m}>{getMonthName(mo)} {y}</option>
               })}
             </select>
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-brand-600 rounded-xl hover:bg-brand-700 transition-colors shadow-sm active:scale-95"
+            >
+              <Lucide.Download className="w-4 h-4" />
+              Exportar
+            </button>
           </div>
         </div>
 
-        {/* Summary Cards */}
+        {/* Tabs */}
+        <div className="flex p-1 space-x-1 bg-surface-100 dark:bg-surface-800/50 rounded-xl w-full sm:w-fit mb-2">
+          <button
+            onClick={() => setActiveTab('geral')}
+            className={`flex-1 sm:flex-none px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'geral'
+                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm ring-1 ring-surface-200 dark:ring-surface-600'
+                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-200/50 dark:hover:bg-surface-700/50'
+            }`}
+          >
+            Resumo Geral
+          </button>
+          <button
+            onClick={() => setActiveTab('metas')}
+            className={`flex-1 sm:flex-none px-6 py-2.5 text-sm font-medium rounded-lg transition-all duration-200 ${
+              activeTab === 'metas'
+                ? 'bg-white dark:bg-surface-700 text-surface-900 dark:text-white shadow-sm ring-1 ring-surface-200 dark:ring-surface-600'
+                : 'text-surface-500 dark:text-surface-400 hover:text-surface-700 dark:hover:text-surface-200 hover:bg-surface-200/50 dark:hover:bg-surface-700/50'
+            }`}
+          >
+            Metas e Caixinhas
+          </button>
+        </div>
+
+        {activeTab === 'geral' ? (
+          <>
+            {/* Summary Cards */}
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <div className="card group relative overflow-hidden transition-all duration-200 hover:shadow-card-hover hover:border-surface-200 dark:hover:border-surface-700">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-900/10 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -688,7 +722,17 @@ export default function ReportsClient({
 
         {/* Advanced Reports Section */}
         <AdvancedReports formatCurrency={formatCurrency} isBRL={isBRL} />
+          </>
+        ) : (
+          <MonthlyGoalsReport selectedMonth={selectedMonth} formatCurrency={formatCurrency} />
+        )}
       </main>
+      
+      <ExportModal 
+        isOpen={isExportModalOpen} 
+        onClose={() => setIsExportModalOpen(false)} 
+        selectedMonth={selectedMonth} 
+      />
     </div>
   )
 }

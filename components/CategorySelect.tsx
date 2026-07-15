@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 
 import * as Lucide from 'lucide-react'
 import ManageCategoriesModal from './ManageCategoriesModal'
+import { localizeCategoryName } from '@/lib/categories'
 
 interface Category {
   id: string
@@ -66,23 +67,10 @@ function CatIcon({ name, className = 'w-4 h-4' }: { name: string; className?: st
 // Re-export for use in other components
 export { LUCIDE_MAP, CatIcon }
 
-// Translation helper
-const categoryTranslations: Record<string, string> = {
-  'category.Food': 'Alimentação',
-  'category.Transport': 'Transporte',
-  'category.Entertainment': 'Lazer',
-  'category.Shopping': 'Compras',
-  'category.Bills': 'Contas',
-  'category.Health': 'Saúde',
-  'category.General': 'Geral',
-  'category.Salary': 'Salário',
-  'category.Freelance': 'Freelance',
-  'category.Investment': 'Investimento',
-  'category.Other': 'Outro',
-}
-
 const t = (key: string): string => {
-  return categoryTranslations[key] || key.replace(/^(category)\./, '');
+  const category = key.replace(/^(category)\./, '');
+  const translated = localizeCategoryName(category, 'pt-BR');
+  return translated !== category ? translated : category;
 }
 
 export default function CategorySelect({ value, onChange, type }: CategorySelectProps) {

@@ -162,7 +162,7 @@ export async function getTransactionsByUser(userId: string) {
   })
 }
 
-export async function getUserBalance(userId: string) {
+export async function getUserBalance(userId: string, upToDate?: Date) {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
     select: { 
@@ -191,7 +191,7 @@ export async function getUserBalance(userId: string) {
   let income = 0
   let expense = 0
 
-  const today = new Date()
+  const today = upToDate ? new Date(upToDate) : new Date()
   today.setHours(23, 59, 59, 999)
 
   for (const t of transactions) {
@@ -338,7 +338,7 @@ export async function getMonthlySummary(userId: string) {
 // 🆕 Get transactions for a specific month (installment + recurring aware)
 export async function getTransactionsByMonth(userId: string, year: number, month: number) {
   const startOfMonth = new Date(year, month - 1, 1)
-  const endOfMonth = new Date(year, month, 0)
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
   // Non-installment, non-recurring transactions for the target month
   const nonInstallments = await prisma.transaction.findMany({
@@ -411,7 +411,7 @@ export async function getTransactionsByMonth(userId: string, year: number, month
 // 🆕 Get monthly summary for any month (installment + recurring aware)
 export async function getMonthSummary(userId: string, year: number, month: number) {
   const startOfMonth = new Date(year, month - 1, 1)
-  const endOfMonth = new Date(year, month, 0)
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
   const nonInstallments = await prisma.transaction.findMany({
     where: {
@@ -449,7 +449,9 @@ export async function getMonthSummary(userId: string, year: number, month: numbe
     return t.isActive
   })
 
-  return computeMonthSummary(installments, nonInstallments, year, month, activeRecurring)
+  const summary = computeMonthSummary(installments, nonInstallments, year, month, activeRecurring)
+  const overall = await getUserBalance(userId, endOfMonth)
+  return { ...summary, balance: overall.balance }
 }
 
 // Pure function to compute a month's summary from transaction lists
@@ -593,7 +595,7 @@ export async function getAvailableMonths(userId: string) {
 // 🆕 Get expenses by category for a specific month (installment + recurring aware)
 export async function getExpensesByCategory(userId: string, year: number, month: number) {
   const startOfMonth = new Date(year, month - 1, 1)
-  const endOfMonth = new Date(year, month, 0)
+  const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
   const nonInstallments = await prisma.transaction.findMany({
     where: {
