@@ -1,6 +1,5 @@
-import { PrismaClient, UserSubscriptionStatus, UserPlan } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import { UserSubscriptionStatus, UserPlan } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 
 interface ActivateVipInput {
   userId: string

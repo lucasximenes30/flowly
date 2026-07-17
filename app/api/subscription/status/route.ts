@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/auth'
-import { PrismaClient } from '@prisma/client'
-
+import { prisma } from '@/lib/prisma'
 import { activateVipAccess } from '@/services/subscription.service'
-
-const prisma = new PrismaClient()
 
 /**
  * GET /api/subscription/status
