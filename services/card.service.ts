@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 
 export interface CreateCardInput {
   name: string
@@ -22,7 +23,7 @@ export interface CardDTO {
   createdAt: string
 }
 
-export async function getCardsByUser(userId: string): Promise<CardDTO[]> {
+export const getCardsByUser = cache(async (userId: string): Promise<CardDTO[]> => {
   const cards = await prisma.card.findMany({
     where: { userId },
     orderBy: { createdAt: 'asc' },
@@ -37,7 +38,7 @@ export async function getCardsByUser(userId: string): Promise<CardDTO[]> {
     limitAmount: c.limitAmount.toString(),
     createdAt: c.createdAt.toISOString(),
   }))
-}
+})
 
 export async function createCard(userId: string, input: CreateCardInput): Promise<CardDTO> {
   const card = await prisma.card.create({

@@ -8,6 +8,7 @@ import {
   resolveCanonicalCategory,
   localizeCategoryName,
 } from '@/lib/categories'
+import { cache as reactCache } from 'react'
 
 export interface AIInsight {
   text: string
@@ -388,7 +389,7 @@ export interface WeeklyAnalysis {
 /**
  * Análise semanal dos últimos 4 meses (ou do período disponível)
  */
-export async function getWeeklyAnalysis(userId: string): Promise<WeeklyAnalysis[]> {
+export const getWeeklyAnalysis = reactCache(async (userId: string): Promise<WeeklyAnalysis[]> => {
   const now = new Date()
   const fourMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
@@ -449,7 +450,7 @@ export async function getWeeklyAnalysis(userId: string): Promise<WeeklyAnalysis[
   }
 
   return result
-}
+})
 
 function getWeekStart(date: Date): Date {
   const d = new Date(date)

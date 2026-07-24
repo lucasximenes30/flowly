@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 
 interface WorkoutPlanOwnershipRecord {
   id: string
@@ -137,10 +138,10 @@ async function ensureWorkoutDayOwnership(
   }
 }
 
-export async function getWorkoutDayAssignmentByDate(
+export const getWorkoutDayAssignmentByDate = cache(async (
   userId: string,
   input: { planId: string; date: string }
-): Promise<WorkoutDayAssignmentDTO | null> {
+): Promise<WorkoutDayAssignmentDTO | null> => {
   const date = normalizeDateKey(input.date)
   await ensurePlanOwnership(userId, input.planId)
 
@@ -153,7 +154,7 @@ export async function getWorkoutDayAssignmentByDate(
   })
 
   return assignment ? toWorkoutDayAssignmentDTO(assignment) : null
-}
+})
 
 export async function upsertWorkoutDayAssignment(
   userId: string,

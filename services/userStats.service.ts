@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 
 interface UserRecord {
   id: string
@@ -140,10 +141,10 @@ async function ensureUserStatsRecord(userId: string, client: unknown): Promise<U
   }
 }
 
-export async function getUserStats(userId: string): Promise<UserStatsDTO> {
+export const getUserStats = cache(async (userId: string): Promise<UserStatsDTO> => {
   const stats = await ensureUserStatsRecord(userId, prisma)
   return toUserStatsDTO(stats)
-}
+})
 
 export async function registerWorkoutCompletion(
   userId: string,
@@ -206,10 +207,10 @@ export async function registerWorkoutCompletion(
   }
 }
 
-export async function getWorkoutRanking(input?: {
+export const getWorkoutRanking = cache(async (input?: {
   limit?: number
   currentUserId?: string
-}): Promise<WorkoutRankingDTO> {
+}): Promise<WorkoutRankingDTO> => {
   const limit = clampRankingLimit(input?.limit)
 
   if (input?.currentUserId) {
@@ -247,4 +248,4 @@ export async function getWorkoutRanking(input?: {
     ranking: ranking.slice(0, limit),
     currentUserPosition,
   }
-}
+})

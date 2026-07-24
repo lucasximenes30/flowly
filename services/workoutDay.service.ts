@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 
 interface WorkoutDayRecord {
   id: string
@@ -110,7 +111,7 @@ function normalizeWeekDay(weekDay: number | null | undefined): number | null {
   return weekDay
 }
 
-export async function getWorkoutDaysByPlan(userId: string, planId: string): Promise<WorkoutDayDTO[]> {
+export const getWorkoutDaysByPlan = cache(async (userId: string, planId: string): Promise<WorkoutDayDTO[]> => {
   await ensurePlanOwnership(userId, planId)
 
   const days = await workoutDayDelegate(prisma).findMany({
@@ -119,7 +120,7 @@ export async function getWorkoutDaysByPlan(userId: string, planId: string): Prom
   })
 
   return days.map(toWorkoutDayDTO)
-}
+})
 
 export async function createWorkoutDay(
   userId: string,

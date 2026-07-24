@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 
 export interface CreateCategoryInput {
   name: string
@@ -9,7 +10,7 @@ export interface CreateCategoryInput {
   userId: string
 }
 
-export async function getUserCategories(userId: string) {
+export const getUserCategories = cache(async (userId: string) => {
   const defaults = await prisma.category.findMany({
     where: { userId: null },
     orderBy: { name: 'asc' },
@@ -21,7 +22,7 @@ export async function getUserCategories(userId: string) {
   })
 
   return { defaults, custom }
-}
+})
 
 export async function createCategory(input: CreateCategoryInput) {
   return prisma.category.create({

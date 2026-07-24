@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 type PaymentStatus = 'PENDING' | 'ACTIVE' | 'FAILED' | 'EXPIRED' | 'CANCELED'
 const PaymentStatus = {
   PENDING: 'PENDING' as PaymentStatus,
@@ -12,7 +13,7 @@ import { startOfMonth, endOfMonth } from 'date-fns'
 // Price per VIP slot used as fallback for estimated revenue when payment history is sparse
 const PLAN_PRICE_CENTS = 4700 // R$ 47,00
 
-export async function getPaymentTransactions({
+export const getPaymentTransactions = cache(async ({
   userId,
   status,
   limit = 50,
@@ -22,7 +23,7 @@ export async function getPaymentTransactions({
   status?: PaymentStatus
   limit?: number
   offset?: number
-} = {}) {
+} = {}) => {
   const where: any = {}
   if (userId) where.userId = userId
   if (status) where.status = status
@@ -53,9 +54,9 @@ export async function getPaymentTransactions({
   ])
 
   return { transactions, total }
-}
+})
 
-export async function getPaymentTransactionsByUser(userId: string) {
+export const getPaymentTransactionsByUser = cache(async (userId: string) => {
   return prisma.paymentTransaction.findMany({
     where: { userId },
     orderBy: { createdAt: 'desc' },
@@ -73,9 +74,9 @@ export async function getPaymentTransactionsByUser(userId: string) {
       createdAt: true,
     },
   })
-}
+})
 
-export async function getDashboardPaymentStats() {
+export const getDashboardPaymentStats = cache(async () => {
   const now = new Date()
   const monthStart = startOfMonth(now)
   const monthEnd = endOfMonth(now)
@@ -136,4 +137,4 @@ export async function getDashboardPaymentStats() {
     pendingCount,
     approvedCount,
   }
-}
+})

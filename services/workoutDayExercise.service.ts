@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 import { ensureExerciseAccess, type ExerciseDTO } from '@/services/exercise.service'
 
 interface WorkoutPlanRecord {
@@ -217,7 +218,7 @@ function normalizeNotes(value?: string): string | null {
   return normalized
 }
 
-export async function getWorkoutDayExercises(userId: string, workoutDayId: string): Promise<WorkoutDayExerciseDTO[]> {
+export const getWorkoutDayExercises = cache(async (userId: string, workoutDayId: string): Promise<WorkoutDayExerciseDTO[]> => {
   await ensureWorkoutDayOwnership(userId, workoutDayId)
 
   const items = await workoutDayExerciseDelegate(prisma).findMany({
@@ -227,12 +228,12 @@ export async function getWorkoutDayExercises(userId: string, workoutDayId: strin
   })
 
   return items.map(toWorkoutDayExerciseDTO)
-}
+})
 
-export async function getWorkoutDayExercisesByPlan(
+export const getWorkoutDayExercisesByPlan = cache(async (
   userId: string,
   planId: string
-): Promise<WorkoutDayExerciseDTO[]> {
+): Promise<WorkoutDayExerciseDTO[]> => {
   await ensurePlanOwnership(userId, planId)
 
   const items = await workoutDayExerciseDelegate(prisma).findMany({
@@ -244,7 +245,7 @@ export async function getWorkoutDayExercisesByPlan(
   })
 
   return items.map(toWorkoutDayExerciseDTO)
-}
+})
 
 export async function addExerciseToWorkoutDay(
   userId: string,

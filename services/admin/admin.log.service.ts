@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 import { Prisma } from '@prisma/client'
 
 export type AdminAction =
@@ -43,7 +44,7 @@ export async function createAdminLog({
   }
 }
 
-export async function getAdminLogs({
+export const getAdminLogs = cache(async ({
   targetUserId,
   limit = 50,
   offset = 0,
@@ -51,7 +52,7 @@ export async function getAdminLogs({
   targetUserId?: string
   limit?: number
   offset?: number
-} = {}) {
+} = {}) => {
   const where = targetUserId ? { targetUserId } : undefined
 
   const [logs, total] = await Promise.all([
@@ -78,4 +79,4 @@ export async function getAdminLogs({
   ])
 
   return { logs, total }
-}
+})

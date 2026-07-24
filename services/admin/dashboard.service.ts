@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 import { startOfDay, endOfDay, addDays } from 'date-fns'
 import { UserPlan } from '@prisma/client'
 
-export async function getDashboardStats() {
+export const getDashboardStats = cache(async () => {
   const [totalUsers, activeVip, activePro, activeProYearly, pendingPayments, expiredSubs, trialUsers, upgradeConversions] = await Promise.all([
     prisma.user.count(),
     prisma.user.count({
@@ -47,9 +48,9 @@ export async function getDashboardStats() {
     trialUsers,
     upgradeConversions,
   }
-}
+})
 
-export async function getExpiringUsers() {
+export const getExpiringUsers = cache(async () => {
   const now = new Date()
   const todayStart = startOfDay(now)
   const todayEnd = endOfDay(now)
@@ -137,9 +138,9 @@ export async function getExpiringUsers() {
     in3Days,
     in7Days,
   }
-}
+})
 
-export async function getUsersGrowth(days: number = 30) {
+export const getUsersGrowth = cache(async (days: number = 30) => {
   const now = new Date()
   const startDate = startOfDay(addDays(now, -days))
 
@@ -171,9 +172,9 @@ export async function getUsersGrowth(days: number = 30) {
     date,
     count,
   }))
-}
+})
 
-export async function getUsersDistribution() {
+export const getUsersDistribution = cache(async () => {
   const users = await prisma.user.findMany({
     select: { role: true, plan: true },
   })
@@ -196,4 +197,4 @@ export async function getUsersDistribution() {
     { name: 'Admin', value: dist.ADMIN, color: '#ef4444' }, // red-500
     { name: 'Free', value: dist.FREE, color: '#64748b' }, // slate-500
   ].filter((item) => item.value > 0)
-}
+})

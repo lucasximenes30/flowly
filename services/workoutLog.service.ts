@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { registerWorkoutCompletion } from '@/services/userStats.service'
+import { cache } from 'react'
 
 interface WorkoutDayRecord {
   id: string
@@ -295,10 +296,10 @@ async function persistExerciseLogs(
   })
 }
 
-export async function getTodayWorkoutLog(
+export const getTodayWorkoutLog = cache(async (
   userId: string,
   input?: { workoutId?: string }
-): Promise<WorkoutLogDTO | null> {
+): Promise<WorkoutLogDTO | null> => {
   if (input?.workoutId) {
     await ensureWorkoutOwnership(userId, input.workoutId)
   }
@@ -323,7 +324,7 @@ export async function getTodayWorkoutLog(
   })
 
   return log ? toWorkoutLogDTO(log) : null
-}
+})
 
 export async function upsertTodayWorkoutLog(
   userId: string,

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 import { hash } from 'bcryptjs'
 import { SALT_ROUNDS } from '@/lib/constants'
 
@@ -72,7 +73,7 @@ export async function resetUserPasswordAdmin(id: string) {
 }
 
 // Get full user details for admin modal
-export async function getUserDetails(id: string) {
+export const getUserDetails = cache(async (id: string) => {
   return prisma.user.findUnique({
     where: { id },
     select: {
@@ -106,5 +107,5 @@ export async function getUserDetails(id: string) {
       },
     },
   })
-}
+})
 
