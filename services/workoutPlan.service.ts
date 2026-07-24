@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
 
 interface WorkoutPlanRecord {
   id: string
@@ -50,14 +51,14 @@ function toWorkoutPlanDTO(plan: WorkoutPlanRecord): WorkoutPlanDTO {
   }
 }
 
-export async function getActiveWorkoutPlanByUser(userId: string): Promise<WorkoutPlanDTO | null> {
+export const getActiveWorkoutPlanByUser = cache(async (userId: string): Promise<WorkoutPlanDTO | null> => {
   const plan = await workoutPlanDelegate(prisma).findFirst({
     where: { userId, isActive: true },
     orderBy: { createdAt: 'desc' },
   })
 
   return plan ? toWorkoutPlanDTO(plan) : null
-}
+})
 
 export async function createWorkoutPlan(userId: string, name: string): Promise<WorkoutPlanDTO> {
   const normalizedName = name.trim()

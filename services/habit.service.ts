@@ -1,6 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
 
 export interface HabitDTO {
   id: string
@@ -73,7 +75,7 @@ function calculateStreaks(checkins: { date: string; completed: boolean }[]): { c
   return { currentStreak, bestStreak }
 }
 
-export async function getHabitsByUser(userId: string): Promise<HabitDTO[]> {
+export const getHabitsByUser = cache(async (userId: string): Promise<HabitDTO[]> => {
   const habits = await prisma.habit.findMany({
     where: { userId, isActive: true },
     include: {
@@ -95,7 +97,7 @@ export async function getHabitsByUser(userId: string): Promise<HabitDTO[]> {
     ...calculateStreaks(h.checkins),
     createdAt: h.createdAt.toISOString(),
   }))
-}
+})
 
 export async function createHabit(
   userId: string,
@@ -202,10 +204,10 @@ export async function toggleCheckin(
   }
 }
 
-export async function getCheckinsForWeek(
+export const getCheckinsForWeek = cache(async (
   userId: string,
   dates: string[]
-): Promise<CheckinDTO[]> {
+): Promise<CheckinDTO[]> => {
   const habits = await prisma.habit.findMany({
     where: { userId, isActive: true },
     select: { id: true },
@@ -221,9 +223,9 @@ export async function getCheckinsForWeek(
     date: c.date,
     completed: c.completed,
   }))
-}
+})
 
-export async function getHistoricalScore(userId: string, weekDates: string[], totalVisibleHabits: number): Promise<number> {
+export const getHistoricalScore = cache(async (userId: string, weekDates: string[], totalVisibleHabits: number): Promise<number> => {
   const allCheckins = await prisma.habitCheckin.findMany({
     where: { habit: { userId }, completed: true }
   })
@@ -244,7 +246,7 @@ export async function getHistoricalScore(userId: string, weekDates: string[], to
     }
   }
   return score
-}
+})
 
 export interface UserRankingEntry {
   userId: string
@@ -255,8 +257,9 @@ export interface UserRankingEntry {
   rankingPoints: number
 }
 
-export async function getUserRanking(limit: number = 10): Promise<UserRankingEntry[]> {
-  const users = await prisma.user.findMany({
+export const getUserRanking = unstable_cache(
+  async (limit: number = 10): Promise<UserRankingEntry[]> => {
+    const users = await prisma.user.findMany({
     where: {
       habits: {
         some: {
@@ -331,4 +334,4 @@ export async function getUserRanking(limit: number = 10): Promise<UserRankingEnt
   })
 
   return ranking.slice(0, limit)
-}
+}, ['global-user-ranking'], { revalidate: 60 })

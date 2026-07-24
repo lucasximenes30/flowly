@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 import { isInstallmentActiveInMonth, getInstallmentForMonth, getRecurringStatusForMonth } from '@/lib/installments'
+import { cache } from 'react'
 
 export interface CreateTransactionInput {
   title: string
@@ -155,14 +156,14 @@ export async function cancelRecurring(
   }
 }
 
-export async function getTransactionsByUser(userId: string) {
+export const getTransactionsByUser = cache(async (userId: string) => {
   return prisma.transaction.findMany({
     where: { userId },
     orderBy: { date: 'desc' },
   })
-}
+})
 
-export async function getUserBalance(userId: string, upToDate?: Date) {
+export const getUserBalance = cache(async (userId: string, upToDate?: Date) => {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
     select: { 
@@ -328,15 +329,15 @@ export async function getUserBalance(userId: string, upToDate?: Date) {
   }
 
   return { income, expense, balance: income - expense }
-}
+})
 
-export async function getMonthlySummary(userId: string) {
+export const getMonthlySummary = cache(async (userId: string) => {
   const now = new Date()
   return getMonthSummary(userId, now.getFullYear(), now.getMonth() + 1)
-}
+})
 
 // 🆕 Get transactions for a specific month (installment + recurring aware)
-export async function getTransactionsByMonth(userId: string, year: number, month: number) {
+export const getTransactionsByMonth = cache(async (userId: string, year: number, month: number) => {
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
@@ -406,10 +407,10 @@ export async function getTransactionsByMonth(userId: string, year: number, month
   }))
 
   return [...enrichedActiveInstallments, ...nonInstallments, ...enrichedRecurring]
-}
+})
 
 // 🆕 Get monthly summary for any month (installment + recurring aware)
-export async function getMonthSummary(userId: string, year: number, month: number) {
+export const getMonthSummary = cache(async (userId: string, year: number, month: number) => {
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
@@ -452,7 +453,7 @@ export async function getMonthSummary(userId: string, year: number, month: numbe
   const summary = computeMonthSummary(installments, nonInstallments, year, month, activeRecurring)
   const overall = await getUserBalance(userId, endOfMonth)
   return { ...summary, balance: overall.balance }
-}
+})
 
 // Pure function to compute a month's summary from transaction lists
 function computeMonthSummary(
@@ -509,7 +510,7 @@ function computeMonthSummary(
 }
 
 // 🆕 Get comparison between selected month and previous month (installment-aware)
-export async function getMonthComparison(userId: string, refYear: number, refMonth: number) {
+export const getMonthComparison = cache(async (userId: string, refYear: number, refMonth: number) => {
   const currentSummary = await getMonthSummary(userId, refYear, refMonth)
 
   let prevYear = refYear
@@ -530,12 +531,12 @@ export async function getMonthComparison(userId: string, refYear: number, refMon
       balanceChange: currentSummary.balance - previousSummary.balance,
     },
   }
-}
+})
 
 // 🆕 Get available months — scoped strictly to the authenticated user's data.
 // Only expands recurring months if the user actually has recurring transactions.
 // Always includes current month as minimum (for new users with no data).
-export async function getAvailableMonths(userId: string) {
+export const getAvailableMonths = cache(async (userId: string) => {
   const transactions = await prisma.transaction.findMany({
     where: { userId },
     select: { date: true, isInstallment: true, isRecurring: true, totalInstallments: true, purchaseDate: true },
@@ -590,10 +591,10 @@ export async function getAvailableMonths(userId: string) {
   }
 
   return Array.from(months).sort().reverse()
-}
+})
 
 // 🆕 Get expenses by category for a specific month (installment + recurring aware)
-export async function getExpensesByCategory(userId: string, year: number, month: number) {
+export const getExpensesByCategory = cache(async (userId: string, year: number, month: number) => {
   const startOfMonth = new Date(year, month - 1, 1)
   const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999)
 
@@ -677,10 +678,10 @@ export async function getExpensesByCategory(userId: string, year: number, month:
   return Array.from(categoryMap.entries())
     .map(([category, amount]) => ({ category, amount }))
     .sort((a, b) => b.amount - a.amount)
-}
+})
 
 // 🆕 Get monthly trend data (last 6 months) — installment-aware
-export async function getMonthlyTrend(userId: string) {
+export const getMonthlyTrend = cache(async (userId: string) => {
   const now = new Date()
   const months: { year: number; month: number; label: string }[] = []
 
@@ -705,4 +706,4 @@ export async function getMonthlyTrend(userId: string) {
   }
 
   return result
-}
+})
